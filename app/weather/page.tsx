@@ -28,7 +28,7 @@ export default function Weather() {
   const now = HOURLY[new Date().getHours()];
 
   return (
-    <div className="pt-[88px] min-h-screen bg-slate-50">
+    <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#EFF6FF 0%,#F0FDF4 100%)"}}>
       <div className="container py-8">
         <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} className="flex items-start justify-between mb-8 flex-wrap gap-4">
           <div>

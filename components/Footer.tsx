@@ -4,7 +4,7 @@ import { Sprout, Phone, Mail, MapPin } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-900 text-slate-400">
+    <footer style={{background:"linear-gradient(160deg,#0F172A 0%,#1E293B 100%)"}} className="text-slate-400">
       <div className="container py-14">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">

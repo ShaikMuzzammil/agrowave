@@ -46,7 +46,7 @@ export default function FarmCalendar() {
   };
 
   return (
-    <div className="pt-[88px] min-h-screen bg-slate-50">
+    <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#FFFBEB 0%,#F0FDF4 100%)"}}>
       <div className="container py-8">
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Bell, Calculator, X, Search } from "lucide-react";
+import { TrendingUp, Bell, Calculator, X, Search, Printer } from "lucide-react";
 import { CROPS, getLivePrices, fmtINR, sparkline, COST_PRESETS, YIELD_DEFAULTS } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import Card from "@/components/Card";
@@ -10,19 +10,19 @@ import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, Cartesia
 
 const TT = { contentStyle:{background:"#fff",border:"1px solid #E2E8F0",borderRadius:"10px",fontFamily:"DM Sans",fontSize:"12px"} };
 const MANDIS = [
-  {name:"Azadpur APMC",  loc:"Delhi",   crops:["wheat","potato","onion"]},
-  {name:"Vashi APMC",    loc:"Mumbai",  crops:["rice","tomato","onion"]},
-  {name:"Koyambedu",     loc:"Chennai", crops:["rice","cotton","tomato"]},
-  {name:"Guntur APMC",   loc:"AP",      crops:["cotton","maize","onion"]},
-  {name:"Ludhiana Mandi",loc:"Punjab",  crops:["wheat","maize","potato"]},
+  {name:"Azadpur APMC",  loc:"Delhi",    crops:["wheat","potato","onion"]},
+  {name:"Vashi APMC",    loc:"Mumbai",   crops:["rice","tomato","onion"]},
+  {name:"Koyambedu",     loc:"Chennai",  crops:["rice","cotton","tomato"]},
+  {name:"Guntur APMC",   loc:"AP",       crops:["cotton","maize","onion"]},
+  {name:"Ludhiana Mandi",loc:"Punjab",   crops:["wheat","maize","potato"]},
   {name:"Yeshwantpur",   loc:"Bengaluru",crops:["tomato","rice","maize"]},
 ];
 
 export default function Market() {
   const [prices, setPrices] = useState<Record<string,any>>({});
-  const [crop, setCrop] = useState("wheat");
-  const [sl, setSl] = useState<Record<string,any[]>>({});
-  const [tab, setTab] = useState<"prices"|"calculator"|"mandis"|"alerts">("prices");
+  const [crop, setCrop]     = useState("wheat");
+  const [sl, setSl]         = useState<Record<string,any[]>>({});
+  const [tab, setTab]       = useState<"prices"|"calculator"|"mandis"|"alerts">("prices");
   const [alertForm, setAlertForm] = useState({commodity:"wheat",type:"above" as "above"|"below",threshold:"",email:""});
   const [alertSaved, setAlertSaved] = useState(false);
   const { pushNotif } = useStore();
@@ -63,10 +63,13 @@ export default function Market() {
   }));
 
   const saveAlert = () => {
-    if(!alertForm.threshold) return;
+    if(!alertForm.threshold) {
+      pushNotif({title:"⚠️ Enter a price threshold",body:"Please set a target price before saving the alert.",type:"warning",time:"just now"});
+      return;
+    }
     pushNotif({
       title:`🔔 Price Alert Set — ${alertForm.commodity.toUpperCase()}`,
-      body:`You will be notified when ${alertForm.commodity} goes ${alertForm.type} ₹${alertForm.threshold}/qtl.`,
+      body:`You'll be notified when ${alertForm.commodity} goes ${alertForm.type} ₹${alertForm.threshold}/qtl.`,
       type:"info", time:"just now"
     });
     setAlertSaved(true);
@@ -74,22 +77,37 @@ export default function Market() {
     setAlertForm(p=>({...p,threshold:"",email:""}));
   };
 
-  const TABS = [{id:"prices",l:"Live Prices",icon:TrendingUp},{id:"calculator",l:"P&L Calculator",icon:Calculator},{id:"mandis",l:"Mandi Rates",icon:Search},{id:"alerts",l:"Price Alerts",icon:Bell}] as const;
+  const TABS = [
+    {id:"prices",l:"Live Prices",icon:TrendingUp},
+    {id:"calculator",l:"P&L Calculator",icon:Calculator},
+    {id:"mandis",l:"Mandi Rates",icon:Search},
+    {id:"alerts",l:"Price Alerts",icon:Bell}
+  ] as const;
 
   return (
-    <div className="pt-[88px] min-h-screen bg-slate-50">
+    <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#F8FAFC 0%,#ECFDF5 50%,#EFF6FF 100%)"}}>
       <PriceTicker/>
-      <div className="container py-8">
-        <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-1">Market <span className="grad-text">Intelligence</span></h1>
-          <p className="text-slate-500 text-sm">Live MSP + mandi rates · 600+ markets · Updated every 60 seconds</p>
-        </motion.div>
+      {/* Header strip */}
+      <div style={{background:"linear-gradient(135deg,#0F172A,#1E293B)"}} className="py-10">
+        <div className="container flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <motion.h1 initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} className="text-4xl font-bold text-white mb-1">
+              Market <span className="grad-text">Intelligence</span>
+            </motion.h1>
+            <p className="text-slate-400 text-sm">Live MSP + mandi rates · 600+ markets · Updated every 60 seconds</p>
+          </div>
+          <button onClick={()=>window.print()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold no-print"
+            style={{background:"rgba(255,255,255,0.1)",color:"#A7F3D0",border:"1px solid rgba(167,243,208,0.3)"}}>
+            <Printer className="w-4 h-4"/> Print Report
+          </button>
+        </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1 w-fit mb-8 shadow-sm">
+      <div className="container py-8">
+        {/* Tabs — always visible active state */}
+        <div className="flex gap-2 flex-wrap mb-8 p-1.5 rounded-2xl w-fit" style={{background:"#fff",border:"2px solid #E2E8F0",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm transition-all ${tab===t.id?"bg-brand-600 text-white shadow":"text-slate-500 hover:text-slate-700 hover:bg-slate-50"}`}>
+            <button key={t.id} onClick={() => setTab(t.id)} className={`tab-btn ${tab===t.id?"active":""}`}>
               <t.icon className="w-4 h-4"/>{t.l}
             </button>
           ))}
@@ -98,13 +116,21 @@ export default function Market() {
         {/* PRICES */}
         {tab==="prices" && (
           <div>
+            {/* Crop selector row */}
+            <div className="flex gap-2 flex-wrap mb-6">
+              {Object.entries(CROPS).map(([k,v]) => (
+                <button key={k} onClick={()=>setCrop(k)} className={`filter-pill ${crop===k?"active":""}`}>
+                  {v.emoji} {k.toUpperCase()}
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
               {Object.entries(CROPS).map(([k,v],i) => {
                 const p = prices[k]; const up = (p?.pct||0)>=0;
                 return (
                   <motion.div key={k} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}}
                     onClick={() => setCrop(k)}>
-                    <Card className={`cursor-pointer p-5 transition-all ${crop===k?"border-brand-400 ring-1 ring-brand-200 shadow-soft":""}`}>
+                    <Card className={`cursor-pointer p-5 transition-all ${crop===k?"border-brand-400 ring-2 ring-brand-200 shadow-soft":""}`}>
                       <div className="flex justify-between mb-3">
                         <span className="text-3xl">{v.emoji}</span>
                         <span className={`badge ${up?"badge-green":"badge-red"}`}>{up?"▲":"▼"}{Math.abs(p?.pct||0).toFixed(1)}%</span>
@@ -128,7 +154,7 @@ export default function Market() {
               })}
             </div>
             {crop && sl[crop] && (
-              <Card hover={false}>
+              <Card hover={false} style={{boxShadow:"0 4px 24px rgba(0,0,0,0.07)"}}>
                 <div className="flex items-start justify-between mb-5">
                   <div>
                     <h3 className="text-xl font-bold text-slate-800">{CROPS[crop as keyof typeof CROPS]?.emoji} {crop.toUpperCase()} — 30 Day Price History</h3>
@@ -143,7 +169,9 @@ export default function Market() {
                     <div className="text-right">
                       <div className="text-xs text-slate-400">Minimum Support Price</div>
                       <div className="text-lg font-bold text-brand-700">₹{CROPS[crop as keyof typeof CROPS]?.msp.toLocaleString("en-IN")}</div>
-                      <div className="text-xs text-brand-600 font-medium">{(((prices[crop]?.current||CROPS[crop as keyof typeof CROPS]?.base)/CROPS[crop as keyof typeof CROPS]?.msp-1)*100).toFixed(1)}% above MSP</div>
+                      <div className="text-xs text-brand-600 font-medium">
+                        {(((prices[crop]?.current||CROPS[crop as keyof typeof CROPS]?.base)/CROPS[crop as keyof typeof CROPS]?.msp-1)*100).toFixed(1)}% above MSP
+                      </div>
                     </div>
                   )}
                 </div>
@@ -204,17 +232,17 @@ export default function Market() {
               </div>
             </Card>
             <div className="space-y-4">
-              <Card hover={false}>
+              <Card hover={false} style={{boxShadow:"0 4px 24px rgba(0,0,0,0.07)"}}>
                 <h3 className="font-bold text-lg text-slate-800 mb-5">Results</h3>
                 <div className="space-y-3">
                   {[
-                    {l:"Total Yield",    v:`${res.totalYield.toFixed(0)} qtl`,  c:"text-slate-800"},
-                    {l:"Gross Revenue",  v:fmtINR(res.revenue),                 c:"text-brand-700"},
-                    {l:"Total Cost",     v:fmtINR(res.totalCost),               c:"text-rose-600"},
-                    {l:"Net Profit",     v:fmtINR(res.profit),                  c:res.profit>=0?"text-brand-700":"text-rose-600"},
-                    {l:"Profit Margin",  v:`${res.margin.toFixed(1)}%`,          c:res.margin>=20?"text-brand-600":res.margin>=0?"text-amber-600":"text-rose-600"},
-                    {l:"Break-Even",     v:`₹${res.breakEven.toFixed(0)}/qtl`,  c:"text-slate-600"},
-                    {l:"ROI",            v:`${res.roi.toFixed(1)}%`,             c:res.roi>=20?"text-brand-600":res.roi>=0?"text-amber-600":"text-rose-600"},
+                    {l:"Total Yield",   v:`${res.totalYield.toFixed(0)} qtl`,c:"text-slate-800"},
+                    {l:"Gross Revenue", v:fmtINR(res.revenue),               c:"text-brand-700"},
+                    {l:"Total Cost",    v:fmtINR(res.totalCost),             c:"text-rose-600"},
+                    {l:"Net Profit",    v:fmtINR(res.profit),                c:res.profit>=0?"text-brand-700":"text-rose-600"},
+                    {l:"Profit Margin", v:`${res.margin.toFixed(1)}%`,       c:res.margin>=20?"text-brand-600":res.margin>=0?"text-amber-600":"text-rose-600"},
+                    {l:"Break-Even",    v:`₹${res.breakEven.toFixed(0)}/qtl`,c:"text-slate-600"},
+                    {l:"ROI",           v:`${res.roi.toFixed(1)}%`,          c:res.roi>=20?"text-brand-600":res.roi>=0?"text-amber-600":"text-rose-600"},
                   ].map(row => (
                     <div key={row.l} className="flex justify-between items-center py-2.5 border-b border-slate-50 last:border-0">
                       <span className="text-slate-500 text-sm">{row.l}</span>
@@ -243,8 +271,7 @@ export default function Market() {
           <motion.div initial={{opacity:0}} animate={{opacity:1}}>
             <div className="flex gap-2 flex-wrap mb-6">
               {Object.entries(CROPS).map(([k,v]) => (
-                <button key={k} onClick={()=>setCrop(k)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all ${crop===k?"bg-brand-600 text-white":"bg-white border border-slate-200 text-slate-600 hover:border-brand-300 hover:text-brand-700"}`}>
+                <button key={k} onClick={()=>setCrop(k)} className={`filter-pill ${crop===k?"active":""}`}>
                   {v.emoji} {k.toUpperCase()}
                 </button>
               ))}
@@ -254,7 +281,7 @@ export default function Market() {
                 const diff = m.price - (prices[crop]?.current||CROPS[crop as keyof typeof CROPS]?.base||2000);
                 return (
                   <motion.div key={m.name} initial={{opacity:0,x:-16}} animate={{opacity:1,x:0}} transition={{delay:i*0.08}}>
-                    <Card className="flex items-center justify-between p-5">
+                    <Card className="flex items-center justify-between p-5" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
                       <div>
                         <h4 className="font-bold text-slate-800">{m.name}</h4>
                         <p className="text-sm text-slate-400">{m.loc} · Arrival: {m.arrival}</p>
@@ -274,7 +301,7 @@ export default function Market() {
         {/* ALERTS */}
         {tab==="alerts" && (
           <motion.div initial={{opacity:0}} animate={{opacity:1}} className="grid md:grid-cols-2 gap-6 max-w-3xl">
-            <Card hover={false}>
+            <Card hover={false} style={{boxShadow:"0 4px 24px rgba(0,0,0,0.07)"}}>
               <h3 className="font-bold text-xl text-slate-800 mb-5 flex items-center gap-2"><Bell className="w-5 h-5 text-brand-600"/>Set Price Alert</h3>
               <div className="space-y-4">
                 <div><label className="block text-xs font-semibold text-slate-500 mb-1.5">COMMODITY</label>
@@ -287,7 +314,7 @@ export default function Market() {
                   <div className="grid grid-cols-2 gap-2">
                     {(["above","below"] as const).map(t => (
                       <button key={t} onClick={()=>setAlertForm(p=>({...p,type:t}))}
-                        className={`py-3 rounded-xl text-sm font-semibold border transition-all ${alertForm.type===t?"bg-brand-600 border-brand-600 text-white":"border-slate-200 text-slate-600 hover:border-brand-300"}`}>
+                        className={`py-3 rounded-xl text-sm font-semibold border-2 transition-all ${alertForm.type===t?"bg-brand-600 border-brand-600 text-white shadow-green":"border-slate-200 text-slate-600 bg-white hover:border-brand-300 hover:text-brand-700"}`}>
                         {t==="above"?"▲ Above Threshold":"▼ Below Threshold"}
                       </button>
                     ))}
@@ -300,7 +327,8 @@ export default function Market() {
                   <input type="email" placeholder="farmer@example.com" value={alertForm.email} onChange={e=>setAlertForm(p=>({...p,email:e.target.value}))}/>
                 </div>
                 <button onClick={saveAlert}
-                  className={`btn w-full py-3 text-sm transition-all ${alertSaved?"btn-outline text-brand-700 border-brand-400":"btn-primary"}`}>
+                  className={`btn w-full py-3 text-sm transition-all ${alertSaved?"btn-outline text-brand-700 border-brand-400":"btn-primary"}`}
+                  style={!alertSaved?{background:"linear-gradient(135deg,#059669,#10B981)"}:{}}>
                   {alertSaved ? "✅ Alert saved! Watch your notifications" : "Set Price Alert"}
                 </button>
               </div>
@@ -311,7 +339,7 @@ export default function Market() {
                 {[
                   {n:"01",t:"Set Your Target",d:"Choose a crop and set the price threshold you want to be notified about."},
                   {n:"02",t:"We Monitor Live",d:"Our system checks prices every 60 seconds from 600+ mandis across India."},
-                  {n:"03",t:"Instant Notification",d:"When your target is reached, you get an instant in-app notification and email alert."},
+                  {n:"03",t:"Instant Notification",d:"When your target is reached, you get an instant in-app notification."},
                   {n:"04",t:"Sell at the Right Time",d:"Make informed selling decisions based on real market data, not guesswork."},
                 ].map(s => (
                   <div key={s.n} className="flex gap-3">

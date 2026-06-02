@@ -6,25 +6,26 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sprout, LayoutDashboard, CloudRain, Package, TrendingUp,
   Calendar, Mail, Menu, X, Bell, ChevronRight, Home,
-  Info, Search
+  Info, Map
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 
 const NAV = [
-  { href:"/dashboard",     label:"Dashboard",    icon:LayoutDashboard },
-  { href:"/field-monitor", label:"My Fields",    icon:Sprout },
-  { href:"/weather",       label:"Weather",      icon:CloudRain },
-  { href:"/market",        label:"Market",       icon:TrendingUp },
-  { href:"/inventory",     label:"Inventory",    icon:Package },
-  { href:"/calendar",      label:"Calendar",     icon:Calendar },
-  { href:"/about",         label:"About",        icon:Info },
-  { href:"/contact",       label:"Contact",      icon:Mail },
+  { href:"/dashboard",     label:"Dashboard",  icon:LayoutDashboard },
+  { href:"/land",          label:"Land",       icon:Map },
+  { href:"/field-monitor", label:"My Fields",  icon:Sprout },
+  { href:"/weather",       label:"Weather",    icon:CloudRain },
+  { href:"/market",        label:"Market",     icon:TrendingUp },
+  { href:"/inventory",     label:"Inventory",  icon:Package },
+  { href:"/calendar",      label:"Calendar",   icon:Calendar },
+  { href:"/contact",       label:"Contact",    icon:Mail },
 ];
 
 const HOME_SECTIONS = [
   {id:"hero",s:"Home"},{id:"features",s:"Features"},
   {id:"how-it-works",s:"How It Works"},{id:"benefits",s:"Benefits"},
   {id:"market-preview",s:"Market"},{id:"testimonials",s:"Stories"},
+  {id:"contact-section",s:"Contact"},
 ];
 
 export default function Navigation() {
@@ -34,7 +35,7 @@ export default function Navigation() {
   const [showNotifs, setShowNotifs] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { notifications, markRead, markAllRead, unreadCount } = useStore();
+  const { notifications, markRead, markAllRead } = useStore();
   const unread = notifications.filter(n=>!n.read);
 
   useEffect(() => {
@@ -54,7 +55,6 @@ export default function Navigation() {
   }, [pathname]);
 
   const scroll = (id:string) => { document.getElementById(id)?.scrollIntoView({behavior:"smooth"}); setOpen(false); };
-  const notifColors = { success:"text-brand-500", warning:"text-gold-500", error:"text-rose-500", info:"text-sky-500" };
 
   return (
     <>
@@ -65,7 +65,7 @@ export default function Navigation() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-brand-grad flex items-center justify-center shadow-green">
+              <div className="w-9 h-9 rounded-xl bg-brand-grad flex items-center justify-center shadow-green" style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
                 <Sprout className="w-5 h-5 text-white"/>
               </div>
               <div>
@@ -80,23 +80,27 @@ export default function Navigation() {
                 HOME_SECTIONS.map(s => (
                   <button key={s.id} onClick={() => scroll(s.id)}
                     className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      activeSection===s.id ? "text-brand-600" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                      activeSection===s.id ? "text-brand-600 bg-brand-50" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
                     }`}>
                     {s.s}
                     {activeSection===s.id && <motion.div layoutId="navUnderline" className="absolute bottom-0.5 left-3 right-3 h-0.5 bg-brand-500 rounded-full"/>}
                   </button>
                 ))
-              ) : NAV.slice(0,6).map(n => {
-                const active = pathname===n.href || (n.href!=="/" && pathname.startsWith(n.href));
+              ) : NAV.slice(0,7).map(n => {
+                const active = pathname===n.href || (n.href!=="/dashboard" && n.href!=="/" && pathname.startsWith(n.href));
                 const Icon = n.icon;
+                const isLand = n.href === "/land";
                 return (
                   <Link key={n.href} href={n.href}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all relative ${
-                      active ? "text-brand-600 bg-brand-50" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                    }`}>
+                      active
+                        ? isLand ? "text-white bg-brand-600 shadow-green" : "text-brand-600 bg-brand-50"
+                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                    }`}
+                    style={isLand && !active ? {border:"1.5px solid #A7F3D0",color:"#047857"} : {}}>
                     <Icon className="w-4 h-4"/>
-                    {n.label}
-                    {active && <motion.div layoutId="navActive" className="absolute bottom-0.5 left-3 right-3 h-0.5 bg-brand-500 rounded-full"/>}
+                    {isLand ? <span className="font-bold">land</span> : n.label}
+                    {active && !isLand && <motion.div layoutId="navActive" className="absolute bottom-0.5 left-3 right-3 h-0.5 bg-brand-500 rounded-full"/>}
                   </Link>
                 );
               })}
@@ -156,8 +160,8 @@ export default function Navigation() {
                 </button>
               )}
 
-              <Link href="/dashboard"
-                className="btn btn-primary hidden md:flex text-sm px-5 py-2.5">
+              <Link href="/dashboard" className="btn btn-primary hidden md:flex text-sm px-5 py-2.5"
+                style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
                 Open Farm <ChevronRight className="w-4 h-4"/>
               </Link>
 
@@ -169,13 +173,13 @@ export default function Navigation() {
         </div>
 
         {/* Live strip */}
-        <div className="hidden sm:flex bg-brand-600 px-6 py-1.5 items-center justify-between">
+        <div className="hidden sm:flex bg-brand-600 px-6 py-1.5 items-center justify-between" style={{background:"#059669"}}>
           <div className="flex items-center gap-3">
             <span className="dot-live" style={{background:"#A7F3D0"}}/>
-            <span className="text-brand-100 text-[11px] font-semibold tracking-widest">LIVE MONITORING</span>
-            <span className="text-brand-200 text-[11px]">KHARIF 2026 · Day 47 of 120</span>
+            <span className="text-green-100 text-[11px] font-semibold tracking-widest">LIVE MONITORING</span>
+            <span className="text-green-200 text-[11px]">KHARIF 2026 · Day 47 of 120</span>
           </div>
-          <div className="flex items-center gap-4 text-[11px] text-brand-200">
+          <div className="flex items-center gap-4 text-[11px] text-green-200">
             <span>6 Plots Active</span>
             <span>·</span>
             <span className={unread.length > 0 ? "text-yellow-300 font-semibold" : ""}>{unread.length} New Alerts</span>
@@ -197,14 +201,20 @@ export default function Navigation() {
                 <button onClick={() => setOpen(false)} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400"><X className="w-5 h-5"/></button>
               </div>
               <div className="p-4 space-y-1">
-                {NAV.map(n => { const Icon=n.icon; return (
+                {NAV.map(n => { const Icon=n.icon; const isLand=n.href==="/land"; return (
                   <Link key={n.href} href={n.href} onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all ${pathname===n.href?"bg-brand-50 text-brand-700":"text-slate-600 hover:bg-slate-50"}`}>
-                    <Icon className="w-4 h-4"/> {n.label}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all ${
+                      pathname===n.href
+                        ? isLand ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-700"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}>
+                    <Icon className="w-4 h-4"/> {isLand ? "land" : n.label}
+                    {isLand && <span className="ml-auto badge badge-green text-[9px]">NEW</span>}
                   </Link>
                 );})}
                 <div className="pt-3 border-t">
-                  <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-primary w-full justify-center">Open Farm Dashboard</Link>
+                  <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-primary w-full justify-center"
+                    style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>Open Farm Dashboard</Link>
                 </div>
               </div>
             </motion.div>
