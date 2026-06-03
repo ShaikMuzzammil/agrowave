@@ -1,178 +1,172 @@
 "use client";
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Wind, Droplets, Eye, Gauge, Thermometer } from "lucide-react";
-import Card from "@/components/Card";
-import { FORECAST, HOURLY } from "@/lib/utils";
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Cloud, Droplets, Thermometer, Wind, Eye, AlertTriangle, Sun } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { FORECAST, RAINFALL_WEEK } from "@/lib/farmData";
 
-const TT = { contentStyle:{background:"#fff",border:"1px solid #E2E8F0",borderRadius:"10px",fontFamily:"DM Sans",fontSize:"12px"} };
-
-const ADVISORY = [
-  { icon:"💧", title:"Irrigation Advisory",    sev:"info",    msg:"Rain expected Wed–Thu. Skip irrigation for North Field and West Block on Tuesday. Save approx ₹800 in water costs." },
-  { icon:"⚗️", title:"Fertilizer Timing",      sev:"warning", msg:"Do NOT apply DAP until after the rain cycle (Thu). Apply Friday–Saturday morning for best soil uptake and absorption." },
-  { icon:"🐛", title:"Post-Rain Pest Risk",    sev:"danger",  msg:"High armyworm activity expected after rains. Inspect South Field on Friday morning. Keep chlorpyrifos ready." },
-  { icon:"🌾", title:"Harvest Opportunity",    sev:"success", msg:"Dry window Fri–Sun is ideal for soybean harvest. Schedule combine now — forecast shows 0% rain probability those days." },
+const HOURLY = [
+  {h:"6am",temp:26,rain:5,hum:72},{h:"8am",temp:28,rain:8,hum:70},{h:"10am",temp:31,rain:10,hum:65},
+  {h:"12pm",temp:34,rain:12,hum:58},{h:"2pm",temp:36,rain:15,hum:52},{h:"4pm",temp:35,rain:10,hum:55},
+  {h:"6pm",temp:32,rain:8,hum:62},{h:"8pm",temp:29,rain:5,hum:68},{h:"10pm",temp:27,rain:3,hum:73},
 ];
 
-const sevStyle = {
-  info:    "bg-sky-50 border-sky-200 text-sky-800",
-  warning: "bg-amber-50 border-amber-200 text-amber-800",
-  danger:  "bg-rose-50 border-rose-200 text-rose-800",
-  success: "bg-brand-50 border-brand-200 text-brand-800",
-};
+const WEATHER_ALERTS = [
+  { type:"warning", icon:"⛈️", title:"Heavy Rain Alert – Wednesday", msg:"80% probability of thunderstorms. Secure loose equipment and pause aerial spraying. Auto-irrigation will pause." },
+  { type:"info", icon:"💨", title:"Wind Advisory – Thursday", msg:"Wind speeds of 25-35 km/h expected post-rain. Delay pesticide application to avoid drift." },
+  { type:"success", icon:"☀️", title:"Ideal Harvest Window – Fri to Sun", msg:"Clear skies and 0% rain forecast Friday through Sunday. Optimal for soybean and onion harvest." },
+];
 
-export default function Weather() {
-  const [unit, setUnit] = useState<"C"|"F">("C");
-  const conv = (t:number) => unit==="C" ? t : Math.round(t*9/5+32);
-  const now = HOURLY[new Date().getHours()];
+export default function WeatherPage() {
+  const [tab, setTab] = useState<"7day"|"hourly">("7day");
 
   return (
-    <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#EFF6FF 0%,#F0FDF4 100%)"}}>
-      <div className="container py-8">
-        <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} className="flex items-start justify-between mb-8 flex-wrap gap-4">
+    <div className="max-w-screen-xl mx-auto px-4 py-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-black text-slate-900">Weather Intelligence</h1>
+        <p className="text-sm text-slate-500 mt-0.5">KHARIF 2026 · Hyderabad, Telangana · Updated just now</p>
+      </div>
+
+      {/* Current weather hero */}
+      <div className="bg-gradient-to-br from-sky-600 to-blue-700 rounded-2xl p-6 text-white">
+        <div className="grid md:grid-cols-2 gap-6 items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-1">Weather <span className="grad-text">Intelligence</span></h1>
-            <p className="text-slate-500 text-sm">Hyper-local farm forecasts · Telangana, India · Updated every 30 min</p>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-6xl">🌤️</span>
+              <div>
+                <div className="text-5xl font-black">32°C</div>
+                <div className="text-sky-200 font-medium">Mostly Sunny</div>
+              </div>
+            </div>
+            <p className="text-sky-100 text-sm">Feels like 35°C · Humidity 62% · Visibility 12 km</p>
+            <p className="text-sky-200/70 text-xs mt-1">Today: Low 24°C · High 36°C · Rain: 10%</p>
           </div>
-          <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1">
-            {(["C","F"] as const).map(u => (
-              <button key={u} onClick={()=>setUnit(u)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${unit===u?"bg-brand-600 text-white":"text-slate-500 hover:text-slate-700"}`}>
-                °{u}
-              </button>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: <Droplets size={18}/>, label:"Humidity", value:"62%", color:"bg-sky-500/30" },
+              { icon: <Wind size={18}/>, label:"Wind", value:"14 km/h", color:"bg-sky-500/30" },
+              { icon: <Eye size={18}/>, label:"Visibility", value:"12 km", color:"bg-sky-500/30" },
+              { icon: <Sun size={18}/>, label:"UV Index", value:"7 High", color:"bg-sky-500/30" },
+            ].map(s=>(
+              <div key={s.label} className={`${s.color} backdrop-blur rounded-xl p-3`}>
+                <div className="flex items-center gap-1.5 text-sky-200 mb-1">{s.icon}<span className="text-xs">{s.label}</span></div>
+                <div className="font-bold text-white">{s.value}</div>
+              </div>
             ))}
           </div>
-        </motion.div>
-
-        {/* Current + today */}
-        <div className="grid md:grid-cols-3 gap-4 mb-6">
-          <motion.div className="md:col-span-2" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}}>
-            <Card hover={false} className="p-8" style={{background:"linear-gradient(135deg,#ECFDF5,#EFF6FF)"}}>
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <p className="text-xs font-semibold text-slate-400 tracking-wider mb-2">CURRENT CONDITIONS · FARM LOCATION</p>
-                  <div className="flex items-end gap-4">
-                    <span className="text-7xl font-bold text-slate-900">{conv(now?.t||33)}°{unit}</span>
-                    <div className="pb-2">
-                      <div className="text-4xl mb-1">{FORECAST[0].icon}</div>
-                      <div className="font-semibold text-slate-700 text-lg">{FORECAST[0].desc}</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-slate-400">Feels like</p>
-                  <p className="text-2xl font-bold text-slate-700">{conv((now?.t||33)+2)}°{unit}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-4 border-t border-slate-200/60 pt-5">
-                {[
-                  {icon:Droplets,    l:"Humidity",   v:`${FORECAST[0].hum}%`},
-                  {icon:Wind,        l:"Wind",       v:`${FORECAST[0].wind} km/h`},
-                  {icon:Eye,         l:"Visibility", v:"8 km"},
-                  {icon:Gauge,       l:"Pressure",   v:"1012 hPa"},
-                ].map(s=>(
-                  <div key={s.l} className="text-center">
-                    <s.icon className="w-5 h-5 text-slate-400 mx-auto mb-1.5"/>
-                    <div className="text-xs text-slate-400 mb-0.5">{s.l}</div>
-                    <div className="font-bold text-slate-700">{s.v}</div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </motion.div>
-
-          <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:0.1}}>
-            <Card hover={false} className="h-full">
-              <p className="text-xs font-semibold text-slate-400 mb-4">TODAY AT A GLANCE</p>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm font-semibold text-slate-600 mb-2">
-                    <span>{conv(FORECAST[0].lo)}° Low</span>
-                    <span>{conv(FORECAST[0].hi)}° High</span>
-                  </div>
-                  <div className="h-2.5 rounded-full overflow-hidden" style={{background:"linear-gradient(to right,#93C5FD,#FDE68A,#FCA5A5)"}}>
-                    <div className="h-full w-full opacity-80"/>
-                  </div>
-                </div>
-                <div className="border-t border-slate-100 pt-4">
-                  <p className="text-xs text-slate-400 mb-1">Rain Probability</p>
-                  <div className="text-4xl font-bold text-sky-600">{FORECAST[0].rain}%</div>
-                  <p className="text-xs text-slate-400 mt-1">{FORECAST[0].rain>50?"Rain likely — postpone field work":"Clear for farm activities"}</p>
-                </div>
-                <div className="border-t border-slate-100 pt-4">
-                  <p className="text-xs text-slate-400 mb-1">UV Index</p>
-                  <div className="text-2xl font-bold text-amber-500">8 · Very High</div>
-                  <p className="text-xs text-slate-400 mt-1">Avoid outdoor work 11am–3pm</p>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
         </div>
+      </div>
 
-        {/* Hourly chart */}
-        <Card hover={false} className="mb-6">
-          <p className="font-bold text-slate-800 mb-4">24-Hour Temperature & Rainfall</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={HOURLY} margin={{top:5,right:10,left:0,bottom:5}}>
-              <defs>
-                <linearGradient id="tg2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="rg2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false}/>
-              <XAxis dataKey="h" tick={{fill:"#94A3B8",fontSize:9}} axisLine={false} tickLine={false} interval={3}/>
-              <YAxis tick={{fill:"#94A3B8",fontSize:9}} axisLine={false} tickLine={false}/>
-              <Tooltip {...TT} formatter={(v:any,n)=>[`${Number(v).toFixed(1)}${n==="t"?"°C":" mm"}`,n==="t"?"Temp":"Rain"]}/>
-              <Area type="monotone" dataKey="t" stroke="#F59E0B" fill="url(#tg2)" strokeWidth={2.5} name="t"/>
-              <Area type="monotone" dataKey="r" stroke="#3B82F6" fill="url(#rg2)" strokeWidth={1.5} name="r"/>
-            </AreaChart>
-          </ResponsiveContainer>
-        </Card>
+      {/* Tab selector */}
+      <div className="flex gap-2">
+        {(["7day","hourly"] as const).map(t=>(
+          <button key={t} onClick={()=>setTab(t)}
+            className={`filter-pill ${tab===t?"active":""}`}>
+            {t==="7day" ? "7-Day Forecast" : "Hourly Today"}
+          </button>
+        ))}
+      </div>
 
-        {/* 7-day forecast */}
-        <Card hover={false} className="mb-6">
-          <p className="font-bold text-slate-800 mb-5">7-Day Forecast</p>
-          <div className="grid grid-cols-7 gap-2">
-            {FORECAST.map((d,i)=>(
-              <motion.div key={d.day} initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:i*0.07}}
-                className={`text-center p-3 rounded-xl border transition-all ${i===0?"border-brand-300 bg-brand-50":"border-slate-100 hover:border-brand-200 hover:bg-brand-50/50"}`}>
-                <div className="text-xs font-semibold text-slate-500 mb-2">{d.day}</div>
-                <div className="text-2xl mb-2">{d.icon}</div>
-                <div className="font-bold text-slate-800 text-sm">{conv(d.hi)}°</div>
-                <div className="text-xs text-slate-400 mb-2">{conv(d.lo)}°</div>
-                <div className={`text-xs font-semibold ${d.rain>50?"text-sky-600":d.rain>20?"text-amber-500":"text-slate-300"}`}>{d.rain}%</div>
-                <div className="mt-1.5 h-1 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-sky-400 rounded-full" style={{width:`${d.rain}%`}}/>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Farm advisory */}
-        <div>
-          <h2 className="font-bold text-xl text-slate-800 mb-4">📋 Farm Advisory This Week</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {ADVISORY.map((a,i)=>(
-              <motion.div key={i} initial={{opacity:0,x:-16}} whileInView={{opacity:1,x:0}} viewport={{once:true}} transition={{delay:i*0.08}}>
-                <div className={`p-4 rounded-xl border ${(sevStyle as any)[a.sev]}`}>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">{a.icon}</span>
-                    <div>
-                      <p className="font-bold text-sm mb-1">{a.title}</p>
-                      <p className="text-sm opacity-80 leading-relaxed">{a.msg}</p>
+      {tab==="7day" ? (
+        <div className="grid lg:grid-cols-3 gap-5">
+          {/* Forecast cards */}
+          <div className="lg:col-span-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+            {FORECAST.map(f=>(
+              <div key={f.day} className="terra-card flex items-center gap-4">
+                <span className="text-3xl">{f.icon}</span>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900">{f.day}</span>
+                    <span className="text-sm font-bold text-slate-700">{f.tempMin}°–{f.tempMax}°C</span>
+                  </div>
+                  <p className="text-xs text-slate-500">{f.desc}</p>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <div className="moisture-bar-track flex-1">
+                      <div className="moisture-bar-fill" style={{width:`${f.rainChance}%`,background:"#3b82f6"}} />
                     </div>
+                    <span className="text-xs text-blue-600 font-medium w-12 text-right">{f.rainChance}% rain</span>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
+
+          {/* Charts */}
+          <div className="lg:col-span-2 space-y-5">
+            <div className="terra-card">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">7-Day Rain Probability (%)</h3>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={FORECAST}>
+                  <defs>
+                    <linearGradient id="rainGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="day" tick={{fontSize:12,fill:"#94a3b8"}} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0,100]} tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{fontSize:12,borderRadius:8,border:"1px solid #e2e8f0"}} />
+                  <Area type="monotone" dataKey="rainChance" stroke="#3b82f6" strokeWidth={2} fill="url(#rainGrad)" name="Rain %" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="terra-card">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Weekly Rainfall Total (mm)</h3>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={RAINFALL_WEEK}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="day" tick={{fontSize:12,fill:"#94a3b8"}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fontSize:11,fill:"#94a3b8"}} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{fontSize:12,borderRadius:8,border:"1px solid #e2e8f0"}} />
+                  <Bar dataKey="mm" fill="#22c55e" radius={[6,6,0,0]} name="mm" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="terra-card">
+          <h3 className="font-bold text-slate-900 mb-4">Hourly Forecast – Today</h3>
+          <div className="overflow-x-auto">
+            <div className="flex gap-3 min-w-max pb-2">
+              {HOURLY.map(h=>(
+                <div key={h.h} className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl border border-slate-100 min-w-[90px]">
+                  <span className="text-xs font-semibold text-slate-500">{h.h}</span>
+                  <span className="text-2xl">{h.rain>50?"⛈️":h.rain>20?"🌧️":h.rain>8?"🌦️":"🌤️"}</span>
+                  <span className="font-black text-slate-900">{h.temp}°C</span>
+                  <div className="flex items-center gap-1 text-xs text-blue-600">
+                    <Droplets size={10}/>{h.rain}%
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-slate-400">
+                    <Cloud size={10}/>{h.hum}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alerts */}
+      <div>
+        <h2 className="section-title mb-4 flex items-center gap-2">
+          <AlertTriangle size={18} className="text-amber-500" /> Weather Alerts
+        </h2>
+        <div className="space-y-3">
+          {WEATHER_ALERTS.map(a=>(
+            <div key={a.title} className={`flex items-start gap-4 p-4 rounded-xl border ${
+              a.type==="warning"?"bg-amber-50 border-amber-200":
+              a.type==="info"?"bg-sky-50 border-sky-200":"bg-emerald-50 border-emerald-200"
+            }`}>
+              <span className="text-2xl">{a.icon}</span>
+              <div>
+                <h4 className={`font-bold text-sm ${
+                  a.type==="warning"?"text-amber-800":a.type==="info"?"text-sky-800":"text-emerald-800"
+                }`}>{a.title}</h4>
+                <p className="text-slate-600 text-sm mt-1 leading-relaxed">{a.msg}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

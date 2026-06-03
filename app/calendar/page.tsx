@@ -1,225 +1,214 @@
 "use client";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, CheckCircle2, Circle, Trash2, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
-import { useStore } from "@/lib/store";
-import Card from "@/components/Card";
+import { ChevronLeft, ChevronRight, Plus, Printer } from "lucide-react";
+import { CALENDAR_EVENTS, CalendarEvent } from "@/lib/farmData";
 
-const TYPE_CFG = {
-  irrigation:{ dot:"bg-sky-400",   badge:"bg-sky-100 text-sky-700",   label:"Irrigation" },
-  fertilizer:{ dot:"bg-amber-400", badge:"bg-amber-100 text-amber-700",label:"Fertilizer" },
-  pesticide: { dot:"bg-rose-400",  badge:"bg-rose-100 text-rose-700",  label:"Pesticide"  },
-  harvest:   { dot:"bg-brand-400", badge:"bg-brand-100 text-brand-700",label:"Harvest"    },
-  planting:  { dot:"bg-violet-400",badge:"bg-violet-100 text-violet-700",label:"Planting" },
-  other:     { dot:"bg-slate-400", badge:"bg-slate-100 text-slate-700", label:"Other"     },
-} as const;
+const CATEGORY_COLORS: Record<CalendarEvent["category"], string> = {
+  irrigation:"bg-sky-100 text-sky-700 border-sky-200",
+  fertilizer:"bg-green-100 text-green-700 border-green-200",
+  pesticide:"bg-amber-100 text-amber-700 border-amber-200",
+  harvest:"bg-yellow-100 text-yellow-800 border-yellow-200",
+  inspection:"bg-violet-100 text-violet-700 border-violet-200",
+  market:"bg-emerald-100 text-emerald-700 border-emerald-200",
+};
+const CATEGORY_ICONS: Record<CalendarEvent["category"], string> = {
+  irrigation:"💧", fertilizer:"🌱", pesticide:"🐛", harvest:"🌾", inspection:"🔍", market:"📈",
+};
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS_OF_WEEK = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+export default function CalendarPage() {
+  const today = new Date(2026, 5, 3); // June 3, 2026
+  const [view, setView] = useState<"month"|"list">("month");
+  const [current, setCurrent] = useState({ year: 2026, month: 5 }); // June=5
+  const [selected, setSelected] = useState<string>("2026-06-03");
+  const [filter, setFilter] = useState<CalendarEvent["category"]|"all">("all");
 
-export default function FarmCalendar() {
-  const { events, addEvent, toggleEvent, deleteEvent, pushNotif } = useStore();
-  const [view, setView] = useState(new Date());
-  const [selDate, setSelDate] = useState(new Date().toISOString().split("T")[0]);
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ title:"", type:"irrigation" as keyof typeof TYPE_CFG, plot:"", notes:"" });
+  const firstDay = new Date(current.year, current.month, 1).getDay();
+  const daysInMonth = new Date(current.year, current.month+1, 0).getDate();
+  const cells = Array.from({length: firstDay + daysInMonth}, (_,i) => i < firstDay ? null : i - firstDay + 1);
 
-  const year=view.getFullYear(), month=view.getMonth();
-  const firstDay=new Date(year,month,1).getDay();
-  const daysInMonth=new Date(year,month+1,0).getDate();
-  const today=new Date().toISOString().split("T")[0];
+  function getDateStr(day: number) {
+    return `${current.year}-${String(current.month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+  }
+  function getEventsForDay(day: number) {
+    return CALENDAR_EVENTS.filter(e=>e.date===getDateStr(day));
+  }
 
-  const calDays=Array.from({length:42},(_,i)=>{ const d=i-firstDay+1; return d>=1&&d<=daysInMonth?d:null; });
-
-  const dayFmt=(d:number)=>`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-  const dayEvents=(d:number)=>events.filter(e=>e.date===dayFmt(d));
-
-  const selEvents=events.filter(e=>e.date===selDate).sort((a,b)=>a.done?1:-1);
-  const upcoming=events.filter(e=>!e.done&&e.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,8);
-
-  const handleAdd=()=>{
-    if(!form.title) return;
-    addEvent({...form, id:Date.now().toString(), date:selDate, done:false});
-    pushNotif({title:"📅 Event Scheduled",body:`${form.title} added for ${new Date(selDate+"T12:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"})}.`,type:"info",time:"just now"});
-    setForm({title:"",type:"irrigation",plot:"",notes:""});
-    setShowAdd(false);
-  };
+  const selectedEvents = CALENDAR_EVENTS.filter(e=>e.date===selected &&
+    (filter==="all" || e.category===filter));
+  const allFiltered = CALENDAR_EVENTS.filter(e=>filter==="all" || e.category===filter);
 
   return (
-    <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#FFFBEB 0%,#F0FDF4 100%)"}}>
-      <div className="container py-8">
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-1">Farm <span className="grad-text">Calendar</span></h1>
-            <p className="text-slate-500 text-sm">Schedule irrigation, fertilizer, harvests and farm activities</p>
-          </div>
-          <button onClick={()=>setShowAdd(true)} className="btn btn-primary"><Plus className="w-4 h-4"/> Add Event</button>
+    <div className="max-w-screen-xl mx-auto px-4 py-6 space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900">Farm Calendar</h1>
+          <p className="text-sm text-slate-500 mt-0.5">KHARIF 2026 · {CALENDAR_EVENTS.length} upcoming activities</p>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar */}
-          <div className="lg:col-span-2">
-            <Card hover={false}>
-              {/* Month nav */}
-              <div className="flex items-center justify-between mb-6">
-                <button onClick={()=>setView(new Date(year,month-1,1))} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all"><ChevronLeft className="w-5 h-5"/></button>
-                <h2 className="font-bold text-lg text-slate-800">{MONTHS[month]} {year}</h2>
-                <button onClick={()=>setView(new Date(year,month+1,1))} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all"><ChevronRight className="w-5 h-5"/></button>
-              </div>
-              <div className="grid grid-cols-7 mb-2">
-                {DAYS.map(d=><div key={d} className="text-center text-xs font-semibold text-slate-400 py-2">{d}</div>)}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {calDays.map((day,i)=>{
-                  if(!day) return <div key={i}/>;
-                  const ds=dayFmt(day);
-                  const devs=dayEvents(day);
-                  const isToday=ds===today, isSel=ds===selDate;
-                  return (
-                    <button key={i} onClick={()=>setSelDate(ds)}
-                      className={`relative min-h-[56px] p-1.5 rounded-xl text-left transition-all ${isSel?"bg-brand-600 text-white shadow-green":isToday?"bg-brand-50 border border-brand-300":"hover:bg-slate-50 border border-transparent"}`}>
-                      <span className={`text-xs font-semibold ${isSel?"text-white":isToday?"text-brand-700":"text-slate-600"}`}>{day}</span>
-                      {devs.length>0 && (
-                        <div className="mt-1 flex gap-0.5 flex-wrap">
-                          {devs.slice(0,3).map((e,j)=>(
-                            <div key={j} className={`w-1.5 h-1.5 rounded-full ${TYPE_CFG[e.type]?.dot||"bg-slate-300"} ${e.done?"opacity-30":""} ${isSel?"opacity-80":""}`}/>
-                          ))}
-                          {devs.length>3 && <span className={`text-[8px] ${isSel?"text-white/70":"text-slate-400"}`}>+{devs.length-3}</span>}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Legend */}
-              <div className="flex flex-wrap gap-4 mt-5 pt-4 border-t border-slate-100">
-                {Object.entries(TYPE_CFG).map(([k,v])=>(
-                  <span key={k} className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                    <span className={`w-2.5 h-2.5 rounded-full ${v.dot}`}/>{v.label}
-                  </span>
-                ))}
-              </div>
-            </Card>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-4">
-            {/* Selected day */}
-            <Card hover={false}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="font-bold text-slate-800">{new Date(selDate+"T12:00").toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"short"})}</p>
-                  <p className="text-xs text-slate-400">{selEvents.length} event{selEvents.length!==1?"s":""} scheduled</p>
-                </div>
-                <button onClick={()=>setShowAdd(true)} className="p-2 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-600 transition-all"><Plus className="w-4 h-4"/></button>
-              </div>
-              {selEvents.length===0 ? (
-                <div className="text-center py-8">
-                  <Calendar className="w-8 h-8 text-slate-200 mx-auto mb-2"/>
-                  <p className="text-sm text-slate-400">Nothing scheduled</p>
-                  <button onClick={()=>setShowAdd(true)} className="text-xs text-brand-600 font-semibold mt-2 hover:underline">+ Add event</button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {selEvents.map(ev=>{
-                    const cfg=TYPE_CFG[ev.type]||TYPE_CFG.other;
-                    return (
-                      <div key={ev.id} className={`flex items-start gap-3 p-3 rounded-xl border ${ev.done?"bg-slate-50 border-slate-100":"bg-white border-slate-200"}`}>
-                        <button onClick={()=>toggleEvent(ev.id)} className="mt-0.5 flex-shrink-0">
-                          {ev.done?<CheckCircle2 className="w-4 h-4 text-brand-500"/>:<Circle className="w-4 h-4 text-slate-300"/>}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-semibold ${ev.done?"line-through text-slate-400":"text-slate-800"}`}>{ev.title}</p>
-                          {ev.plot && <p className="text-xs text-slate-400 mt-0.5">Plot: {ev.plot}</p>}
-                          {ev.notes && <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{ev.notes}</p>}
-                          <span className={`badge text-[9px] mt-1 ${cfg.badge}`}>{cfg.label}</span>
-                        </div>
-                        <button onClick={()=>deleteEvent(ev.id)} className="text-slate-300 hover:text-rose-400 transition-colors flex-shrink-0"><Trash2 className="w-3.5 h-3.5"/></button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
-
-            {/* Upcoming */}
-            <Card hover={false}>
-              <h3 className="font-bold text-slate-800 mb-4">Upcoming (14 days)</h3>
-              {upcoming.length===0 ? (
-                <p className="text-sm text-slate-400 text-center py-4">No upcoming events.</p>
-              ) : (
-                <div className="space-y-2">
-                  {upcoming.map(ev=>{
-                    const cfg=TYPE_CFG[ev.type]||TYPE_CFG.other;
-                    const d=new Date(ev.date+"T12:00");
-                    return (
-                      <div key={ev.id} onClick={()=>setSelDate(ev.date)}
-                        className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group">
-                        <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${cfg.dot}`}/>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-brand-700">{ev.title}</p>
-                          <p className="text-[10px] text-slate-400">{cfg.label}{ev.plot?` · Plot ${ev.plot}`:""}</p>
-                        </div>
-                        <div className="text-[10px] font-semibold text-slate-400 flex-shrink-0">
-                          {d.toLocaleDateString("en-IN",{day:"numeric",month:"short"})}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
-          </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={()=>setView(view==="month"?"list":"month")}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border border-slate-200 rounded-lg bg-white hover:bg-slate-50 transition-all">
+            {view==="month" ? "📋 List View" : "📅 Month View"}
+          </button>
+          <button onClick={()=>window.print()}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-all">
+            <Printer size={13} /> Print
+          </button>
         </div>
       </div>
 
-      {/* Add modal */}
-      <AnimatePresence>
-        {showAdd && (
-          <>
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50" onClick={()=>setShowAdd(false)}/>
-            <motion.div initial={{opacity:0,scale:.95,y:16}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.95}}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md p-4">
-              <Card hover={false} className="shadow-float border-brand-200">
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <h3 className="font-bold text-xl text-slate-800">Add Farm Event</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">For {new Date(selDate+"T12:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</p>
-                  </div>
-                  <button onClick={()=>setShowAdd(false)} className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400"><X className="w-5 h-5"/></button>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 block mb-1.5">EVENT TITLE *</label>
-                    <input placeholder="e.g. Irrigate North Field" value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))}/>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-semibold text-slate-500 block mb-1.5">TYPE</label>
-                      <select value={form.type} onChange={e=>setForm(p=>({...p,type:e.target.value as any}))}>
-                        {Object.entries(TYPE_CFG).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-                      </select>
+      {/* Category filter pills */}
+      <div className="flex gap-2 flex-wrap">
+        {(["all","irrigation","fertilizer","pesticide","harvest","inspection","market"] as const).map(c=>(
+          <button key={c} onClick={()=>setFilter(c)}
+            className={`filter-pill capitalize ${filter===c?"active":""}`}>
+            {c!=="all" && <span className="mr-1">{CATEGORY_ICONS[c as CalendarEvent["category"]]}</span>}
+            {c==="all"?"All Activities":c}
+          </button>
+        ))}
+      </div>
+
+      {view==="month" ? (
+        <div className="grid lg:grid-cols-[1fr_320px] gap-5">
+          {/* Calendar grid */}
+          <div className="terra-card p-0 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <button onClick={()=>setCurrent(c=>c.month===0?{year:c.year-1,month:11}:{...c,month:c.month-1})}
+                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors">
+                <ChevronLeft size={16}/>
+              </button>
+              <h2 className="font-black text-slate-900">{MONTHS[current.month]} {current.year}</h2>
+              <button onClick={()=>setCurrent(c=>c.month===11?{year:c.year+1,month:0}:{...c,month:c.month+1})}
+                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors">
+                <ChevronRight size={16}/>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 border-b border-slate-100">
+              {DAYS_OF_WEEK.map(d=>(
+                <div key={d} className="py-2 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">{d}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7">
+              {cells.map((day, idx) => {
+                if (!day) return <div key={`empty-${idx}`} className="min-h-[80px] border-b border-r border-slate-50" />;
+                const dateStr = getDateStr(day);
+                const dayEvents = getEventsForDay(day);
+                const filteredDayEvents = dayEvents.filter(e=>filter==="all"||e.category===filter);
+                const isToday = current.year===2026 && current.month===5 && day===3;
+                const isSelected = dateStr===selected;
+                return (
+                  <button key={day}
+                    onClick={()=>setSelected(dateStr)}
+                    className={`min-h-[80px] border-b border-r border-slate-50 p-1.5 text-left transition-colors hover:bg-emerald-50/50 ${
+                      isSelected?"bg-emerald-50 border-emerald-200":""
+                    }`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold mb-1 ${
+                      isToday?"bg-emerald-600 text-white":isSelected?"bg-emerald-100 text-emerald-700":"text-slate-700"
+                    }`}>{day}</div>
+                    <div className="space-y-0.5">
+                      {filteredDayEvents.slice(0,2).map(e=>(
+                        <div key={e.id} className={`text-[9px] font-semibold px-1 py-0.5 rounded truncate border ${CATEGORY_COLORS[e.category]}`}>
+                          {CATEGORY_ICONS[e.category]} {e.title}
+                        </div>
+                      ))}
+                      {filteredDayEvents.length>2 && (
+                        <div className="text-[9px] text-slate-400 px-1">+{filteredDayEvents.length-2} more</div>
+                      )}
                     </div>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-500 block mb-1.5">DATE</label>
-                      <input type="date" value={selDate} onChange={e=>setSelDate(e.target.value)} className="[color-scheme:light]"/>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 block mb-1.5">PLOT (optional)</label>
-                    <input placeholder="e.g. North Field, East Block" value={form.plot} onChange={e=>setForm(p=>({...p,plot:e.target.value}))}/>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 block mb-1.5">NOTES</label>
-                    <textarea rows={2} placeholder="Dosage, timing, special instructions…" value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/>
-                  </div>
-                  <button onClick={handleAdd} className="btn btn-primary w-full py-3">Schedule Event</button>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected day panel */}
+          <div className="space-y-3">
+            <div className="terra-card">
+              <h3 className="font-bold text-slate-900 mb-1">
+                {new Date(selected+"T00:00:00").toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})}
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">{selectedEvents.length} activities scheduled</p>
+              {selectedEvents.length===0 ? (
+                <div className="py-8 text-center">
+                  <div className="text-3xl mb-2">📅</div>
+                  <p className="text-slate-400 text-sm">No activities this day</p>
                 </div>
-              </Card>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+              ) : (
+                <div className="space-y-3">
+                  {selectedEvents.map(e=>(
+                    <div key={e.id} className={`p-3 rounded-xl border ${CATEGORY_COLORS[e.category]}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span>{CATEGORY_ICONS[e.category]}</span>
+                        <span className="font-bold text-sm">{e.title}</span>
+                        <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          e.priority==="high"?"bg-rose-100 text-rose-700":
+                          e.priority==="medium"?"bg-amber-100 text-amber-700":"bg-slate-100 text-slate-600"
+                        }`}>{e.priority}</span>
+                      </div>
+                      {e.plot && <p className="text-xs opacity-70 capitalize">Plot: {e.plot}</p>}
+                      <p className="text-xs opacity-80 mt-1 leading-relaxed">{e.notes}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Upcoming events */}
+            <div className="terra-card">
+              <h3 className="font-bold text-slate-900 mb-3 text-sm">All Upcoming</h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {allFiltered.sort((a,b)=>a.date.localeCompare(b.date)).map(e=>(
+                  <button key={e.id} onClick={()=>setSelected(e.date)}
+                    className={`w-full text-left p-2.5 rounded-lg border transition-colors hover:bg-slate-50 ${
+                      selected===e.date?"bg-emerald-50 border-emerald-200":"border-slate-100"
+                    }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{CATEGORY_ICONS[e.category]}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-slate-900 truncate">{e.title}</p>
+                        <p className="text-[10px] text-slate-400">{new Date(e.date+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"})}</p>
+                      </div>
+                      <span className={`text-[9px] font-bold px-1.5 rounded-full ${
+                        e.priority==="high"?"bg-rose-100 text-rose-700":
+                        e.priority==="medium"?"bg-amber-100 text-amber-700":"bg-slate-100 text-slate-600"
+                      }`}>{e.priority}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {allFiltered.sort((a,b)=>a.date.localeCompare(b.date)).map(e=>(
+            <div key={e.id} className={`terra-card border-l-4 ${
+              e.priority==="high"?"border-l-rose-500":e.priority==="medium"?"border-l-amber-500":"border-l-slate-300"
+            }`}>
+              <div className="flex items-start gap-4">
+                <span className="text-2xl">{CATEGORY_ICONS[e.category]}</span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-bold text-slate-900">{e.title}</h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${CATEGORY_COLORS[e.category]} capitalize`}>{e.category}</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      e.priority==="high"?"bg-rose-100 text-rose-700":e.priority==="medium"?"bg-amber-100 text-amber-700":"bg-slate-100 text-slate-600"
+                    }`}>{e.priority}</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    {new Date(e.date+"T00:00:00").toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+                    {e.plot && ` · Plot: ${e.plot}`}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">{e.notes}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
