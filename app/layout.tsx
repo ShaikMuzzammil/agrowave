@@ -1,22 +1,33 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
+import ToastNotifications from "@/components/ToastNotifications";
 
 export const metadata: Metadata = {
-  title: "AgroWave – Smart Farming Platform",
-  description: "TerraForge AI: Real-time farm intelligence with 6-plot monitoring, weather, market, inventory and land analytics.",
+  title: "AgroWave — Smart Farming Platform for India",
+  description: "Real-time soil intelligence, predictive weather, live market prices, and smart land management for modern Indian farmers.",
+  keywords: ["smart farming","agriculture","India","soil health","crop monitoring","land management"],
+  openGraph: {
+    title: "AgroWave — Smart Farming Platform",
+    description: "Real-time soil intelligence and live market prices for Indian farmers.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>"/>
+        <meta name="theme-color" content="#059669"/>
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5"/>
       </head>
-      <body className="antialiased min-h-screen bg-slate-50" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-        <Navbar />
+      <body>
+        <Navigation/>
         <main className="min-h-screen">{children}</main>
+        <Footer/>
+        <ToastNotifications/>
       </body>
     </html>
   );

@@ -1,168 +1,215 @@
 "use client";
 import { useState } from "react";
-import { Search, AlertTriangle, Plus, Minus, Trash2, Package } from "lucide-react";
-import { INVENTORY, InventoryItem, InventoryCategory } from "@/lib/farmData";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Minus, Trash2, AlertTriangle, Search, X, Package, Printer } from "lucide-react";
+import { useStore } from "@/lib/store";
+import Card from "@/components/Card";
+import { fmtINR } from "@/lib/utils";
 
-const CATEGORIES: Array<InventoryCategory|"All"> = ["All","Seeds","Fertilizer","Pesticides","Fuel","Tools","Other"];
+const CATS = ["All","Seeds","Fertilizer","Pesticides","Fuel","Tools","Other"];
+const CAT_STYLE: Record<string,string> = {
+  Seeds:"badge-green", Fertilizer:"badge-blue", Pesticides:"badge-red",
+  Fuel:"badge-amber", Tools:"badge-slate", Other:"badge-slate",
+};
 
-export default function InventoryPage() {
-  const [category, setCategory] = useState<InventoryCategory|"All">("All");
-  const [search, setSearch] = useState("");
-  const [items, setItems] = useState<InventoryItem[]>(INVENTORY);
+export default function Inventory() {
+  const { inventory, addItem, adjustStock, deleteItem, pushNotif } = useStore();
+  const [cat, setCat] = useState("All");
+  const [q, setQ] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ name:"", cat:"Seeds", qty:0, unit:"kg", minQty:0, cost:0 });
 
-  const lowItems = items.filter(i=>i.isLow);
-  const filtered = items.filter(i=>
-    (category==="All" || i.category===category) &&
-    (i.name.toLowerCase().includes(search.toLowerCase()) || i.category.toLowerCase().includes(search.toLowerCase()))
+  const filtered = inventory.filter(i =>
+    (cat==="All" || i.cat===cat) && i.name.toLowerCase().includes(q.toLowerCase())
   );
+  const low = inventory.filter(i=>i.qty<=i.minQty);
+  const total = inventory.reduce((s,i)=>s+i.qty*i.cost,0);
 
-  function adjust(id: string, delta: number) {
-    setItems(prev=>prev.map(i=>i.id===id
-      ? { ...i, inStock: Math.max(0, i.inStock+delta), isLow: (i.inStock+delta)<i.minThreshold }
-      : i
-    ));
-  }
+  const handleAdd = () => {
+    if (!form.name) { pushNotif({title:"⚠️ Item name required",body:"Please enter an item name before adding.",type:"warning",time:"just now"}); return; }
+    addItem({...form, id:Date.now().toString(), lastUsed:"Just added"});
+    pushNotif({title:"📦 Item Added",body:`${form.name} added to inventory.`,type:"success",time:"just now"});
+    setForm({name:"",cat:"Seeds",qty:0,unit:"kg",minQty:0,cost:0});
+    setShowAdd(false);
+  };
 
-  function getCatColor(cat: InventoryCategory) {
-    return cat==="Seeds"?"bg-emerald-100 text-emerald-700 border-emerald-200":
-      cat==="Fertilizer"?"bg-sky-100 text-sky-700 border-sky-200":
-      cat==="Pesticides"?"bg-amber-100 text-amber-700 border-amber-200":
-      cat==="Fuel"?"bg-orange-100 text-orange-700 border-orange-200":
-      cat==="Tools"?"bg-violet-100 text-violet-700 border-violet-200":"bg-slate-100 text-slate-600 border-slate-200";
-  }
+  const handleAdjust = (id:string, delta:number, name:string) => {
+    adjustStock(id, delta);
+    if (delta > 0) pushNotif({title:"📦 Stock Updated",body:`${name}: +${delta} units added.`,type:"info",time:"just now"});
+  };
 
   return (
-    <div className="max-w-screen-xl mx-auto px-4 py-6 space-y-5">
-      <div>
-        <h1 className="text-2xl font-black text-slate-900">Inventory Manager</h1>
-        <p className="text-sm text-slate-500 mt-0.5">{items.length} items tracked · {lowItems.length} low stock</p>
-      </div>
-
-      {/* Low stock alert banner */}
-      {lowItems.length>0 && (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertTriangle size={18} className="text-rose-600 shrink-0 mt-0.5" />
+    <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#F0FDF4 0%,#EFF6FF 100%)"}}>
+      {/* Hero header */}
+      <div className="bg-slate-900 py-10 mb-0">
+        <div className="container flex items-end justify-between flex-wrap gap-4">
           <div>
-            <p className="font-bold text-rose-800 text-sm">
-              Low Stock Alert — {lowItems.length} {lowItems.length===1?"item":"items"} below minimum threshold
-            </p>
-            <p className="text-rose-600 text-xs mt-0.5">{lowItems.map(i=>i.name).join(" · ")}</p>
+            <h1 className="text-4xl font-bold text-white mb-1">Inventory <span className="grad-text">Hub</span></h1>
+            <p className="text-slate-400 text-sm">Track seeds, fertilizers, pesticides and tools</p>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={()=>window.print()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold no-print"
+              style={{background:"rgba(255,255,255,0.1)",color:"#A7F3D0",border:"1px solid rgba(167,243,208,0.3)"}}>
+              <Printer className="w-4 h-4"/> Print Report
+            </button>
+            <button onClick={()=>setShowAdd(true)} className="btn btn-primary"
+              style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+              <Plus className="w-4 h-4"/> Add Item
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Search + Category filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input className="terra-input pl-9 text-sm" placeholder="Search inventory..."
-            value={search} onChange={e=>setSearch(e.target.value)} />
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {CATEGORIES.map(c=>(
-            <button key={c} onClick={()=>setCategory(c)}
-              className={`filter-pill ${category===c?"active":""}`}>
-              {c}
-            </button>
+      <div className="container py-8">
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            {l:"Total Items",    v:inventory.length,         c:"text-brand-700 bg-brand-50 border-brand-200"},
+            {l:"Total Value",    v:fmtINR(total),            c:"text-amber-700 bg-amber-50 border-amber-200"},
+            {l:"Low Stock",      v:`${low.length} items`,    c:low.length>0?"text-rose-700 bg-rose-50 border-rose-200":"text-brand-700 bg-brand-50 border-brand-200"},
+            {l:"Categories",     v:CATS.length-1,            c:"text-sky-700 bg-sky-50 border-sky-200"},
+          ].map((s,i)=>(
+            <motion.div key={s.l} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:i*0.07}}>
+              <div className={`card p-5 border text-center ${s.c}`} style={{boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+                <div className="text-2xl font-bold mb-0.5">{s.v}</div>
+                <div className="text-xs font-semibold opacity-70">{s.l}</div>
+              </div>
+            </motion.div>
           ))}
         </div>
-      </div>
 
-      {/* Inventory table */}
-      <div className="terra-card p-0 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        {/* Low stock banner */}
+        {low.length > 0 && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}}
+            className="flex items-start gap-3 p-4 bg-rose-50 border-2 border-rose-200 rounded-xl mb-6 text-rose-800"
+            style={{boxShadow:"0 4px 16px rgba(244,63,94,0.1)"}}>
+            <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-rose-500"/>
+            <div>
+              <p className="font-bold text-sm">Low Stock Alert — {low.length} item{low.length>1?"s":""} below minimum threshold</p>
+              <p className="text-xs mt-0.5 opacity-80">{low.map(i=>i.name).join(" · ")}</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6 items-start sm:items-center">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
+            <input className="pl-9" placeholder="Search inventory…" value={q} onChange={e=>setQ(e.target.value)}
+              style={{background:"#fff",border:"2px solid #E2E8F0"}}/>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {CATS.map(c=>(
+              <button key={c} onClick={()=>setCat(c)} className={`filter-pill ${cat===c?"active":""}`}>
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="card overflow-x-auto p-0" style={{boxShadow:"0 4px 24px rgba(0,0,0,0.06)"}}>
+          <table className="w-full min-w-[700px]">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="text-left px-5 py-3.5 font-bold text-slate-600 text-xs uppercase tracking-wider">Item Name</th>
-                <th className="text-left px-4 py-3.5 font-bold text-slate-600 text-xs uppercase tracking-wider">Category</th>
-                <th className="text-right px-4 py-3.5 font-bold text-slate-600 text-xs uppercase tracking-wider">In Stock</th>
-                <th className="text-right px-4 py-3.5 font-bold text-slate-600 text-xs uppercase tracking-wider">Min Threshold</th>
-                <th className="text-right px-4 py-3.5 font-bold text-slate-600 text-xs uppercase tracking-wider">Cost/Unit</th>
-                <th className="text-right px-4 py-3.5 font-bold text-slate-600 text-xs uppercase tracking-wider">Total Value</th>
-                <th className="text-right px-4 py-3.5 font-bold text-slate-600 text-xs uppercase tracking-wider">Last Used</th>
-                <th className="text-center px-4 py-3.5 font-bold text-slate-600 text-xs uppercase tracking-wider">Actions</th>
+              <tr className="border-b border-slate-100" style={{background:"#F8FAFC"}}>
+                {["Item Name","Category","In Stock","Min Threshold","Cost/Unit","Total Value","Last Used","Actions"].map(h=>(
+                  <th key={h} className="text-left text-xs font-bold text-slate-500 tracking-wider px-5 py-4 uppercase">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody>
-              {filtered.map((item, idx) => (
-                <tr key={item.id}
-                  className={`border-b border-slate-50 transition-colors hover:bg-slate-50 ${item.isLow?"bg-rose-50/40":""} ${idx%2===1&&!item.isLow?"bg-slate-50/30":""}`}>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <Package size={14} className="text-slate-400 shrink-0" />
-                      <span className="font-semibold text-slate-900">{item.name}</span>
-                      {item.isLow && (
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full badge-low border">LOW</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${getCatColor(item.category)}`}>
-                      {item.category}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <span className={`font-bold ${item.isLow?"text-rose-600":"text-slate-900"}`}>
-                      {item.inStock} {item.unit}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-right text-slate-600">{item.minThreshold} {item.unit}</td>
-                  <td className="px-4 py-4 text-right text-slate-700">₹{item.costPerUnit}</td>
-                  <td className="px-4 py-4 text-right font-semibold text-slate-900">
-                    ₹{(item.inStock*item.costPerUnit).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-4 text-right text-slate-400 text-xs">{item.lastUsed}</td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <button onClick={()=>adjust(item.id,-1)}
-                        className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-600 flex items-center justify-center transition-all">
-                        <Minus size={12} />
-                      </button>
-                      <button onClick={()=>adjust(item.id,1)}
-                        className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-emerald-100 hover:text-emerald-600 flex items-center justify-center transition-all">
-                        <Plus size={12} />
-                      </button>
-                      <button onClick={()=>setItems(prev=>prev.filter(i=>i.id!==item.id))}
-                        className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-600 flex items-center justify-center transition-all">
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length===0 && (
-                <tr><td colSpan={8} className="px-5 py-12 text-center text-slate-400">
-                  No items found for "{search || category}"
-                </td></tr>
-              )}
+            <tbody className="divide-y divide-slate-50">
+              {filtered.map((item,i)=>{
+                const isLow = item.qty <= item.minQty;
+                return (
+                  <motion.tr key={item.id} initial={{opacity:0,x:-12}} animate={{opacity:1,x:0}} transition={{delay:i*0.04}}
+                    className="hover:bg-brand-50/30 transition-colors">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-slate-300"/>
+                        <span className="font-semibold text-slate-800 text-sm">{item.name}</span>
+                        {isLow && <span className="badge badge-red text-[9px]">LOW</span>}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4"><span className={`badge ${CAT_STYLE[item.cat]||"badge-slate"}`}>{item.cat}</span></td>
+                    <td className="px-5 py-4">
+                      <span className={`text-lg font-bold ${isLow?"text-rose-600":"text-slate-800"}`}>{item.qty}</span>
+                      <span className="text-xs text-slate-400 ml-1">{item.unit}</span>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-slate-500">{item.minQty} {item.unit}</td>
+                    <td className="px-5 py-4 text-sm text-slate-500">₹{item.cost}</td>
+                    <td className="px-5 py-4 font-semibold text-amber-600 text-sm">₹{(item.qty*item.cost).toLocaleString("en-IN")}</td>
+                    <td className="px-5 py-4 text-xs text-slate-400">{item.lastUsed}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-1">
+                        <button onClick={()=>handleAdjust(item.id,-10,item.name)} className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors border border-slate-100 hover:border-rose-200"><Minus className="w-3.5 h-3.5"/></button>
+                        <button onClick={()=>handleAdjust(item.id,50,item.name)}  className="p-1.5 rounded-lg hover:bg-brand-50 text-slate-400 hover:text-brand-600 transition-colors border border-slate-100 hover:border-brand-200"><Plus className="w-3.5 h-3.5"/></button>
+                        <button onClick={()=>deleteItem(item.id)}                 className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors border border-slate-100 hover:border-rose-200"><Trash2 className="w-3.5 h-3.5"/></button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                );
+              })}
             </tbody>
           </table>
-        </div>
-
-        {/* Total value footer */}
-        <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-          <span className="text-sm text-slate-500">{filtered.length} items shown</span>
-          <span className="font-bold text-slate-900 text-sm">
-            Total Value: ₹{filtered.reduce((s,i)=>s+(i.inStock*i.costPerUnit),0).toLocaleString()}
-          </span>
+          {filtered.length===0 && (
+            <div className="text-center py-16 text-slate-400">
+              <Package className="w-10 h-10 mx-auto mb-3 opacity-30"/>
+              <p className="font-medium">No items found</p>
+              <p className="text-sm mt-1">Try a different category or search term</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label:"Total Items", value:items.length.toString(), color:"bg-slate-100 text-slate-700" },
-          { label:"Low Stock", value:lowItems.length.toString(), color:"bg-rose-100 text-rose-700" },
-          { label:"Total Value", value:`₹${items.reduce((s,i)=>s+(i.inStock*i.costPerUnit),0).toLocaleString()}`, color:"bg-emerald-100 text-emerald-700" },
-          { label:"Categories", value:"6", color:"bg-sky-100 text-sky-700" },
-        ].map(c=>(
-          <div key={c.label} className={`${c.color} rounded-xl p-4 text-center`}>
-            <div className="text-xl font-black">{c.value}</div>
-            <div className="text-xs font-semibold mt-0.5 uppercase tracking-wider opacity-80">{c.label}</div>
-          </div>
-        ))}
-      </div>
+      {/* Add modal */}
+      <AnimatePresence>
+        {showAdd && (
+          <>
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50" onClick={()=>setShowAdd(false)}/>
+            <motion.div initial={{opacity:0,scale:.95,y:16}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.95}}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4">
+              <div className="card shadow-float border-brand-200" style={{boxShadow:"0 24px 80px rgba(0,0,0,0.18)"}}>
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-bold text-xl text-slate-800">Add Inventory Item</h3>
+                  <button onClick={()=>setShowAdd(false)} className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400"><X className="w-5 h-5"/></button>
+                </div>
+                <div className="space-y-3">
+                  <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">ITEM NAME *</label>
+                    <input placeholder="e.g. Rice Seeds IR-64" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">CATEGORY</label>
+                      <select value={form.cat} onChange={e=>setForm(p=>({...p,cat:e.target.value}))}>
+                        {CATS.slice(1).map(c=><option key={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">UNIT</label>
+                      <select value={form.unit} onChange={e=>setForm(p=>({...p,unit:e.target.value}))}>
+                        {["kg","L","g","ml","roll","bag","pack","unit"].map(u=><option key={u}>{u}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">QTY</label>
+                      <input type="number" value={form.qty} onChange={e=>setForm(p=>({...p,qty:+e.target.value}))}/>
+                    </div>
+                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">MIN QTY</label>
+                      <input type="number" value={form.minQty} onChange={e=>setForm(p=>({...p,minQty:+e.target.value}))}/>
+                    </div>
+                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">COST (₹)</label>
+                      <input type="number" value={form.cost} onChange={e=>setForm(p=>({...p,cost:+e.target.value}))}/>
+                    </div>
+                  </div>
+                  <button onClick={handleAdd} className="btn btn-primary w-full py-3 mt-2"
+                    style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                    <Plus className="w-4 h-4"/> Add to Inventory
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
