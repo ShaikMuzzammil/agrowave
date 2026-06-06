@@ -1,175 +1,178 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Phone, MapPin, Send, CheckCircle, MessageSquare, ChevronDown, Sprout } from "lucide-react";
+import { Send, Mail, Phone, MapPin, CheckCircle2, Info } from "lucide-react";
 import Card from "@/components/Card";
 
-const FAQ = [
-  {q:"Is AgroWave free to use?",           a:"Yes — completely free, no account required. Open the platform and start immediately."},
-  {q:"Does it need any hardware?",          a:"No hardware needed. Start with manual entry. IoT sensor integration can be added later."},
-  {q:"How accurate are the forecasts?",     a:"Our hyper-local model achieves 99.2% accuracy for 24-hour predictions."},
-  {q:"Are the market prices real?",         a:"Prices are simulated from real MSP data with realistic variation. In production, live mandi APIs would feed real rates."},
-  {q:"Where is my farm data stored?",       a:"Entirely in your browser using localStorage. No server, no cloud, no account — your data stays with you."},
-  {q:"Can I use this for my hackathon?",    a:"This IS the hackathon project! It demonstrates a complete smart farming platform built with Next.js 14."},
-];
-
 export default function Contact() {
-  const [form, setForm]   = useState({name:"",email:"",phone:"",subject:"General Inquiry",msg:""});
+  const [form, setForm] = useState({ name:"", email:"", subject:"", message:"" });
   const [sent, setSent]   = useState(false);
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState("");
-  const [openFaq, setFaq] = useState<number|null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name||!form.email||!form.msg) return;
+    if (!form.name || !form.email || !form.message) {
+      setError("Please fill in all required fields."); return;
+    }
     setBusy(true); setError("");
     try {
       const res = await fetch("/api/contact", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ name:form.name, email:form.email, phone:form.phone, subject:form.subject, message:form.msg }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send");
-      setSent(true);
-    } catch(e:any) {
-      setError(e.message || "Something went wrong. Please try again.");
-    } finally { setBusy(false); }
+      if (res.ok) { setSent(true); }
+      else { const d = await res.json(); setError(d.error || "Failed to send. Please try again."); }
+    } catch { setError("Network error. Please check your connection."); }
+    finally { setBusy(false); }
   };
 
-  if (sent) return (
-    <div className="pt-[88px] min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <motion.div initial={{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} className="text-center max-w-md">
-        <div className="w-24 h-24 rounded-full bg-brand-100 border-4 border-brand-300 flex items-center justify-center mx-auto mb-6 shadow-green">
-          <CheckCircle className="w-12 h-12 text-brand-600"/>
-        </div>
-        <h2 className="text-3xl font-bold text-slate-900 mb-3">Message Sent! 🎉</h2>
-        <p className="text-slate-500 mb-2">Thank you, <strong>{form.name}</strong>.</p>
-        <p className="text-slate-500 mb-8">We'll reply to <span className="text-brand-600 font-semibold">{form.email}</span> within 24 hours.</p>
-        <div className="card p-5 text-left mb-6">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Your message summary</p>
-          <div className="space-y-2 text-sm">
-            <div className="flex gap-2"><span className="text-slate-400 w-16">Subject:</span><span className="font-medium">{form.subject}</span></div>
-            <div className="flex gap-2"><span className="text-slate-400 w-16">Message:</span><span className="text-slate-600 line-clamp-2">{form.msg}</span></div>
-          </div>
-        </div>
-        <button onClick={()=>{setSent(false);setForm({name:"",email:"",phone:"",subject:"General Inquiry",msg:"",});}}
-          className="btn btn-primary px-8 py-3">Send Another Message</button>
-      </motion.div>
-    </div>
-  );
-
   return (
-    <div className="pt-[88px] min-h-screen bg-slate-50">
+    <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#F0FDF4 0%,#EFF6FF 50%,#FFFBEB 100%)"}}>
       {/* Header */}
-      <section style={{background:"linear-gradient(135deg,#0F172A 0%,#1E293B 50%,#0F172A 100%)"}} className="py-16">
-        <div className="container text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-5">
-            <Sprout className="w-4 h-4"/> Get In Touch
-          </div>
-          <h1 className="text-5xl font-bold text-white mb-4">Contact <span className="grad-text">AgroWave</span></h1>
-          <p className="text-slate-400 text-lg max-w-xl mx-auto">Questions, partnerships, or feedback — we'd love to hear from you.</p>
+      <div style={{background:"linear-gradient(135deg,#0F172A,#1E293B)"}} className="py-14">
+        <div className="container text-center max-w-2xl mx-auto">
+          <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}}>
+            <div className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-5">
+              <Mail className="w-4 h-4"/> Contact & Support
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+              Get in <span className="grad-text">Touch</span>
+            </h1>
+            <p className="text-slate-400 text-lg">Questions, feedback, or partnership requests — we respond within 24 hours.</p>
+          </motion.div>
         </div>
-      </section>
+      </div>
 
       <div className="container py-12">
-        {/* Contact info cards */}
-        <div className="grid md:grid-cols-3 gap-4 mb-12 max-w-3xl mx-auto">
-          {[
-            {icon:Phone,  title:"Kisan Helpline",  val:"1800-180-1551",     sub:"Mon–Sat, 6am–10pm", bg:"bg-brand-50 border-brand-100"},
-            {icon:Mail,   title:"Email",            val:"hello@agrowave.farm",sub:"Reply within 24h",  bg:"bg-sky-50 border-sky-100"},
-            {icon:MapPin, title:"Location",         val:"Hyderabad, India",  sub:"Telangana – 500032", bg:"bg-amber-50 border-amber-100"},
-          ].map((c,i)=>(
-            <motion.div key={i} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:i*0.1}}>
-              <div className={`card text-center p-6 border ${c.bg}`}>
-                <div className={`w-12 h-12 rounded-xl border flex items-center justify-center mx-auto mb-3 ${c.bg}`}>
-                  <c.icon className="w-6 h-6 text-brand-600"/>
-                </div>
-                <p className="font-bold text-slate-800 mb-1">{c.title}</p>
-                <p className="text-brand-700 font-semibold text-sm">{c.val}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{c.sub}</p>
-              </div>
-            </motion.div>
-          ))}
+        {/* Hint banner */}
+        <div className="hint-banner mb-8 max-w-3xl mx-auto">
+          <Info className="w-4 h-4 flex-shrink-0"/>
+          <span><strong>Tip:</strong> Your message is sent directly to our team via email. You'll receive an auto-reply confirming receipt. We respond within 24 hours on working days.</span>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {/* Form */}
-          <motion.div initial={{opacity:0,x:-20}} animate={{opacity:1,x:0}}>
-            <div className="card border-brand-100" style={{boxShadow:"0 8px 32px rgba(16,185,129,0.08)"}}>
-              <h2 className="font-bold text-xl text-slate-800 mb-6 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-brand-600"/> Send a Message
-              </h2>
-
-              {error && (
-                <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm font-medium">
-                  ⚠️ {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 block mb-1.5">FULL NAME *</label>
-                    <input required placeholder="Ramesh Kumar" value={form.name}
-                      onChange={e=>setForm(p=>({...p,name:e.target.value}))}/>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 block mb-1.5">PHONE</label>
-                    <input placeholder="+91 98765 43210" value={form.phone}
-                      onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/>
-                  </div>
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {/* Contact Info */}
+          <div className="space-y-5">
+            <h2 className="font-bold text-xl text-slate-800 mb-5">How to reach us</h2>
+            {[
+              { icon:Phone,  title:"Kisan Helpline", val:"1800-180-1551", sub:"Free · Mon–Sat 8am–8pm", bg:"#ECFDF5", border:"#A7F3D0", ic:"#10B981" },
+              { icon:Mail,   title:"Email",           val:"hello@agrowave.farm", sub:"We reply within 24h", bg:"#EFF6FF", border:"#BFDBFE", ic:"#3B82F6" },
+              { icon:MapPin, title:"Location",        val:"Hyderabad, Telangana", sub:"INDIA — TS", bg:"#FFFBEB", border:"#FDE68A", ic:"#F59E0B" },
+            ].map((c,i) => (
+              <motion.div key={i} initial={{opacity:0,x:-16}} animate={{opacity:1,x:0}} transition={{delay:i*0.1}}
+                className="flex items-start gap-4 p-4 rounded-2xl"
+                style={{background:c.bg,border:`1.5px solid ${c.border}`}}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{background:`${c.ic}20`}}>
+                  <c.icon className="w-5 h-5" style={{color:c.ic}}/>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 block mb-1.5">EMAIL *</label>
-                  <input required type="email" placeholder="farmer@example.com" value={form.email}
-                    onChange={e=>setForm(p=>({...p,email:e.target.value}))}/>
+                  <p className="font-semibold text-slate-800 text-sm">{c.title}</p>
+                  <p className="font-bold text-slate-900 text-base">{c.val}</p>
+                  <p className="text-xs text-slate-400">{c.sub}</p>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 block mb-1.5">SUBJECT</label>
-                  <select value={form.subject} onChange={e=>setForm(p=>({...p,subject:e.target.value}))}>
-                    {["General Inquiry","Technical Support","Partnership","Feature Request","Bug Report","Kisan Helpline"].map(s=><option key={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 block mb-1.5">MESSAGE *</label>
-                  <textarea required rows={5} placeholder="How can AgroWave help your farm?" value={form.msg}
-                    onChange={e=>setForm(p=>({...p,msg:e.target.value}))}/>
-                </div>
-                <button type="submit" disabled={busy} className="btn btn-primary w-full py-3 disabled:opacity-60 disabled:cursor-not-allowed">
-                  {busy ? (
-                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Sending…</>
-                  ) : (
-                    <><Send className="w-4 h-4"/> Send Message via Resend</>
-                  )}
-                </button>
-                <p className="text-center text-xs text-slate-400">Powered by Resend — messages delivered to our inbox instantly</p>
-              </form>
-            </div>
-          </motion.div>
-
-          {/* FAQ */}
-          <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} className="space-y-3">
-            <h2 className="font-bold text-xl text-slate-800 mb-4">Frequently Asked Questions</h2>
-            {FAQ.map((f,i)=>(
-              <div key={i} className={`card cursor-pointer transition-all ${openFaq===i?"border-brand-300 bg-brand-50/30":""}`}
-                onClick={()=>setFaq(openFaq===i?null:i)}>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold text-slate-800 text-sm">{f.q}</span>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${openFaq===i?"rotate-180":""}`}/>
-                </div>
-                {openFaq===i && <p className="text-slate-500 text-sm mt-3 leading-relaxed border-t border-brand-100 pt-3">{f.a}</p>}
-              </div>
+              </motion.div>
             ))}
 
-            <div className="card bg-brand-50 border-brand-200 mt-4">
-              <h3 className="font-bold text-brand-800 mb-2">🏆 Hackathon Project</h3>
-              <p className="text-sm text-brand-700 leading-relaxed">
-                AgroWave was built as a smart agriculture hackathon submission demonstrating a complete, production-ready platform for Indian farmers.
-              </p>
+            {/* FAQ quick answers */}
+            <div className="card p-5 border-2 border-brand-100 bg-brand-50">
+              <h3 className="font-bold text-brand-800 mb-3 text-sm">Common Questions</h3>
+              <div className="space-y-3">
+                {[
+                  {q:"Is AgroWave free?", a:"Yes — fully free to use."},
+                  {q:"Works on mobile?",  a:"Yes — optimized for all screens."},
+                  {q:"Need account?",     a:"No login required to start."},
+                ].map((faq,i) => (
+                  <div key={i} className="border-b border-brand-200 pb-2 last:border-0">
+                    <p className="text-xs font-bold text-brand-700">{faq.q}</p>
+                    <p className="text-xs text-brand-600 mt-0.5">{faq.a}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </motion.div>
+          </div>
+
+          {/* Form */}
+          <div className="md:col-span-2">
+            <Card hover={false} className="p-8" style={{boxShadow:"0 8px 40px rgba(0,0,0,0.08)"}}>
+              {sent ? (
+                <motion.div initial={{scale:.9,opacity:0}} animate={{scale:1,opacity:1}} className="text-center py-10">
+                  <div className="w-20 h-20 rounded-full bg-brand-100 flex items-center justify-center mx-auto mb-5">
+                    <CheckCircle2 className="w-10 h-10 text-brand-600"/>
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Message Sent! 🎉</h3>
+                  <p className="text-slate-500 mb-2">Thank you, {form.name}.</p>
+                  <p className="text-slate-400 text-sm">
+                    We've sent a confirmation to <span className="text-brand-600 font-semibold">{form.email}</span>.<br/>
+                    Our team will respond within 24 hours.
+                  </p>
+                  <button onClick={()=>{setSent(false);setForm({name:"",email:"",subject:"",message:""});}}
+                    className="btn btn-outline mt-6 px-8 py-2.5 text-sm">Send Another</button>
+                </motion.div>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-1">Send a Message</h2>
+                  <p className="text-slate-400 text-sm mb-6">Fill in the form — we'll reply to your email address.</p>
+
+                  {error && (
+                    <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">{error}</div>
+                  )}
+
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">YOUR NAME <span className="text-rose-500">*</span></label>
+                        <input required placeholder="Ramesh Kumar" value={form.name}
+                          onChange={e=>setForm(p=>({...p,name:e.target.value}))}
+                          style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">EMAIL <span className="text-rose-500">*</span></label>
+                        <input required type="email" placeholder="farmer@example.com" value={form.email}
+                          onChange={e=>setForm(p=>({...p,email:e.target.value}))}
+                          style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">SUBJECT</label>
+                      <select value={form.subject} onChange={e=>setForm(p=>({...p,subject:e.target.value}))}
+                        style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
+                        <option value="">Select a topic…</option>
+                        <option value="Support">Technical Support</option>
+                        <option value="Feature Request">Feature Request</option>
+                        <option value="Partnership">Partnership / Business</option>
+                        <option value="Bug Report">Bug Report</option>
+                        <option value="Feedback">General Feedback</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">MESSAGE <span className="text-rose-500">*</span></label>
+                      <textarea required rows={5} placeholder="Describe your question or feedback in detail…" value={form.message}
+                        onChange={e=>setForm(p=>({...p,message:e.target.value}))}
+                        style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
+                    </div>
+                    <button type="submit" disabled={busy} className="btn btn-primary w-full py-3.5 text-base"
+                      style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                      {busy ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                          </svg>
+                          Sending…
+                        </span>
+                      ) : (
+                        <><Send className="w-4 h-4"/> Send Message</>
+                      )}
+                    </button>
+                  </form>
+                </>
+              )}
+            </Card>
+          </div>
         </div>
       </div>
     </div>

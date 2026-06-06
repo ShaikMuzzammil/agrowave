@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Bell, Calculator, X, Search, Printer } from "lucide-react";
+import { TrendingUp, Bell, Calculator, X, Search, Printer, Info, ChevronDown } from "lucide-react";
 import { CROPS, getLivePrices, fmtINR, sparkline, COST_PRESETS, YIELD_DEFAULTS } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import Card from "@/components/Card";
@@ -78,11 +78,18 @@ export default function Market() {
   };
 
   const TABS = [
-    {id:"prices",l:"Live Prices",icon:TrendingUp},
-    {id:"calculator",l:"P&L Calculator",icon:Calculator},
-    {id:"mandis",l:"Mandi Rates",icon:Search},
-    {id:"alerts",l:"Price Alerts",icon:Bell}
+    {id:"prices",     l:"Live Prices",    icon:TrendingUp},
+    {id:"calculator", l:"P&L Calculator", icon:Calculator},
+    {id:"mandis",     l:"Mandi Rates",    icon:Search},
+    {id:"alerts",     l:"Price Alerts",   icon:Bell},
   ] as const;
+
+  const HINT: Record<string,string> = {
+    prices:     "Click any crop card to view its 30-day price history chart below.",
+    calculator: "Select your crop to auto-fill costs. Adjust area and yield to simulate profit scenarios.",
+    mandis:     "Prices shown are mandi estimates for the selected crop. Switch crops via the filter above.",
+    alerts:     "Set a target price and you'll receive a notification when the crop reaches that level.",
+  };
 
   return (
     <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#F8FAFC 0%,#ECFDF5 50%,#EFF6FF 100%)"}}>
@@ -104,22 +111,28 @@ export default function Market() {
       </div>
 
       <div className="container py-8">
-        {/* Tabs — always visible active state */}
-        <div className="flex gap-2 flex-wrap mb-8 p-1.5 rounded-2xl w-fit" style={{background:"#fff",border:"2px solid #E2E8F0",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+        {/* Tabs — strong visible active state */}
+        <div className="flex gap-2 flex-wrap mb-5 p-1.5 rounded-2xl w-fit"
+          style={{background:"#fff",border:"2px solid #E2E8F0",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} className={`tab-btn ${tab===t.id?"active":""}`}>
+            <button key={t.id} onClick={() => setTab(t.id)} className={`tab-btn${tab===t.id?" active":""}`}>
               <t.icon className="w-4 h-4"/>{t.l}
             </button>
           ))}
         </div>
 
+        {/* Hint banner */}
+        <div className="hint-banner mb-6">
+          <Info className="w-4 h-4 flex-shrink-0"/>
+          <span>{HINT[tab]}</span>
+        </div>
+
         {/* PRICES */}
         {tab==="prices" && (
           <div>
-            {/* Crop selector row */}
             <div className="flex gap-2 flex-wrap mb-6">
               {Object.entries(CROPS).map(([k,v]) => (
-                <button key={k} onClick={()=>setCrop(k)} className={`filter-pill ${crop===k?"active":""}`}>
+                <button key={k} onClick={()=>setCrop(k)} className={`filter-pill${crop===k?" active":""}`}>
                   {v.emoji} {k.toUpperCase()}
                 </button>
               ))}
@@ -179,7 +192,7 @@ export default function Market() {
                   <AreaChart data={sl[crop]}>
                     <defs>
                       <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.15}/>
+                        <stop offset="5%"  stopColor="#10B981" stopOpacity={0.15}/>
                         <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
@@ -199,70 +212,65 @@ export default function Market() {
         {tab==="calculator" && (
           <motion.div initial={{opacity:0}} animate={{opacity:1}} className="grid md:grid-cols-2 gap-6">
             <Card hover={false}>
-              <h3 className="font-bold text-xl text-slate-800 mb-5 flex items-center gap-2"><Calculator className="w-5 h-5 text-brand-600"/>Profit & Loss Calculator</h3>
+              <h3 className="font-bold text-slate-800 mb-5 text-lg">P&L Calculator</h3>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-xs font-semibold text-slate-500 mb-1.5">CROP</label>
-                    <select value={calc.crop} onChange={e=>setCalc(p=>({...p,crop:e.target.value}))}>
-                      {Object.keys(CROPS).map(k=><option key={k} value={k}>{k.charAt(0).toUpperCase()+k.slice(1)}</option>)}
-                    </select>
-                  </div>
-                  <div><label className="block text-xs font-semibold text-slate-500 mb-1.5">AREA (acres)</label>
-                    <input type="number" value={calc.area} onChange={e=>setCalc(p=>({...p,area:+e.target.value}))} min="0.5" step="0.5"/>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-xs font-semibold text-slate-500 mb-1.5">YIELD (qtl/acre)</label>
-                    <input type="number" value={calc.yield} onChange={e=>setCalc(p=>({...p,yield:+e.target.value}))}/>
-                  </div>
-                  <div><label className="block text-xs font-semibold text-slate-500 mb-1.5">SELLING PRICE (₹/qtl)</label>
-                    <input type="number" value={calc.price} onChange={e=>setCalc(p=>({...p,price:+e.target.value}))}/>
-                  </div>
-                </div>
-                <div className="border-t pt-4">
-                  <p className="text-xs font-semibold text-slate-400 mb-3 tracking-wider">COST PER ACRE (₹)</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[{k:"seed",l:"Seeds"},{k:"fert",l:"Fertilizer"},{k:"labor",l:"Labor"},{k:"irr",l:"Irrigation"},{k:"pest",l:"Pesticides"},{k:"other",l:"Others"}].map(({k,l}) => (
-                      <div key={k}><label className="block text-xs font-semibold text-slate-500 mb-1">{l.toUpperCase()}</label>
-                        <input type="number" value={(calc as any)[k]} onChange={e=>setCalc(p=>({...p,[k]:+e.target.value}))}/>
-                      </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">CROP</label>
+                  <select value={calc.crop} onChange={e=>setCalc(p=>({...p,crop:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
+                    {Object.keys(CROPS).map(k=>(
+                      <option key={k} value={k}>{CROPS[k as keyof typeof CROPS].emoji} {k.toUpperCase()}</option>
                     ))}
-                  </div>
+                  </select>
                 </div>
-              </div>
-            </Card>
-            <div className="space-y-4">
-              <Card hover={false} style={{boxShadow:"0 4px 24px rgba(0,0,0,0.07)"}}>
-                <h3 className="font-bold text-lg text-slate-800 mb-5">Results</h3>
-                <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    {l:"Total Yield",   v:`${res.totalYield.toFixed(0)} qtl`,c:"text-slate-800"},
-                    {l:"Gross Revenue", v:fmtINR(res.revenue),               c:"text-brand-700"},
-                    {l:"Total Cost",    v:fmtINR(res.totalCost),             c:"text-rose-600"},
-                    {l:"Net Profit",    v:fmtINR(res.profit),                c:res.profit>=0?"text-brand-700":"text-rose-600"},
-                    {l:"Profit Margin", v:`${res.margin.toFixed(1)}%`,       c:res.margin>=20?"text-brand-600":res.margin>=0?"text-amber-600":"text-rose-600"},
-                    {l:"Break-Even",    v:`₹${res.breakEven.toFixed(0)}/qtl`,c:"text-slate-600"},
-                    {l:"ROI",           v:`${res.roi.toFixed(1)}%`,          c:res.roi>=20?"text-brand-600":res.roi>=0?"text-amber-600":"text-rose-600"},
-                  ].map(row => (
-                    <div key={row.l} className="flex justify-between items-center py-2.5 border-b border-slate-50 last:border-0">
-                      <span className="text-slate-500 text-sm">{row.l}</span>
-                      <span className={`font-bold text-lg ${row.c}`}>{row.v}</span>
+                    {l:"Area (acres)",  k:"area",  min:0.5, step:0.5},
+                    {l:"Yield (kg/ac)", k:"yield", min:1,   step:1},
+                    {l:"Price (₹/qtl)",k:"price", min:100, step:50},
+                    {l:"Seed (₹/ac)",  k:"seed",  min:0,   step:100},
+                    {l:"Fertilizer (₹/ac)",k:"fert",min:0, step:100},
+                    {l:"Labor (₹/ac)", k:"labor", min:0,   step:100},
+                    {l:"Irrigation (₹/ac)",k:"irr",min:0,  step:100},
+                    {l:"Pesticide (₹/ac)",k:"pest",min:0,  step:100},
+                  ].map(f=>(
+                    <div key={f.k}>
+                      <label className="text-xs font-semibold text-slate-500 block mb-1">{f.l}</label>
+                      <input type="number" min={f.min} step={f.step} value={(calc as any)[f.k]}
+                        onChange={e=>setCalc(p=>({...p,[f.k]:+e.target.value}))}
+                        style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                     </div>
                   ))}
                 </div>
-              </Card>
-              <Card hover={false}>
-                <p className="text-xs font-semibold text-slate-400 mb-3">COST DISTRIBUTION</p>
-                <ResponsiveContainer width="100%" height={150}>
-                  <BarChart layout="vertical" data={[{n:"Seeds",v:calc.seed},{n:"Fert",v:calc.fert},{n:"Labor",v:calc.labor},{n:"Irr",v:calc.irr},{n:"Pest",v:calc.pest},{n:"Other",v:calc.other}]} margin={{left:10}}>
-                    <XAxis type="number" tick={{fill:"#94A3B8",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`₹${v}`}/>
-                    <YAxis type="category" dataKey="n" tick={{fill:"#94A3B8",fontSize:10}} axisLine={false} tickLine={false} width={35}/>
-                    <Tooltip {...TT} formatter={(v:any)=>[`₹${Number(v).toLocaleString("en-IN")}`,"Cost/Acre"]}/>
-                    <Bar dataKey="v" fill="#10B981" radius={[0,6,6,0]}/>
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            </div>
+              </div>
+            </Card>
+            <Card hover={false} style={{background:"linear-gradient(160deg,#0F172A,#1E293B)"}}>
+              <h3 className="font-bold text-white mb-5 text-lg">Results</h3>
+              <div className="space-y-4">
+                {[
+                  {l:"Total Yield",    v:res.totalYield.toFixed(0)+" kg",           c:"#A7F3D0"},
+                  {l:"Gross Revenue",  v:fmtINR(res.revenue),                       c:"#86EFAC"},
+                  {l:"Total Cost",     v:fmtINR(res.totalCost),                     c:"#FCA5A5"},
+                  {l:"Net Profit",     v:fmtINR(res.profit),                        c:res.profit>=0?"#4ADE80":"#F87171"},
+                  {l:"Profit Margin",  v:res.margin.toFixed(1)+"%",                 c:res.margin>=0?"#4ADE80":"#F87171"},
+                  {l:"Break-even",     v:"₹"+res.breakEven.toFixed(0)+"/qtl",       c:"#93C5FD"},
+                  {l:"ROI",            v:res.roi.toFixed(1)+"%",                    c:res.roi>=0?"#4ADE80":"#F87171"},
+                ].map(s=>(
+                  <div key={s.l} className="flex items-center justify-between">
+                    <span className="text-slate-400 text-sm">{s.l}</span>
+                    <span className="font-bold text-base" style={{color:s.c}}>{s.v}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 p-4 rounded-xl" style={{background:"rgba(16,185,129,0.12)",border:"1px solid rgba(16,185,129,0.3)"}}>
+                <p className="text-green-300 text-xs font-semibold">{res.profit>=0?"✅ Profitable":"⚠️ Loss-making"} crop at current rates</p>
+                <p className="text-slate-400 text-xs mt-1">
+                  {res.profit>=0
+                    ? `Net margin of ${res.margin.toFixed(1)}% — consider selling when price exceeds ₹${(res.breakEven*1.25).toFixed(0)}/qtl.`
+                    : `Reduce input costs or wait for price to exceed ₹${res.breakEven.toFixed(0)}/qtl break-even.`}
+                </p>
+              </div>
+            </Card>
           </motion.div>
         )}
 
@@ -271,82 +279,94 @@ export default function Market() {
           <motion.div initial={{opacity:0}} animate={{opacity:1}}>
             <div className="flex gap-2 flex-wrap mb-6">
               {Object.entries(CROPS).map(([k,v]) => (
-                <button key={k} onClick={()=>setCrop(k)} className={`filter-pill ${crop===k?"active":""}`}>
+                <button key={k} onClick={()=>setCrop(k)} className={`filter-pill${crop===k?" active":""}`}>
                   {v.emoji} {k.toUpperCase()}
                 </button>
               ))}
             </div>
-            <div className="grid gap-3">
-              {(mandiRows.length>0?mandiRows:MANDIS.slice(0,4).map(m=>({...m,price:prices[crop]?.current||2000,arrival:"N/A"}))).map((m,i) => {
-                const diff = m.price - (prices[crop]?.current||CROPS[crop as keyof typeof CROPS]?.base||2000);
-                return (
-                  <motion.div key={m.name} initial={{opacity:0,x:-16}} animate={{opacity:1,x:0}} transition={{delay:i*0.08}}>
-                    <Card className="flex items-center justify-between p-5" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
-                      <div>
-                        <h4 className="font-bold text-slate-800">{m.name}</h4>
-                        <p className="text-sm text-slate-400">{m.loc} · Arrival: {m.arrival}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-slate-900">₹{m.price.toLocaleString("en-IN")}</div>
-                        <div className={`text-sm font-semibold ${diff>=0?"text-brand-600":"text-rose-500"}`}>{diff>=0?"+":""}{diff} vs avg</div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
+            <Card hover={false}>
+              <h3 className="font-bold text-slate-800 mb-4 text-lg">{CROPS[crop as keyof typeof CROPS]?.emoji} {crop.toUpperCase()} Mandi Rates</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr style={{background:"#F8FAFC"}} className="border-b border-slate-100">
+                      {["Mandi","Location","Today's Price","Arrivals","vs MSP"].map(h=>(
+                        <th key={h} className="text-left text-xs font-bold text-slate-500 uppercase tracking-wider px-4 py-3">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mandiRows.length===0
+                      ? <tr><td colSpan={5} className="text-center py-8 text-slate-400 text-sm">No mandi data for selected crop.</td></tr>
+                      : mandiRows.map((m,i)=>{
+                        const msp = CROPS[crop as keyof typeof CROPS]?.msp||0;
+                        const diff = msp>0 ? ((m.price-msp)/msp*100) : 0;
+                        return (
+                          <tr key={i} className="border-b border-slate-50 hover:bg-brand-50/20 transition-colors">
+                            <td className="px-4 py-3 font-semibold text-slate-800 text-sm">{m.name}</td>
+                            <td className="px-4 py-3 text-slate-500 text-sm">{m.loc}</td>
+                            <td className="px-4 py-3 font-bold text-slate-900">₹{m.price.toLocaleString("en-IN")}/qtl</td>
+                            <td className="px-4 py-3 text-slate-500 text-sm">{m.arrival}</td>
+                            <td className="px-4 py-3">
+                              {msp>0
+                                ? <span className={`badge ${diff>=0?"badge-green":"badge-red"}`}>{diff>=0?"+":""}{diff.toFixed(1)}%</span>
+                                : <span className="text-slate-300 text-xs">N/A</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           </motion.div>
         )}
 
         {/* ALERTS */}
         {tab==="alerts" && (
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} className="grid md:grid-cols-2 gap-6 max-w-3xl">
-            <Card hover={false} style={{boxShadow:"0 4px 24px rgba(0,0,0,0.07)"}}>
-              <h3 className="font-bold text-xl text-slate-800 mb-5 flex items-center gap-2"><Bell className="w-5 h-5 text-brand-600"/>Set Price Alert</h3>
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} className="max-w-lg mx-auto">
+            <Card hover={false}>
+              <h3 className="font-bold text-slate-800 mb-2 text-lg">Set Price Alert</h3>
+              <p className="text-sm text-slate-500 mb-5">Get notified when a crop reaches your target price.</p>
               <div className="space-y-4">
-                <div><label className="block text-xs font-semibold text-slate-500 mb-1.5">COMMODITY</label>
-                  <select value={alertForm.commodity} onChange={e=>setAlertForm(p=>({...p,commodity:e.target.value}))}>
-                    {Object.entries(CROPS).map(([k,v]) => <option key={k} value={k}>{v.emoji} {k.toUpperCase()}</option>)}
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">COMMODITY</label>
+                  <select value={alertForm.commodity} onChange={e=>setAlertForm(p=>({...p,commodity:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
+                    {Object.keys(CROPS).map(k=>(
+                      <option key={k} value={k}>{CROPS[k as keyof typeof CROPS].emoji} {k.toUpperCase()}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">ALERT WHEN PRICE IS</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["above","below"] as const).map(t => (
-                      <button key={t} onClick={()=>setAlertForm(p=>({...p,type:t}))}
-                        className={`py-3 rounded-xl text-sm font-semibold border-2 transition-all ${alertForm.type===t?"bg-brand-600 border-brand-600 text-white shadow-green":"border-slate-200 text-slate-600 bg-white hover:border-brand-300 hover:text-brand-700"}`}>
-                        {t==="above"?"▲ Above Threshold":"▼ Below Threshold"}
-                      </button>
-                    ))}
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">ALERT WHEN PRICE IS</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input placeholder="Enter price (₹/qtl)" value={alertForm.threshold}
+                      onChange={e=>setAlertForm(p=>({...p,threshold:e.target.value}))}
+                      style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
+                    <select value={alertForm.type} onChange={e=>setAlertForm(p=>({...p,type:e.target.value as any}))}
+                      style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
+                      <option value="above">▲ Above Threshold</option>
+                      <option value="below">▼ Below Threshold</option>
+                    </select>
                   </div>
                 </div>
-                <div><label className="block text-xs font-semibold text-slate-500 mb-1.5">TARGET PRICE (₹/qtl)</label>
-                  <input type="number" placeholder="e.g. 2300" value={alertForm.threshold} onChange={e=>setAlertForm(p=>({...p,threshold:e.target.value}))}/>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">TARGET PRICE (₹/qtl)</label>
+                  <input placeholder="e.g. 2300" value={alertForm.threshold}
+                    onChange={e=>setAlertForm(p=>({...p,threshold:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
-                <div><label className="block text-xs font-semibold text-slate-500 mb-1.5">EMAIL (optional)</label>
-                  <input type="email" placeholder="farmer@example.com" value={alertForm.email} onChange={e=>setAlertForm(p=>({...p,email:e.target.value}))}/>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">EMAIL (OPTIONAL)</label>
+                  <input type="email" placeholder="you@example.com for email alerts" value={alertForm.email}
+                    onChange={e=>setAlertForm(p=>({...p,email:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
-                <button onClick={saveAlert}
-                  className={`btn w-full py-3 text-sm transition-all ${alertSaved?"btn-outline text-brand-700 border-brand-400":"btn-primary"}`}
-                  style={!alertSaved?{background:"linear-gradient(135deg,#059669,#10B981)"}:{}}>
-                  {alertSaved ? "✅ Alert saved! Watch your notifications" : "Set Price Alert"}
+                <button onClick={saveAlert} className="btn btn-primary w-full py-3"
+                  style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                  {alertSaved ? "✅ Alert Saved!" : "🔔 Set Price Alert"}
                 </button>
-              </div>
-            </Card>
-            <Card hover={false} className="bg-brand-50 border-brand-100">
-              <h3 className="font-bold text-lg text-slate-800 mb-4">How Price Alerts Work</h3>
-              <div className="space-y-4">
-                {[
-                  {n:"01",t:"Set Your Target",d:"Choose a crop and set the price threshold you want to be notified about."},
-                  {n:"02",t:"We Monitor Live",d:"Our system checks prices every 60 seconds from 600+ mandis across India."},
-                  {n:"03",t:"Instant Notification",d:"When your target is reached, you get an instant in-app notification."},
-                  {n:"04",t:"Sell at the Right Time",d:"Make informed selling decisions based on real market data, not guesswork."},
-                ].map(s => (
-                  <div key={s.n} className="flex gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-brand-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">{s.n}</div>
-                    <div><p className="font-semibold text-slate-800 text-sm">{s.t}</p><p className="text-slate-500 text-xs mt-0.5">{s.d}</p></div>
-                  </div>
-                ))}
               </div>
             </Card>
           </motion.div>

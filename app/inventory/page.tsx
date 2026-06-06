@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Minus, Trash2, AlertTriangle, Search, X, Package, Printer } from "lucide-react";
+import { Plus, Minus, Trash2, AlertTriangle, Search, X, Package, Printer, Info } from "lucide-react";
 import { useStore } from "@/lib/store";
 import Card from "@/components/Card";
 import { fmtINR } from "@/lib/utils";
@@ -14,19 +14,22 @@ const CAT_STYLE: Record<string,string> = {
 
 export default function Inventory() {
   const { inventory, addItem, adjustStock, deleteItem, pushNotif } = useStore();
-  const [cat, setCat] = useState("All");
-  const [q, setQ] = useState("");
+  const [cat, setCat]     = useState("All");
+  const [q, setQ]         = useState("");
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name:"", cat:"Seeds", qty:0, unit:"kg", minQty:0, cost:0 });
+  const [form, setForm]   = useState({ name:"", cat:"Seeds", qty:0, unit:"kg", minQty:0, cost:0 });
 
   const filtered = inventory.filter(i =>
     (cat==="All" || i.cat===cat) && i.name.toLowerCase().includes(q.toLowerCase())
   );
-  const low = inventory.filter(i=>i.qty<=i.minQty);
+  const low   = inventory.filter(i=>i.qty<=i.minQty);
   const total = inventory.reduce((s,i)=>s+i.qty*i.cost,0);
 
   const handleAdd = () => {
-    if (!form.name) { pushNotif({title:"⚠️ Item name required",body:"Please enter an item name before adding.",type:"warning",time:"just now"}); return; }
+    if (!form.name) {
+      pushNotif({title:"⚠️ Item name required",body:"Please enter an item name before adding.",type:"warning",time:"just now"});
+      return;
+    }
     addItem({...form, id:Date.now().toString(), lastUsed:"Just added"});
     pushNotif({title:"📦 Item Added",body:`${form.name} added to inventory.`,type:"success",time:"just now"});
     setForm({name:"",cat:"Seeds",qty:0,unit:"kg",minQty:0,cost:0});
@@ -61,6 +64,12 @@ export default function Inventory() {
       </div>
 
       <div className="container py-8">
+        {/* Hint */}
+        <div className="hint-banner mb-6">
+          <Info className="w-4 h-4 flex-shrink-0"/>
+          <span><strong>Tip:</strong> Use the <strong>category pills</strong> below to filter items. Click <strong>+</strong> to restock or <strong>–</strong> to deduct stock. Items below minimum threshold appear highlighted in red.</span>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
@@ -70,7 +79,7 @@ export default function Inventory() {
             {l:"Categories",     v:CATS.length-1,            c:"text-sky-700 bg-sky-50 border-sky-200"},
           ].map((s,i)=>(
             <motion.div key={s.l} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:i*0.07}}>
-              <div className={`card p-5 border text-center ${s.c}`} style={{boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+              <div className={`card p-5 border-2 text-center ${s.c}`} style={{boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
                 <div className="text-2xl font-bold mb-0.5">{s.v}</div>
                 <div className="text-xs font-semibold opacity-70">{s.l}</div>
               </div>
@@ -91,8 +100,8 @@ export default function Inventory() {
           </motion.div>
         )}
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6 items-start sm:items-center">
+        {/* Filters — visible active state */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6 items-start sm:items-center flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"/>
             <input className="pl-9" placeholder="Search inventory…" value={q} onChange={e=>setQ(e.target.value)}
@@ -100,7 +109,8 @@ export default function Inventory() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {CATS.map(c=>(
-              <button key={c} onClick={()=>setCat(c)} className={`filter-pill ${cat===c?"active":""}`}>
+              <button key={c} onClick={()=>setCat(c)}
+                className={`filter-pill${cat===c?" active":""}`}>
                 {c}
               </button>
             ))}
@@ -118,7 +128,9 @@ export default function Inventory() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.map((item,i)=>{
+              {filtered.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-12 text-slate-400 text-sm">No items found for this category.</td></tr>
+              ) : filtered.map((item,i)=>{
                 const isLow = item.qty <= item.minQty;
                 return (
                   <motion.tr key={item.id} initial={{opacity:0,x:-12}} animate={{opacity:1,x:0}} transition={{delay:i*0.04}}
@@ -151,63 +163,100 @@ export default function Inventory() {
               })}
             </tbody>
           </table>
-          {filtered.length===0 && (
-            <div className="text-center py-16 text-slate-400">
-              <Package className="w-10 h-10 mx-auto mb-3 opacity-30"/>
-              <p className="font-medium">No items found</p>
-              <p className="text-sm mt-1">Try a different category or search term</p>
-            </div>
-          )}
+        </div>
+
+        {/* Print table */}
+        <div className="hidden print:block mt-8">
+          <h2 className="text-xl font-bold mb-2">Inventory Report — {new Date().toLocaleDateString("en-IN")}</h2>
+          <p className="text-sm text-slate-500 mb-4">Total Value: {fmtINR(total)} · {inventory.length} items · {low.length} low stock</p>
         </div>
       </div>
 
-      {/* Add modal */}
+      {/* ADD ITEM MODAL — centred overlay */}
       <AnimatePresence>
         {showAdd && (
-          <>
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50" onClick={()=>setShowAdd(false)}/>
-            <motion.div initial={{opacity:0,scale:.95,y:16}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.95}}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4">
-              <div className="card shadow-float border-brand-200" style={{boxShadow:"0 24px 80px rgba(0,0,0,0.18)"}}>
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="font-bold text-xl text-slate-800">Add Inventory Item</h3>
-                  <button onClick={()=>setShowAdd(false)} className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400"><X className="w-5 h-5"/></button>
+          <motion.div
+            initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+            className="modal-overlay"
+            onClick={e=>{ if(e.target===e.currentTarget) setShowAdd(false); }}>
+            <motion.div
+              initial={{scale:0.92,opacity:0,y:24}}
+              animate={{scale:1,opacity:1,y:0}}
+              exit={{scale:0.92,opacity:0,y:24}}
+              transition={{type:"spring",damping:24,stiffness:280}}
+              className="modal-card" style={{maxWidth:"520px"}}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">Add Inventory Item</h2>
+                  <p className="text-sm text-slate-400 mt-1">Track a new seed, fertilizer, tool, or supply</p>
                 </div>
-                <div className="space-y-3">
-                  <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">ITEM NAME *</label>
-                    <input placeholder="e.g. Rice Seeds IR-64" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}/>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">CATEGORY</label>
-                      <select value={form.cat} onChange={e=>setForm(p=>({...p,cat:e.target.value}))}>
-                        {CATS.slice(1).map(c=><option key={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">UNIT</label>
-                      <select value={form.unit} onChange={e=>setForm(p=>({...p,unit:e.target.value}))}>
-                        {["kg","L","g","ml","roll","bag","pack","unit"].map(u=><option key={u}>{u}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">QTY</label>
-                      <input type="number" value={form.qty} onChange={e=>setForm(p=>({...p,qty:+e.target.value}))}/>
-                    </div>
-                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">MIN QTY</label>
-                      <input type="number" value={form.minQty} onChange={e=>setForm(p=>({...p,minQty:+e.target.value}))}/>
-                    </div>
-                    <div><label className="text-xs font-semibold text-slate-500 block mb-1.5">COST (₹)</label>
-                      <input type="number" value={form.cost} onChange={e=>setForm(p=>({...p,cost:+e.target.value}))}/>
-                    </div>
-                  </div>
-                  <button onClick={handleAdd} className="btn btn-primary w-full py-3 mt-2"
-                    style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
-                    <Plus className="w-4 h-4"/> Add to Inventory
-                  </button>
+                <button onClick={()=>setShowAdd(false)} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                  <X className="w-5 h-5"/>
+                </button>
+              </div>
+
+              <div className="modal-grid mb-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">ITEM NAME</label>
+                  <input placeholder="e.g. DAP Fertilizer" value={form.name}
+                    onChange={e=>setForm(p=>({...p,name:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">CATEGORY</label>
+                  <select value={form.cat} onChange={e=>setForm(p=>({...p,cat:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
+                    {["Seeds","Fertilizer","Pesticides","Fuel","Tools","Other"].map(c=>(
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">QUANTITY</label>
+                  <input type="number" min="0" value={form.qty}
+                    onChange={e=>setForm(p=>({...p,qty:+e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">UNIT</label>
+                  <select value={form.unit} onChange={e=>setForm(p=>({...p,unit:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
+                    {["kg","L","bags","pcs","qtl","g","ml","ton"].map(u=>(
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">MIN THRESHOLD</label>
+                  <input type="number" min="0" placeholder="Alert when below this" value={form.minQty}
+                    onChange={e=>setForm(p=>({...p,minQty:+e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">COST PER UNIT (₹)</label>
+                  <input type="number" min="0" placeholder="e.g. 280" value={form.cost}
+                    onChange={e=>setForm(p=>({...p,cost:+e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
               </div>
+
+              {form.qty > 0 && form.cost > 0 && (
+                <div className="mb-4 p-3 rounded-xl" style={{background:"#F0FDF4",border:"1.5px solid #A7F3D0"}}>
+                  <p className="text-sm text-brand-700 font-semibold">
+                    Total value: <strong>₹{(form.qty*form.cost).toLocaleString("en-IN")}</strong>
+                  </p>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button onClick={()=>setShowAdd(false)} className="btn btn-ghost px-6 py-2.5">Cancel</button>
+                <button onClick={handleAdd} className="btn btn-primary px-8 py-2.5"
+                  style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                  <Plus className="w-4 h-4"/> Add Item
+                </button>
+              </div>
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

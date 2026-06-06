@@ -1,15 +1,14 @@
 "use client";
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, CheckCircle2, TrendingUp, Droplets, CloudRain,
   Sprout, BarChart3, Shield, Zap, Star, Play, Bug, Package,
-  Calendar, Bell, ChevronDown, Mail
-} from "lucide-react";
+  Calendar, Bell, ChevronDown, Mail, Map, BookOpen,
+  LayoutDashboard, Leaf, ThumbsUp, Lightbulb, Target, Info
+, X } from "lucide-react";
 import PriceTicker from "@/components/PriceTicker";
-
 import StatCounter from "@/components/StatCounter";
 import Card from "@/components/Card";
 import { getLivePrices, CROPS, FORECAST } from "@/lib/utils";
@@ -58,9 +57,132 @@ const CROP_CALENDAR = [
 ];
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+// Platform guide data
+const GUIDE_TABS = [
+  {
+    id:"dashboard", icon:LayoutDashboard, label:"Dashboard", color:"#10B981",
+    title:"Farm Dashboard — Your Command Center",
+    desc:"The main overview of your entire farm. Monitor all 6 plots simultaneously, trigger irrigation, check alerts, and view the satellite farm map.",
+    steps:[
+      "Open the Dashboard from the top navigation bar.",
+      "The left panel shows all 6 field cards — click any card to expand its details.",
+      "Use 'Irrigate All' button (top right of field list) to water all plots at once.",
+      "The center Farm Map shows live moisture color coding for each plot.",
+      "The right panel has the Farm Health Radar and 7-day forecast charts.",
+      "The green status bar at the top shows live KHARIF 2026 monitoring data.",
+    ],
+    tip:"Fields with red moisture levels need immediate irrigation. Yellow = moderate, green = optimal.",
+    link:"/dashboard",
+  },
+  {
+    id:"fields", icon:Sprout, label:"My Fields", color:"#3B82F6",
+    title:"Field Monitor — Deep Plot Analytics",
+    desc:"Detailed per-plot inspection tool. View NPK, pH, temperature, pest risk and 7-day trend charts for any selected plot.",
+    steps:[
+      "Click 'My Fields' in the top navigation.",
+      "Select any plot from the left panel to view its full analytics.",
+      "The right panel shows a data grid with moisture, health, temperature, and NPK.",
+      "Click 'Update NPK' to log a fertilizer application with N, P, K values.",
+      "Toggle 'Auto-Irrigate' to enable automated irrigation when moisture drops.",
+      "Click '+ Add New Plot' at the bottom to register a new farm plot.",
+    ],
+    tip:"Use the 7-day trend chart to spot declining health before it becomes critical.",
+    link:"/field-monitor",
+  },
+  {
+    id:"weather", icon:CloudRain, label:"Weather", color:"#0EA5E9",
+    title:"Weather Station — Hyper-Local Forecasts",
+    desc:"Farm-specific 7-day weather forecasts with rain probability, temperature range, and actionable field advisories.",
+    steps:[
+      "Navigate to 'Weather' from the top menu.",
+      "The 7-day forecast shows daily rain % and temperature min/max.",
+      "Farm Advisory cards at the top give actionable advice like 'Skip irrigation on Tuesday'.",
+      "Rainfall and Temperature charts give a visual weekly overview.",
+      "Use the forecast to plan pesticide spraying — avoid rainy days.",
+      "Check Fertilizer Timing advisories to maximize soil absorption.",
+    ],
+    tip:"Never apply DAP fertilizer on a rainy day — rain washes it away. Check the advisory first.",
+    link:"/weather",
+  },
+  {
+    id:"market", icon:TrendingUp, label:"Market", color:"#F59E0B",
+    title:"Market Intelligence — Prices & Profit",
+    desc:"Live crop prices from 600+ mandis, a P&L profit calculator, mandi-wise rates, and custom price alerts.",
+    steps:[
+      "Open 'Market' from the navigation. Four tabs are available.",
+      "Live Prices tab: See all crop prices with 30-day trend charts.",
+      "P&L Calculator tab: Enter area, yield, and costs to compute net profit.",
+      "Mandi Rates tab: See which market is offering the best price today.",
+      "Price Alerts tab: Set a target price — get notified when the crop crosses it.",
+      "Filter by crop using the pill buttons at the top of Prices/Mandis tabs.",
+    ],
+    tip:"Sort mandi prices to find the highest-paying market near you before transporting your crop.",
+    link:"/market",
+  },
+  {
+    id:"inventory", icon:Package, label:"Inventory", color:"#8B5CF6",
+    title:"Inventory Hub — Stock Management",
+    desc:"Track all farm inputs — seeds, fertilizers, pesticides, tools and fuel. Get low-stock alerts before you run out.",
+    steps:[
+      "Navigate to 'Inventory' in the top menu.",
+      "Use the category filter pills (Seeds, Fertilizer, Pesticides...) to browse by type.",
+      "Red LOW badge means the item is below your set minimum threshold.",
+      "Click '+' button in Actions column to add 50 units, '–' to deduct 10.",
+      "Click 'Add Item' (top right) to register a new supply with cost and threshold.",
+      "Print Report button generates a full printable stock report.",
+    ],
+    tip:"Set minimum thresholds for critical items like DAP and pesticides to get advance low-stock alerts.",
+    link:"/inventory",
+  },
+  {
+    id:"calendar", icon:Calendar, label:"Calendar", color:"#EC4899",
+    title:"Farm Calendar — Task Scheduling",
+    desc:"Schedule irrigation rounds, spray applications, fertilizer dates, and harvest windows. Stay on top of every farm activity.",
+    steps:[
+      "Open 'Calendar' in the navigation.",
+      "Click any date or the '+ Add Task' button to schedule a new activity.",
+      "Select task type: Irrigation, Spray, Fertilizer, Harvest, or Custom.",
+      "Assign the task to a specific plot from the dropdown.",
+      "Completed tasks are shown with a green strikethrough.",
+      "Upcoming tasks appear in the sidebar with days-until countdown.",
+    ],
+    tip:"Schedule irrigation 1 day before predicted rain to allow soil to absorb water efficiently.",
+    link:"/calendar",
+  },
+  {
+    id:"land", icon:Map, label:"Land View", color:"#047857",
+    title:"Land View — Satellite Farm Map",
+    desc:"Aerial-style land view showing all 6 plots, live sensor overlay, threshold-based open/warning status, and terrain elevation mode.",
+    steps:[
+      "Click 'Land' in the navigation (or the green 'Open land' button on Dashboard).",
+      "The satellite grid shows all 6 plots with color-coded moisture levels.",
+      "Click any plot tile to view full sensor data in the right panel.",
+      "Open plots (green) meet all health criteria. Warning (yellow) need attention.",
+      "Toggle 'Terrain overlay' to switch between satellite and elevation view.",
+      "Click 'Settings' to customize the threshold values that determine plot status.",
+    ],
+    tip:"Use Land View before making irrigation decisions — see all plots at a glance and prioritize the driest ones.",
+    link:"/land",
+  },
+];
+
+const COMPARE = [
+  { feature:"Live soil monitoring",        aw:true,  trad:false },
+  { feature:"7-day weather forecasts",     aw:true,  trad:false },
+  { feature:"Real-time mandi prices",      aw:true,  trad:false },
+  { feature:"Pest early warning",          aw:true,  trad:false },
+  { feature:"Inventory tracking",         aw:true,  trad:false },
+  { feature:"Profit/loss calculator",     aw:true,  trad:false },
+  { feature:"Printable farm reports",     aw:true,  trad:false },
+  { feature:"Works on mobile & desktop",  aw:true,  trad:false },
+  { feature:"No app installation needed", aw:true,  trad:false },
+  { feature:"Cost",                       aw:"Free", trad:"Paid consultant" },
+];
+
 export default function Home() {
   const [prices, setPrices] = useState<Record<string,any>>({});
   const [now, setNow] = useState(new Date());
+  const [guideTab, setGuideTab] = useState("dashboard");
 
   useEffect(() => {
     setPrices(getLivePrices());
@@ -69,14 +191,15 @@ export default function Home() {
     return () => { clearInterval(iv); clearInterval(cl); };
   },[]);
 
+  const activeGuide = GUIDE_TABS.find(t => t.id === guideTab) || GUIDE_TABS[0];
+
   return (
     <div className="pt-[72px]">
-      {/* HERO */}
+
+      {/* ── HERO ─────────────────────────────────────── */}
       <section id="hero" className="hero-pattern grid-bg min-h-[92vh] flex items-center relative overflow-hidden">
-        {/* Decorative blobs */}
         <div className="absolute top-20 right-10 w-96 h-96 bg-brand-400/10 rounded-full blur-3xl pointer-events-none"/>
         <div className="absolute bottom-10 left-5 w-72 h-72 bg-sky-400/8 rounded-full blur-3xl pointer-events-none"/>
-
         <div className="container py-20">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.1}}
@@ -84,19 +207,15 @@ export default function Home() {
               <span className="dot-live"/>
               <span className="text-brand-700 font-semibold text-sm">KHARIF 2026 · Live Farm Intelligence Active</span>
             </motion.div>
-
             <motion.h1 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.2}}
               className="text-5xl md:text-7xl font-bold text-slate-900 leading-[1.08] mb-6 tracking-tight">
               Farm Smarter.<br/>
               <span className="grad-text">Earn More.</span>
             </motion.h1>
-
             <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.4}}
               className="text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed">
               Real-time soil health, AI weather forecasts, and live mandi prices — all in one platform built specifically for Indian farmers.
             </motion.p>
-
-            {/* Live clock */}
             <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.5}}
               className="inline-flex items-center gap-4 bg-white border border-slate-200 rounded-2xl px-6 py-3 mb-10 shadow-card">
               <span className="dot-live"/>
@@ -106,19 +225,17 @@ export default function Home() {
               <span className="w-px h-4 bg-slate-200"/>
               <span className="text-brand-600 text-sm font-semibold">{FORECAST[0].icon} {FORECAST[0].hi}°C · {FORECAST[0].desc}</span>
             </motion.div>
-
             <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:0.6}}
               className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/dashboard" className="btn btn-primary text-base px-8 py-3.5 rounded-xl shadow-green">
                 Open Farm Dashboard <ArrowRight className="w-5 h-5"/>
               </Link>
-              <Link href="/about" className="btn btn-outline text-base px-8 py-3.5 rounded-xl">
-                <Play className="w-4 h-4"/> See How It Works
-              </Link>
+              <button onClick={()=>document.getElementById("guide")?.scrollIntoView({behavior:"smooth"})}
+                className="btn btn-outline text-base px-8 py-3.5 rounded-xl">
+                <BookOpen className="w-4 h-4"/> Platform Guide
+              </button>
             </motion.div>
           </div>
-
-          {/* Hero stat cards */}
           <motion.div initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{delay:0.8}}
             className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 max-w-4xl mx-auto">
             {[
@@ -137,7 +254,6 @@ export default function Home() {
             ))}
           </motion.div>
         </div>
-
         <button onClick={() => document.getElementById("features")?.scrollIntoView({behavior:"smooth"})}
           className="absolute bottom-8 left-1/2 -translate-x-1/2 p-3 rounded-full bg-white shadow-card border border-slate-200 text-slate-400 hover:text-brand-600 transition-colors animate-float">
           <ChevronDown className="w-5 h-5"/>
@@ -148,19 +264,21 @@ export default function Home() {
       <PriceTicker/>
 
       {/* STATS */}
-      <section className="py-16" style={{background:"#fff",borderTop:"2px solid #E2E8F0",borderBottom:"2px solid #E2E8F0"}}>
+      <section className="py-16" style={{background:"linear-gradient(135deg,#0F172A,#1E293B)"}}>
         <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-            <StatCounter end={24000000} prefix="₹" label="Revenue Tracked" sub="This kharif season"/>
-            <StatCounter end={12}       suffix="+"  label="Districts Active" sub="Across India"/>
-            <StatCounter end={99.2}     suffix="%"  label="Forecast Accuracy" sub="vs national average"/>
-            <StatCounter end={47}       suffix="+"  label="Commodities Tracked" sub="Live mandi data"/>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-white/10">
+            <StatCounter end={24000000} prefix="₹" label="Revenue Tracked"    sub="This kharif season" dark/>
+            <StatCounter end={12}       suffix="+"  label="Districts Active"   sub="Across India" dark/>
+            <StatCounter end={99.2}     suffix="%"  label="Forecast Accuracy"  sub="vs national average" dark/>
+            <StatCounter end={47}       suffix="+"  label="Commodities Tracked" sub="Live mandi data" dark/>
           </div>
         </div>
       </section>
 
+      <div className="section-divider"/>
+
       {/* FEATURES */}
-      <section id="features" className="section" style={{background:"linear-gradient(160deg,#F0FDF4 0%,#F8FAFC 100%)",paddingTop:"96px",paddingBottom:"96px"}}>
+      <section id="features" className="section section-green">
         <div className="container">
           <motion.div initial="hidden" whileInView="show" viewport={{once:true}} variants={stagger} className="text-center mb-16">
             <motion.div variants={fadeUp} className="section-label mb-4">Platform Features</motion.div>
@@ -171,7 +289,6 @@ export default function Home() {
               AgroWave brings together soil science, meteorology, and market intelligence in one clean dashboard.
             </motion.p>
           </motion.div>
-
           <motion.div initial="hidden" whileInView="show" viewport={{once:true}} variants={stagger}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {FEATURES.map((f,i) => {
@@ -193,8 +310,189 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="section-divider"/>
+
+      {/* ── GUIDE SECTION ─────────────────────────────── */}
+      <section id="guide" className="section section-guide">
+        <div className="container">
+          <motion.div initial="hidden" whileInView="show" viewport={{once:true}} variants={stagger} className="text-center mb-12">
+            <motion.div variants={fadeUp} className="section-label mb-4">
+              <BookOpen className="w-3 h-3"/> Platform Guide
+            </motion.div>
+            <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+              How to use <span className="grad-text">AgroWave</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-lg text-slate-500 max-w-2xl mx-auto">
+              A complete walkthrough of every section. Click a module below to learn exactly how to use it.
+            </motion.p>
+          </motion.div>
+
+          {/* Tab row */}
+          <div className="flex flex-wrap gap-2 justify-center mb-8">
+            {GUIDE_TABS.map(t => {
+              const Icon = t.icon;
+              return (
+                <button key={t.id} onClick={() => setGuideTab(t.id)}
+                  className={`guide-tab${guideTab===t.id?" active":""}`}>
+                  <Icon className="w-4 h-4"/> {t.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Guide card */}
+          <AnimatePresence mode="wait">
+            <motion.div key={guideTab}
+              initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}
+              transition={{duration:0.25}}>
+              <div className="card p-0 overflow-hidden shadow-soft max-w-5xl mx-auto">
+                <div className="grid md:grid-cols-2 gap-0">
+                  {/* Left — info */}
+                  <div className="p-8" style={{background:"linear-gradient(135deg,#0F172A,#1E293B)"}}>
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                        style={{background:`${activeGuide.color}25`,border:`1.5px solid ${activeGuide.color}40`}}>
+                        <activeGuide.icon className="w-6 h-6" style={{color:activeGuide.color}}/>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold tracking-widest uppercase mb-0.5"
+                          style={{color:activeGuide.color}}>Module Guide</div>
+                        <h3 className="font-bold text-white text-lg leading-snug">{activeGuide.title}</h3>
+                      </div>
+                    </div>
+                    <p className="text-slate-400 text-sm leading-relaxed mb-6">{activeGuide.desc}</p>
+
+                    {/* Tip box */}
+                    <div className="rounded-xl p-4 mb-6"
+                      style={{background:`${activeGuide.color}18`,border:`1px solid ${activeGuide.color}35`}}>
+                      <div className="flex items-start gap-2">
+                        <Lightbulb className="w-4 h-4 mt-0.5 flex-shrink-0" style={{color:activeGuide.color}}/>
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{color:activeGuide.color}}>Pro Tip</p>
+                          <p className="text-slate-300 text-xs leading-relaxed">{activeGuide.tip}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link href={activeGuide.link} className="btn btn-primary w-full py-3 text-sm"
+                      style={{background:`linear-gradient(135deg,${activeGuide.color},${activeGuide.color}CC)`}}>
+                      Open {activeGuide.label} <ArrowRight className="w-4 h-4"/>
+                    </Link>
+                  </div>
+
+                  {/* Right — steps */}
+                  <div className="p-8 bg-white">
+                    <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-brand-600"/> Step-by-Step Walkthrough
+                    </h4>
+                    <div className="space-y-3">
+                      {activeGuide.steps.map((step,i) => (
+                        <motion.div key={i}
+                          initial={{opacity:0,x:12}} animate={{opacity:1,x:0}} transition={{delay:i*0.06}}
+                          className="guide-step">
+                          <div className="guide-step-num">{String(i+1).padStart(2,"0")}</div>
+                          <p className="text-slate-700 text-sm leading-relaxed">{step}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Quick navigation grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-8">
+            {GUIDE_TABS.map(t => {
+              const Icon = t.icon;
+              return (
+                <Link key={t.id} href={t.link}
+                  className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white border-2 border-slate-100 hover:border-brand-200 hover:bg-brand-50 transition-all group">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"
+                    style={{background:`${t.color}15`,border:`1.5px solid ${t.color}30`}}>
+                    <Icon className="w-5 h-5" style={{color:t.color}}/>
+                  </div>
+                  <span className="text-xs font-semibold text-slate-600 group-hover:text-brand-700">{t.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <div className="section-divider"/>
+
+      {/* WHY THIS WEBSITE */}
+      <section id="why" className="section section-white">
+        <div className="container">
+          <motion.div initial="hidden" whileInView="show" viewport={{once:true}} variants={stagger} className="text-center mb-14">
+            <motion.div variants={fadeUp} className="section-label mb-4">Why AgroWave?</motion.div>
+            <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+              What makes this platform <span className="grad-text">different</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-lg text-slate-500 max-w-2xl mx-auto">
+              AgroWave replaces scattered data, expensive consultants, and outdated methods with one intelligent platform.
+            </motion.p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-14">
+            {[
+              { icon:"🌱", title:"Built for Indian Crops", desc:"Data calibrated for Indian climate zones, kharif/rabi seasons, and MSP pricing — not generic global agriculture platforms." },
+              { icon:"📱", title:"Works Without an App", desc:"No installation required. Open AgroWave in any browser on mobile or desktop and get full functionality immediately." },
+              { icon:"💰", title:"Pays for Itself", desc:"Farmers earn ₹18,000+ extra per season through better market timing alone. The platform is free to use." },
+              { icon:"🔔", title:"Proactive Alerts", desc:"You don't monitor AgroWave — it monitors your farm. Alerts come to you for pest risk, low moisture, and market spikes." },
+              { icon:"📊", title:"All Data in One Place", desc:"No more switching between weather apps, mandi websites, and paper ledgers. One platform handles everything." },
+              { icon:"🖨️", title:"Printable Reports", desc:"Every page has a Print Report button. Generate formatted farm summaries, inventory sheets, and market reports in one click." },
+            ].map((c,i)=>(
+              <motion.div key={i} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.08}}>
+                <Card className="h-full p-6">
+                  <div className="text-4xl mb-3">{c.icon}</div>
+                  <h3 className="font-bold text-slate-800 text-lg mb-2">{c.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{c.desc}</p>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Comparison table */}
+          <div className="max-w-2xl mx-auto">
+            <h3 className="text-2xl font-bold text-slate-900 text-center mb-6">AgroWave vs Traditional Farming</h3>
+            <Card hover={false} className="overflow-hidden p-0">
+              <table className="w-full">
+                <thead>
+                  <tr style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                    <th className="text-left text-sm font-bold text-white px-5 py-3">Feature</th>
+                    <th className="text-center text-sm font-bold text-white px-5 py-3">AgroWave</th>
+                    <th className="text-center text-sm font-bold text-white px-5 py-3">Traditional</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARE.map((row,i)=>(
+                    <tr key={i} className={`border-b border-slate-50 ${i%2===0?"bg-slate-50/50":"bg-white"}`}>
+                      <td className="px-5 py-3 text-sm text-slate-700">{row.feature}</td>
+                      <td className="px-5 py-3 text-center">
+                        {typeof row.aw === "boolean"
+                          ? row.aw ? <CheckCircle2 className="w-5 h-5 text-brand-500 mx-auto"/> : <X className="w-5 h-5 text-slate-300 mx-auto"/>
+                          : <span className="badge badge-green">{row.aw}</span>}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        {typeof row.trad === "boolean"
+                          ? row.trad ? <CheckCircle2 className="w-5 h-5 text-brand-500 mx-auto"/> : <span className="text-slate-300 font-bold text-lg">✕</span>
+                          : <span className="badge badge-red">{row.trad}</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <div className="section-divider"/>
+
       {/* HOW IT WORKS */}
-      <section id="how-it-works" className="section" style={{background:"#ffffff",paddingTop:"96px",paddingBottom:"96px"}}>
+      <section id="how-it-works" className="section section-blue">
         <div className="container">
           <div className="text-center mb-16">
             <div className="section-label mb-4">Simple Process</div>
@@ -221,8 +519,10 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="section-divider"/>
+
       {/* BENEFITS */}
-      <section id="benefits" className="section" style={{background:"linear-gradient(135deg,#ECFDF5 0%,#EFF6FF 100%)",paddingTop:"96px",paddingBottom:"96px"}}>
+      <section id="benefits" className="section section-mixed">
         <div className="container">
           <div className="text-center mb-16">
             <div className="section-label mb-4">Proven Results</div>
@@ -279,8 +579,10 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="section-divider"/>
+
       {/* LIVE MARKET PREVIEW */}
-      <section id="market-preview" className="section" style={{background:"linear-gradient(160deg,#fff 0%,#F8FAFC 100%)",paddingTop:"96px",paddingBottom:"96px"}}>
+      <section id="market-preview" className="section section-white">
         <div className="container">
           <div className="flex items-end justify-between mb-10 flex-wrap gap-4">
             <div>
@@ -312,8 +614,10 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="section-divider"/>
+
       {/* CROP CALENDAR */}
-      <section className="section" style={{background:"linear-gradient(160deg,#FFFBEB 0%,#FEF9C3 50%,#F0FDF4 100%)",paddingTop:"96px",paddingBottom:"96px"}}>
+      <section className="section section-amber">
         <div className="container max-w-4xl">
           <div className="text-center mb-12">
             <div className="section-label mb-3">Seasonal Guide</div>
@@ -357,8 +661,10 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="section-divider"/>
+
       {/* TESTIMONIALS */}
-      <section id="testimonials" className="section" style={{background:"linear-gradient(160deg,#fff 0%,#F0F9FF 100%)",paddingTop:"96px",paddingBottom:"96px"}}>
+      <section id="testimonials" className="section section-subtle">
         <div className="container">
           <div className="text-center mb-14">
             <div className="section-label mb-4">Farmer Stories</div>
@@ -387,6 +693,8 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="section-divider"/>
+
       {/* CTA */}
       <section className="section" style={{background:"linear-gradient(135deg,#059669 0%,#10B981 50%,#34D399 100%)"}}>
         <div className="container text-center">
@@ -400,16 +708,19 @@ export default function Home() {
               <Link href="/dashboard" className="btn text-base px-10 py-4 rounded-xl bg-white text-brand-700 hover:bg-brand-50 font-bold shadow-lg hover:shadow-xl transition-all">
                 Open Farm Dashboard <ArrowRight className="w-5 h-5"/>
               </Link>
-              <Link href="/about" className="btn text-base px-10 py-4 rounded-xl border-2 border-white/50 text-white hover:bg-white/10 font-semibold transition-all">
-                Learn More
-              </Link>
+              <button onClick={()=>document.getElementById("guide")?.scrollIntoView({behavior:"smooth"})}
+                className="btn text-base px-10 py-4 rounded-xl border-2 border-white/50 text-white hover:bg-white/10 font-semibold transition-all">
+                <BookOpen className="w-4 h-4"/> View Platform Guide
+              </button>
             </div>
           </motion.div>
         </div>
       </section>
 
+      <div className="section-divider"/>
+
       {/* CONTACT HOME SECTION */}
-      <section id="contact-section" className="section" style={{background:"linear-gradient(160deg,#0F172A 0%,#1E293B 50%,#0F2027 100%)",paddingTop:"96px",paddingBottom:"96px"}}>
+      <section id="contact-section" className="section section-dark">
         <div className="container">
           <div className="grid md:grid-cols-2 gap-16 items-center max-w-5xl mx-auto">
             <motion.div initial={{opacity:0,x:-24}} whileInView={{opacity:1,x:0}} viewport={{once:true}}>
@@ -477,15 +788,18 @@ function ContactMiniForm() {
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl p-8 space-y-4" style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",backdropFilter:"blur(10px)"}}>
       <h3 className="font-bold text-xl text-white mb-5 flex items-center gap-2">📩 Quick Message</h3>
-      <div><label className="text-xs font-semibold text-slate-400 block mb-1.5">YOUR NAME</label>
+      <div>
+        <label className="text-xs font-semibold text-slate-400 block mb-1.5">YOUR NAME</label>
         <input required placeholder="Ramesh Kumar" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}
           style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.15)",color:"#fff"}}/>
       </div>
-      <div><label className="text-xs font-semibold text-slate-400 block mb-1.5">EMAIL</label>
+      <div>
+        <label className="text-xs font-semibold text-slate-400 block mb-1.5">EMAIL</label>
         <input required type="email" placeholder="farmer@example.com" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}
           style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.15)",color:"#fff"}}/>
       </div>
-      <div><label className="text-xs font-semibold text-slate-400 block mb-1.5">MESSAGE</label>
+      <div>
+        <label className="text-xs font-semibold text-slate-400 block mb-1.5">MESSAGE</label>
         <textarea required rows={3} placeholder="How can AgroWave help?" value={form.msg} onChange={e=>setForm(p=>({...p,msg:e.target.value}))}
           style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.15)",color:"#fff"}}/>
       </div>
