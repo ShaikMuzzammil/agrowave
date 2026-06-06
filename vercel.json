@@ -2,9 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "env": {
-    "RESEND_API_KEY": "@resend_api_key",
-    "HOST_EMAIL": "@host_email"
-  }
+  "installCommand": "npm install"
 }
