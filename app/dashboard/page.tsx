@@ -202,10 +202,7 @@ export default function Dashboard() {
                 </motion.div>
               );
             })}
-            <Link href="/field-monitor"
-              className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 text-xs font-semibold transition-all">
-              <Plus className="w-3 h-3"/> Add New Plot
-            </Link>
+            
           </div>
 
           {/* ── CENTRE — Live Farm Map ── */}
