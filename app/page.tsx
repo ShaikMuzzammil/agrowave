@@ -1,258 +1,612 @@
 "use client";
-import { motion, useScroll, useTransform } from "framer-motion";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowRight, Sprout, BarChart3, Cloud, ShoppingCart,
-  Package, Calendar, Map, Zap, Shield, TrendingUp,
-  Users, CheckCircle, Star, ChevronDown, Mail, Phone,
-  Droplets, Thermometer, Activity, Globe, Award, Leaf,
-  Bot, Wifi, LineChart, FlaskConical
-} from "lucide-react";
-import { useRef } from "react";
+  ArrowRight, CheckCircle2, TrendingUp, Droplets, CloudRain,
+  Sprout, BarChart3, Shield, Zap, Star, Play, Bug, Package,
+  Calendar, Bell, ChevronDown, Mail, Map, BookOpen,
+  LayoutDashboard, Leaf, ThumbsUp, Lightbulb, Target, Info
+, X } from "lucide-react";
+import PriceTicker from "@/components/PriceTicker";
+import StatCounter from "@/components/StatCounter";
+import Card from "@/components/Card";
+import { getLivePrices, CROPS, FORECAST } from "@/lib/utils";
 
-const NAV_LINKS = [
-  {href:"/dashboard",     label:"Dashboard"},
-  {href:"/field-monitor", label:"My Fields"},
-  {href:"/weather",       label:"Weather"},
-  {href:"/market",        label:"Market"},
-  {href:"/inventory",     label:"Inventory"},
-  {href:"/calendar",      label:"Calendar"},
-  {href:"#contact",       label:"Contact"},
-];
+const fadeUp = { hidden:{opacity:0,y:24}, show:{opacity:1,y:0} };
+const stagger = { show:{ transition:{ staggerChildren:0.09 } } };
 
 const FEATURES = [
-  {icon:BarChart3, title:"Real-Time Dashboard",    desc:"Live soil moisture, temperature, health and NPK data across all 6 plots with animated progress rings.",              color:"#059669", bg:"#ECFDF5"},
-  {icon:Cloud,     title:"7-Day Weather Forecast", desc:"Hyper-local rainfall and temperature forecasts with AI-powered irrigation recommendations.",                          color:"#3B82F6", bg:"#EFF6FF"},
-  {icon:TrendingUp,title:"Market Intelligence",    desc:"Live MSP + mandi rates from 600+ markets. P&L calculator with break-even and ROI analysis.",                          color:"#F59E0B", bg:"#FFFBEB"},
-  {icon:Package,   title:"Inventory Hub",          desc:"Track seeds, fertilizers, pesticides and tools with real-time low-stock alerts and total value.",                      color:"#8B5CF6", bg:"#F5F3FF"},
-  {icon:Map,       title:"Real-Land Satellite View",desc:"Live satellite + terrain overlay of all farm sections. Click any plot for detailed analytics.",                       color:"#EC4899", bg:"#FDF2F8"},
-  {icon:Bot,       title:"AI Farm Assistant",      desc:"Ask questions about your farm and get GPT-4 powered insights streamed in real time.",                                  color:"#0EA5E9", bg:"#F0F9FF"},
-  {icon:Calendar,  title:"Smart Calendar",          desc:"Schedule irrigation, spraying and harvests with conflict detection and weekly advisory.",                               color:"#10B981", bg:"#ECFDF5"},
-  {icon:Wifi,      title:"WebSocket Updates",       desc:"Data refreshes every 5 seconds via WebSocket. No page reload — moisture and temperature always live.",                 color:"#F43F5E", bg:"#FFF1F2"},
+  { icon:Droplets,   title:"Live Soil Monitoring",      desc:"Real-time NPK levels, pH, and moisture across every plot. Get alerts before problems arise.",         tag:"Real-Time",  color:"bg-brand-50 text-brand-600 border-brand-100" },
+  { icon:CloudRain,  title:"Hyper-Local Weather",       desc:"7-day farm-specific forecasts with rain probability, wind speed, and frost warnings.",                tag:"AI-Powered",  color:"bg-sky-50 text-sky-600 border-sky-100" },
+  { icon:TrendingUp, title:"Live Market Prices",        desc:"MSP + mandi rates from 600+ markets. Set price alerts and get notified when rates hit your target.",  tag:"Live Data",   color:"bg-amber-50 text-amber-600 border-amber-100" },
+  { icon:Bug,        title:"Pest Early Warning",        desc:"AI-assisted detection of 40+ common pests. Get actionable treatment plans before losses occur.",       tag:"AI-Assisted", color:"bg-rose-50 text-rose-600 border-rose-100" },
+  { icon:Package,    title:"Inventory Management",      desc:"Track seeds, fertilizers, pesticides and tools. Automated low-stock alerts before you run out.",       tag:"Smart",       color:"bg-violet-50 text-violet-600 border-violet-100" },
+  { icon:Calendar,   title:"Farm Activity Calendar",    desc:"Schedule irrigation, spraying, harvests. Get reminders 24h before each task.",                        tag:"Scheduling",  color:"bg-brand-50 text-brand-600 border-brand-100" },
+  { icon:BarChart3,  title:"Yield Analytics",           desc:"Compare forecast vs actual yield, track profit/loss per crop, and identify your best-performing plots.",tag:"Analytics",   color:"bg-sky-50 text-sky-600 border-sky-100" },
+  { icon:Bell,       title:"Smart Notifications",       desc:"Never miss a critical event. Soil alerts, market movements, weather warnings — all in one feed.",      tag:"Proactive",   color:"bg-amber-50 text-amber-600 border-amber-100" },
 ];
 
-const STATS = [
-  {v:"6",      l:"Live Farm Plots",      icon:"🌾"},
-  {v:"99.2%",  l:"Forecast Accuracy",    icon:"🎯"},
-  {v:"600+",   l:"Markets Tracked",      icon:"📊"},
-  {v:"5s",     l:"WebSocket Refresh",    icon:"⚡"},
+const BENEFITS = [
+  { stat:"23%", label:"Average yield increase", detail:"Farmers using AgroWave see 23% higher yields in first season" },
+  { stat:"₹18K", label:"Extra income per season", detail:"Through better market timing and reduced input waste" },
+  { stat:"40%", label:"Water savings", detail:"Smart irrigation cuts water usage by up to 40% with no yield loss" },
+  { stat:"99.2%", label:"Forecast accuracy", detail:"Our hyper-local weather model vs. national averages" },
 ];
 
-const WHY_CARDS = [
-  {icon:"🧑‍🌾", title:"Built for Indian Farmers",   desc:"MSP data, Kharif/Rabi seasons, INR pricing, and mandi rates from Azadpur to Yeshwantpur — all tailored for India."},
-  {icon:"📱",  title:"Works on Any Device",         desc:"Fully responsive on mobile, tablet and desktop. Use it on your phone in the field, or on a laptop in the office."},
-  {icon:"🔒",  title:"Your Data Stays with You",    desc:"No account required. All farm data is stored locally in your browser — no cloud, no server, no privacy risk."},
-  {icon:"⚡",  title:"Real-Time Intelligence",      desc:"WebSocket-powered live updates every 5 seconds. Satellite land view, AI assistant and live market prices."},
-  {icon:"📈",  title:"Actionable Profitability",    desc:"The P&L calculator tells you exactly when to sell, break-even price per quintal, and ROI across all crops."},
-  {icon:"🌱",  title:"Zero Hardware Required",      desc:"Start immediately with manual data entry. IoT sensor integration can be added later — no upfront hardware cost."},
-];
-
-const PLOT_PREVIEW = [
-  {name:"North Field",  crop:"Wheat",   moisture:91, health:94, temp:32.1, badge:"Optimal",   color:"#10B981"},
-  {name:"East Block",   crop:"Rice",    moisture:49, health:75, temp:34.0, badge:"Medium",     color:"#F59E0B"},
-  {name:"West Block",   crop:"Soybean", moisture:68, health:88, temp:30.7, badge:"Good",       color:"#10B981"},
-  {name:"South Field",  crop:"Cotton",  moisture:24, health:63, temp:32.2, badge:"Critical",   color:"#F43F5E"},
-  {name:"Central Plot", crop:"Maize",   moisture:57, health:82, temp:31.8, badge:"Good",       color:"#10B981"},
-  {name:"Border Strip", crop:"Onion",   moisture:62, health:91, temp:29.6, badge:"Optimal",    color:"#10B981"},
-];
-
-const COMPARISONS = [
-  {feature:"Real-time soil monitoring",         ours:true,  basic:false, manual:false},
-  {feature:"AI-powered insights",               ours:true,  basic:false, manual:false},
-  {feature:"Live market & mandi prices",        ours:true,  basic:true,  manual:false},
-  {feature:"Satellite land view",               ours:true,  basic:false, manual:false},
-  {feature:"P&L profitability calculator",      ours:true,  basic:true,  manual:false},
-  {feature:"7-day weather forecasts",           ours:true,  basic:true,  manual:false},
-  {feature:"WebSocket live data (5s refresh)",  ours:true,  basic:false, manual:false},
-  {feature:"Zero cost, no account needed",      ours:true,  basic:false, manual:true},
+const STEPS = [
+  { n:"01", icon:Sprout, title:"Add Your Farm", desc:"Enter your plot details, crops, and location. No hardware needed to start — manual entry works perfectly." },
+  { n:"02", icon:Bell,   title:"Get Smart Alerts", desc:"Receive real-time notifications for soil issues, weather risks, pest threats, and market opportunities." },
+  { n:"03", icon:TrendingUp, title:"Maximize Returns", desc:"Use data-driven insights to decide when to irrigate, when to sell, and how to reduce input costs." },
 ];
 
 const TESTIMONIALS = [
-  {name:"Rajesh Patel",    loc:"Gujarat",       text:"AgroWave showed me my South Field cotton was at 24% moisture — I would have missed the irrigation window. Saved the season.", stars:5},
-  {name:"Meena Kulkarni",  loc:"Maharashtra",   text:"The P&L calculator helped me realize I was selling at below break-even. Now I wait for the right mandi price.",             stars:5},
-  {name:"Arjun Reddy",     loc:"Telangana",     text:"The 7-day forecast warned me about 80% rain on Wednesday. I skipped irrigation on Tuesday and saved ₹800.",                  stars:5},
+  { name:"Ramesh Kumar",   loc:"Maharashtra",   crop:"Wheat Farmer",   quote:"AgroWave's soil alerts saved my wheat crop during the dry spell. I got the warning 2 days early.", stars:5, img:"RK" },
+  { name:"Lakshmi Devi",   loc:"Telangana",     crop:"Rice Farmer",    quote:"The market price tracker helped me sell rice 3 days after the price spike. Best tool for farmers.", stars:5, img:"LD" },
+  { name:"Harpreet Singh", loc:"Punjab",         crop:"Soybean Farmer", quote:"Set a price alert for ₹4,300/qtl and got notified immediately. Sold at peak and earned ₹18,000 more.", stars:5, img:"HS" },
+];
+
+const CROP_CALENDAR = [
+  { name:"Rice",    type:"Kharif", start:5,  end:10, color:"#10B981" },
+  { name:"Cotton",  type:"Kharif", start:5,  end:11, color:"#059669" },
+  { name:"Soybean", type:"Kharif", start:6,  end:10, color:"#34D399" },
+  { name:"Wheat",   type:"Rabi",   start:10, end:3,  color:"#3B82F6" },
+  { name:"Mustard", type:"Rabi",   start:10, end:2,  color:"#60A5FA" },
+  { name:"Potato",  type:"Rabi",   start:10, end:2,  color:"#93C5FD" },
+  { name:"Watermelon",type:"Zaid", start:2,  end:5,  color:"#F59E0B" },
+];
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// Platform guide data
+const GUIDE_TABS = [
+  {
+    id:"dashboard", icon:LayoutDashboard, label:"Dashboard", color:"#10B981",
+    title:"Farm Dashboard — Your Command Center",
+    desc:"The main overview of your entire farm. Monitor all 6 plots simultaneously, trigger irrigation, check alerts, and view the satellite farm map.",
+    steps:[
+      "Open the Dashboard from the top navigation bar.",
+      "The left panel shows all 6 field cards — click any card to expand its details.",
+      "Use 'Irrigate All' button (top right of field list) to water all plots at once.",
+      "The center Farm Map shows live moisture color coding for each plot.",
+      "The right panel has the Farm Health Radar and 7-day forecast charts.",
+      "The green status bar at the top shows live KHARIF 2026 monitoring data.",
+    ],
+    tip:"Fields with red moisture levels need immediate irrigation. Yellow = moderate, green = optimal.",
+    link:"/dashboard",
+  },
+  {
+    id:"fields", icon:Sprout, label:"My Fields", color:"#3B82F6",
+    title:"Field Monitor — Deep Plot Analytics",
+    desc:"Detailed per-plot inspection tool. View NPK, pH, temperature, pest risk and 7-day trend charts for any selected plot.",
+    steps:[
+      "Click 'My Fields' in the top navigation.",
+      "Select any plot from the left panel to view its full analytics.",
+      "The right panel shows a data grid with moisture, health, temperature, and NPK.",
+      "Click 'Update NPK' to log a fertilizer application with N, P, K values.",
+      "Toggle 'Auto-Irrigate' to enable automated irrigation when moisture drops.",
+      "Click '+ Add New Plot' at the bottom to register a new farm plot.",
+    ],
+    tip:"Use the 7-day trend chart to spot declining health before it becomes critical.",
+    link:"/field-monitor",
+  },
+  {
+    id:"weather", icon:CloudRain, label:"Weather", color:"#0EA5E9",
+    title:"Weather Station — Hyper-Local Forecasts",
+    desc:"Farm-specific 7-day weather forecasts with rain probability, temperature range, and actionable field advisories.",
+    steps:[
+      "Navigate to 'Weather' from the top menu.",
+      "The 7-day forecast shows daily rain % and temperature min/max.",
+      "Farm Advisory cards at the top give actionable advice like 'Skip irrigation on Tuesday'.",
+      "Rainfall and Temperature charts give a visual weekly overview.",
+      "Use the forecast to plan pesticide spraying — avoid rainy days.",
+      "Check Fertilizer Timing advisories to maximize soil absorption.",
+    ],
+    tip:"Never apply DAP fertilizer on a rainy day — rain washes it away. Check the advisory first.",
+    link:"/weather",
+  },
+  {
+    id:"market", icon:TrendingUp, label:"Market", color:"#F59E0B",
+    title:"Market Intelligence — Prices & Profit",
+    desc:"Live crop prices from 600+ mandis, a P&L profit calculator, mandi-wise rates, and custom price alerts.",
+    steps:[
+      "Open 'Market' from the navigation. Four tabs are available.",
+      "Live Prices tab: See all crop prices with 30-day trend charts.",
+      "P&L Calculator tab: Enter area, yield, and costs to compute net profit.",
+      "Mandi Rates tab: See which market is offering the best price today.",
+      "Price Alerts tab: Set a target price — get notified when the crop crosses it.",
+      "Filter by crop using the pill buttons at the top of Prices/Mandis tabs.",
+    ],
+    tip:"Sort mandi prices to find the highest-paying market near you before transporting your crop.",
+    link:"/market",
+  },
+  {
+    id:"inventory", icon:Package, label:"Inventory", color:"#8B5CF6",
+    title:"Inventory Hub — Stock Management",
+    desc:"Track all farm inputs — seeds, fertilizers, pesticides, tools and fuel. Get low-stock alerts before you run out.",
+    steps:[
+      "Navigate to 'Inventory' in the top menu.",
+      "Use the category filter pills (Seeds, Fertilizer, Pesticides...) to browse by type.",
+      "Red LOW badge means the item is below your set minimum threshold.",
+      "Click '+' button in Actions column to add 50 units, '–' to deduct 10.",
+      "Click 'Add Item' (top right) to register a new supply with cost and threshold.",
+      "Print Report button generates a full printable stock report.",
+    ],
+    tip:"Set minimum thresholds for critical items like DAP and pesticides to get advance low-stock alerts.",
+    link:"/inventory",
+  },
+  {
+    id:"calendar", icon:Calendar, label:"Calendar", color:"#EC4899",
+    title:"Farm Calendar — Task Scheduling",
+    desc:"Schedule irrigation rounds, spray applications, fertilizer dates, and harvest windows. Stay on top of every farm activity.",
+    steps:[
+      "Open 'Calendar' in the navigation.",
+      "Click any date or the '+ Add Task' button to schedule a new activity.",
+      "Select task type: Irrigation, Spray, Fertilizer, Harvest, or Custom.",
+      "Assign the task to a specific plot from the dropdown.",
+      "Completed tasks are shown with a green strikethrough.",
+      "Upcoming tasks appear in the sidebar with days-until countdown.",
+    ],
+    tip:"Schedule irrigation 1 day before predicted rain to allow soil to absorb water efficiently.",
+    link:"/calendar",
+  },
+  {
+    id:"land", icon:Map, label:"Land View", color:"#047857",
+    title:"Land View — Satellite Farm Map",
+    desc:"Aerial-style land view showing all 6 plots, live sensor overlay, threshold-based open/warning status, and terrain elevation mode.",
+    steps:[
+      "Click 'Land' in the navigation (or the green 'Open land' button on Dashboard).",
+      "The satellite grid shows all 6 plots with color-coded moisture levels.",
+      "Click any plot tile to view full sensor data in the right panel.",
+      "Open plots (green) meet all health criteria. Warning (yellow) need attention.",
+      "Toggle 'Terrain overlay' to switch between satellite and elevation view.",
+      "Click 'Settings' to customize the threshold values that determine plot status.",
+    ],
+    tip:"Use Land View before making irrigation decisions — see all plots at a glance and prioritize the driest ones.",
+    link:"/land",
+  },
+];
+
+const COMPARE = [
+  { feature:"Live soil monitoring",        aw:true,  trad:false },
+  { feature:"7-day weather forecasts",     aw:true,  trad:false },
+  { feature:"Real-time mandi prices",      aw:true,  trad:false },
+  { feature:"Pest early warning",          aw:true,  trad:false },
+  { feature:"Inventory tracking",         aw:true,  trad:false },
+  { feature:"Profit/loss calculator",     aw:true,  trad:false },
+  { feature:"Printable farm reports",     aw:true,  trad:false },
+  { feature:"Works on mobile & desktop",  aw:true,  trad:false },
+  { feature:"No app installation needed", aw:true,  trad:false },
+  { feature:"Cost",                       aw:"Free", trad:"Paid consultant" },
 ];
 
 export default function Home() {
-  const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll();
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
-  const heroY       = useTransform(scrollY, [0, 400], [0, -80]);
+  const [prices, setPrices] = useState<Record<string,any>>({});
+  const [now, setNow] = useState(new Date());
+  const [guideTab, setGuideTab] = useState("dashboard");
+
+  useEffect(() => {
+    setPrices(getLivePrices());
+    const iv = setInterval(() => { setPrices(getLivePrices()); setNow(new Date()); }, 60000);
+    const cl = setInterval(() => setNow(new Date()), 1000);
+    return () => { clearInterval(iv); clearInterval(cl); };
+  },[]);
+
+  const activeGuide = GUIDE_TABS.find(t => t.id === guideTab) || GUIDE_TABS[0];
 
   return (
-    <main className="overflow-x-hidden">
-      {/* ─── HERO ─────────────────────────────────────────────── */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden"
-        style={{background:"linear-gradient(160deg,#0F172A 0%,#1E293B 40%,#0F2D27 100%)"}}>
-        {/* Animated background */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 grid-bg opacity-30"/>
-          {[...Array(20)].map((_,i)=>(
-            <motion.div key={i}
-              initial={{opacity:0, scale:0}}
-              animate={{opacity:[0,.5,0], scale:[0,1,0], x:[0,(i%2?1:-1)*50,0], y:[0,-80,0]}}
-              transition={{duration:4+i*0.3, repeat:Infinity, delay:i*0.5, ease:"easeInOut"}}
-              className="absolute rounded-full"
-              style={{
-                width:4+i%6*4, height:4+i%6*4,
-                background:`hsl(${140+i*12},80%,${60+i%3*10}%)`,
-                left:`${5+i*5}%`, top:`${20+i*3}%`,
-              }}/>
-          ))}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl"
-            style={{background:"radial-gradient(circle,rgba(16,185,129,0.12),transparent)"}}/>
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl"
-            style={{background:"radial-gradient(circle,rgba(59,130,246,0.08),transparent)"}}/>
-        </div>
+    <div className="pt-[72px]">
 
-        <motion.div style={{opacity:heroOpacity,y:heroY}} className="container relative z-10 py-32">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1}}>
-                <div className="inline-flex items-center gap-2 bg-white/8 border border-white/15 text-green-300 px-4 py-2 rounded-full text-sm font-semibold mb-6">
-                  <span className="dot-live"/>  KHARIF 2026 · Day 47 of 120 · 6 Plots Active
-                </div>
-              </motion.div>
-
-              <motion.h1 initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{delay:0.2}}
-                className="text-5xl lg:text-7xl font-bold text-white leading-[1.05] mb-6">
-                Smart Farming<br/>
-                <span className="grad-text">Intelligence</span><br/>
-                Platform
-              </motion.h1>
-
-              <motion.p initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.35}}
-                className="text-lg text-slate-400 leading-relaxed mb-8 max-w-lg">
-                Monitor 6 live farm plots with real-time soil data, AI insights, satellite land view, and live market prices — all in one dashboard. Built for Kharif 2026.
-              </motion.p>
-
-              <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.5}}
-                className="flex flex-wrap gap-4">
-                <Link href="/dashboard" className="btn btn-primary text-base px-7 py-3.5"
-                  style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 8px 28px rgba(16,185,129,0.4)"}}>
-                  Open Dashboard <ArrowRight className="w-5 h-5"/>
-                </Link>
-                <Link href="/land" className="btn btn-outline text-base px-7 py-3.5 text-white border-white/20 hover:bg-white/8 hover:border-white/40">
-                  <Map className="w-5 h-5"/> Land View
-                </Link>
-              </motion.div>
-
-              <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.7}}
-                className="flex flex-wrap gap-6 mt-10 pt-8 border-t border-white/10">
-                {STATS.map((s,i) => (
-                  <div key={i} className="text-center">
-                    <div className="text-2xl mb-1">{s.icon}</div>
-                    <div className="text-2xl font-bold text-white">{s.v}</div>
-                    <div className="text-xs text-slate-400">{s.l}</div>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-
-            {/* Hero: Live Plot Preview Cards */}
-            <motion.div initial={{opacity:0,x:40}} animate={{opacity:1,x:0}} transition={{delay:0.4}}
-              className="hidden lg:grid grid-cols-2 gap-3">
-              {PLOT_PREVIEW.map((p,i) => (
-                <motion.div key={i} initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.5+i*0.08}}
-                  whileHover={{scale:1.03,y:-2}} className="rounded-2xl p-4 cursor-pointer"
-                  style={{
-                    background:"rgba(255,255,255,0.05)",
-                    border:"1px solid rgba(255,255,255,0.1)",
-                    backdropFilter:"blur(12px)",
-                  }}>
-                  <div className="flex justify-between mb-3">
-                    <div>
-                      <p className="font-bold text-white text-sm">{p.name}</p>
-                      <p className="text-xs text-slate-400">{p.crop}</p>
-                    </div>
-                    <span className="text-xs font-bold px-2 py-1 rounded-full"
-                      style={{background:`${p.color}25`,color:p.color}}>{p.badge}</span>
-                  </div>
-                  <div className="relative w-10 h-10 mb-3">
-                    <svg viewBox="0 0 40 40" className="w-full h-full -rotate-90">
-                      <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4"/>
-                      <circle cx="20" cy="20" r="16" fill="none" strokeWidth="4"
-                        stroke={p.color} strokeDasharray={`${(p.moisture/100)*100} 100`}
-                        strokeLinecap="round"/>
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[9px] font-bold text-white">{p.moisture}%</span>
-                    </div>
-                  </div>
-                  <div className="text-xs text-slate-400 flex justify-between">
-                    <span>🌡 {p.temp}°C</span>
-                    <span>💪 {p.health}%</span>
-                  </div>
-                </motion.div>
-              ))}
+      {/* ── HERO ─────────────────────────────────────── */}
+      <section id="hero" className="hero-pattern grid-bg min-h-[92vh] flex items-center relative overflow-hidden">
+        <div className="absolute top-20 right-10 w-96 h-96 bg-brand-400/10 rounded-full blur-3xl pointer-events-none"/>
+        <div className="absolute bottom-10 left-5 w-72 h-72 bg-sky-400/8 rounded-full blur-3xl pointer-events-none"/>
+        <div className="container py-20">
+          <div className="max-w-4xl mx-auto text-center">
+            <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.1}}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-50 border border-brand-200 mb-8">
+              <span className="dot-live"/>
+              <span className="text-brand-700 font-semibold text-sm">KHARIF 2026 · Live Farm Intelligence Active</span>
+            </motion.div>
+            <motion.h1 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.2}}
+              className="text-5xl md:text-7xl font-bold text-slate-900 leading-[1.08] mb-6 tracking-tight">
+              Farm Smarter.<br/>
+              <span className="grad-text">Earn More.</span>
+            </motion.h1>
+            <motion.p initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.4}}
+              className="text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+              Real-time soil health, AI weather forecasts, and live mandi prices — all in one platform built specifically for Indian farmers.
+            </motion.p>
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.5}}
+              className="inline-flex items-center gap-4 bg-white border border-slate-200 rounded-2xl px-6 py-3 mb-10 shadow-card">
+              <span className="dot-live"/>
+              <span className="font-mono text-slate-700 text-sm font-medium">{now.toLocaleTimeString("en-IN")}</span>
+              <span className="w-px h-4 bg-slate-200"/>
+              <span className="text-slate-400 text-sm">{now.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span>
+              <span className="w-px h-4 bg-slate-200"/>
+              <span className="text-brand-600 text-sm font-semibold">{FORECAST[0].icon} {FORECAST[0].hi}°C · {FORECAST[0].desc}</span>
+            </motion.div>
+            <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:0.6}}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/dashboard" className="btn btn-primary text-base px-8 py-3.5 rounded-xl shadow-green">
+                Open Farm Dashboard <ArrowRight className="w-5 h-5"/>
+              </Link>
+              <button onClick={()=>document.getElementById("guide")?.scrollIntoView({behavior:"smooth"})}
+                className="btn btn-outline text-base px-8 py-3.5 rounded-xl">
+                <BookOpen className="w-4 h-4"/> Platform Guide
+              </button>
             </motion.div>
           </div>
-        </motion.div>
+          <motion.div initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{delay:0.8}}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 max-w-4xl mx-auto">
+            {[
+              { emoji:"🌾", label:"Plots Monitored", val:"6 Active",  color:"text-brand-700 bg-brand-50 border-brand-100" },
+              { emoji:"💧", label:"Avg Soil Health",  val:"79.7%",    color:"text-sky-700 bg-sky-50 border-sky-100" },
+              { emoji:"📈", label:"Crops Tracked",    val:"8 Crops",  color:"text-amber-700 bg-amber-50 border-amber-100" },
+              { emoji:"🌦️", label:"Forecast Accuracy",val:"99.2%",   color:"text-violet-700 bg-violet-50 border-violet-100" },
+            ].map((s,i) => (
+              <div key={i} className={`flex items-center gap-3 p-4 rounded-2xl border ${s.color}`}>
+                <span className="text-2xl">{s.emoji}</span>
+                <div>
+                  <div className="font-bold text-base">{s.val}</div>
+                  <div className="text-xs opacity-70 font-medium">{s.label}</div>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+        <button onClick={() => document.getElementById("features")?.scrollIntoView({behavior:"smooth"})}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 p-3 rounded-full bg-white shadow-card border border-slate-200 text-slate-400 hover:text-brand-600 transition-colors animate-float">
+          <ChevronDown className="w-5 h-5"/>
+        </button>
+      </section>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <ChevronDown className="w-6 h-6 text-slate-400"/>
+      {/* PRICE TICKER */}
+      <PriceTicker/>
+
+      {/* STATS */}
+      <section className="py-16" style={{background:"linear-gradient(135deg,#0F172A,#1E293B)"}}>
+        <div className="container">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-white/10">
+            <StatCounter end={24000000} prefix="₹" label="Revenue Tracked"    sub="This kharif season" dark/>
+            <StatCounter end={12}       suffix="+"  label="Districts Active"   sub="Across India" dark/>
+            <StatCounter end={99.2}     suffix="%"  label="Forecast Accuracy"  sub="vs national average" dark/>
+            <StatCounter end={47}       suffix="+"  label="Commodities Tracked" sub="Live mandi data" dark/>
+          </div>
         </div>
       </section>
 
-      {/* ─── WHY AGROWAVE ─────────────────────────────────────── */}
-      <section className="section" style={{background:"linear-gradient(160deg,#F0FDF4 0%,#F8FAFC 100%)"}}>
+      <div className="section-divider"/>
+
+      {/* FEATURES */}
+      <section id="features" className="section section-green">
         <div className="container">
-          <div className="text-center mb-14">
-            <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
-              <span className="section-label mb-4"><Leaf className="w-3.5 h-3.5"/> Why AgroWave</span>
-              <h2 className="text-4xl font-bold text-slate-900 mt-4 mb-4">
-                Designed for the <span className="grad-text">Modern Farmer</span>
-              </h2>
-              <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-                AgroWave transforms raw farm data into actionable intelligence — so every irrigation, every spray, every market decision is data-driven.
-              </p>
+          <motion.div initial="hidden" whileInView="show" viewport={{once:true}} variants={stagger} className="text-center mb-16">
+            <motion.div variants={fadeUp} className="section-label mb-4">Platform Features</motion.div>
+            <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+              Everything a farmer needs.<br/><span className="grad-text">Nothing they don't.</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-lg text-slate-500 max-w-xl mx-auto">
+              AgroWave brings together soil science, meteorology, and market intelligence in one clean dashboard.
+            </motion.p>
+          </motion.div>
+          <motion.div initial="hidden" whileInView="show" viewport={{once:true}} variants={stagger}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {FEATURES.map((f,i) => {
+              const Icon = f.icon;
+              return (
+                <motion.div key={i} variants={fadeUp}>
+                  <Card className={`h-full p-6 border ${f.color} bg-white`}>
+                    <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${f.color}`}>
+                      <Icon className="w-5 h-5"/>
+                    </div>
+                    <span className={`badge mb-3 ${f.color}`}>{f.tag}</span>
+                    <h3 className="font-bold text-slate-800 text-base mb-2">{f.title}</h3>
+                    <p className="text-slate-500 text-sm leading-relaxed">{f.desc}</p>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </div>
+      </section>
+
+      <div className="section-divider"/>
+
+      {/* ── GUIDE SECTION ─────────────────────────────── */}
+      <section id="guide" className="section section-guide">
+        <div className="container">
+          <motion.div initial="hidden" whileInView="show" viewport={{once:true}} variants={stagger} className="text-center mb-12">
+            <motion.div variants={fadeUp} className="section-label mb-4">
+              <BookOpen className="w-3 h-3"/> Platform Guide
             </motion.div>
+            <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+              How to use <span className="grad-text">AgroWave</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-lg text-slate-500 max-w-2xl mx-auto">
+              A complete walkthrough of every section. Click a module below to learn exactly how to use it.
+            </motion.p>
+          </motion.div>
+
+          {/* Tab row */}
+          <div className="flex flex-wrap gap-2 justify-center mb-8">
+            {GUIDE_TABS.map(t => {
+              const Icon = t.icon;
+              return (
+                <button key={t.id} onClick={() => setGuideTab(t.id)}
+                  className={`guide-tab${guideTab===t.id?" active":""}`}>
+                  <Icon className="w-4 h-4"/> {t.label}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {WHY_CARDS.map((c,i) => (
-              <motion.div key={i} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.08}}
-                whileHover={{scale:1.02,y:-3}}
-                className="card p-7 border-2 border-slate-100 hover:border-brand-200 transition-all"
-                style={{boxShadow:"0 2px 16px rgba(0,0,0,0.05)"}}>
-                <div className="text-4xl mb-4">{c.icon}</div>
-                <h3 className="font-bold text-slate-800 text-lg mb-2">{c.title}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed">{c.desc}</p>
+          {/* Guide card */}
+          <AnimatePresence mode="wait">
+            <motion.div key={guideTab}
+              initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}
+              transition={{duration:0.25}}>
+              <div className="card p-0 overflow-hidden shadow-soft max-w-5xl mx-auto">
+                <div className="grid md:grid-cols-2 gap-0">
+                  {/* Left — info */}
+                  <div className="p-8" style={{background:"linear-gradient(135deg,#0F172A,#1E293B)"}}>
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                        style={{background:`${activeGuide.color}25`,border:`1.5px solid ${activeGuide.color}40`}}>
+                        <activeGuide.icon className="w-6 h-6" style={{color:activeGuide.color}}/>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold tracking-widest uppercase mb-0.5"
+                          style={{color:activeGuide.color}}>Module Guide</div>
+                        <h3 className="font-bold text-white text-lg leading-snug">{activeGuide.title}</h3>
+                      </div>
+                    </div>
+                    <p className="text-slate-400 text-sm leading-relaxed mb-6">{activeGuide.desc}</p>
+
+                    {/* Tip box */}
+                    <div className="rounded-xl p-4 mb-6"
+                      style={{background:`${activeGuide.color}18`,border:`1px solid ${activeGuide.color}35`}}>
+                      <div className="flex items-start gap-2">
+                        <Lightbulb className="w-4 h-4 mt-0.5 flex-shrink-0" style={{color:activeGuide.color}}/>
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{color:activeGuide.color}}>Pro Tip</p>
+                          <p className="text-slate-300 text-xs leading-relaxed">{activeGuide.tip}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Link href={activeGuide.link} className="btn btn-primary w-full py-3 text-sm"
+                      style={{background:`linear-gradient(135deg,${activeGuide.color},${activeGuide.color}CC)`}}>
+                      Open {activeGuide.label} <ArrowRight className="w-4 h-4"/>
+                    </Link>
+                  </div>
+
+                  {/* Right — steps */}
+                  <div className="p-8 bg-white">
+                    <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-brand-600"/> Step-by-Step Walkthrough
+                    </h4>
+                    <div className="space-y-3">
+                      {activeGuide.steps.map((step,i) => (
+                        <motion.div key={i}
+                          initial={{opacity:0,x:12}} animate={{opacity:1,x:0}} transition={{delay:i*0.06}}
+                          className="guide-step">
+                          <div className="guide-step-num">{String(i+1).padStart(2,"0")}</div>
+                          <p className="text-slate-700 text-sm leading-relaxed">{step}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Quick navigation grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-8">
+            {GUIDE_TABS.map(t => {
+              const Icon = t.icon;
+              return (
+                <Link key={t.id} href={t.link}
+                  className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white border-2 border-slate-100 hover:border-brand-200 hover:bg-brand-50 transition-all group">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"
+                    style={{background:`${t.color}15`,border:`1.5px solid ${t.color}30`}}>
+                    <Icon className="w-5 h-5" style={{color:t.color}}/>
+                  </div>
+                  <span className="text-xs font-semibold text-slate-600 group-hover:text-brand-700">{t.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <div className="section-divider"/>
+
+      {/* WHY THIS WEBSITE */}
+      <section id="why" className="section section-white">
+        <div className="container">
+          <motion.div initial="hidden" whileInView="show" viewport={{once:true}} variants={stagger} className="text-center mb-14">
+            <motion.div variants={fadeUp} className="section-label mb-4">Why AgroWave?</motion.div>
+            <motion.h2 variants={fadeUp} className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+              What makes this platform <span className="grad-text">different</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-lg text-slate-500 max-w-2xl mx-auto">
+              AgroWave replaces scattered data, expensive consultants, and outdated methods with one intelligent platform.
+            </motion.p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-14">
+            {[
+              { icon:"🌱", title:"Built for Indian Crops", desc:"Data calibrated for Indian climate zones, kharif/rabi seasons, and MSP pricing — not generic global agriculture platforms." },
+              { icon:"📱", title:"Works Without an App", desc:"No installation required. Open AgroWave in any browser on mobile or desktop and get full functionality immediately." },
+              { icon:"💰", title:"Pays for Itself", desc:"Farmers earn ₹18,000+ extra per season through better market timing alone. The platform is free to use." },
+              { icon:"🔔", title:"Proactive Alerts", desc:"You don't monitor AgroWave — it monitors your farm. Alerts come to you for pest risk, low moisture, and market spikes." },
+              { icon:"📊", title:"All Data in One Place", desc:"No more switching between weather apps, mandi websites, and paper ledgers. One platform handles everything." },
+              { icon:"🖨️", title:"Printable Reports", desc:"Every page has a Print Report button. Generate formatted farm summaries, inventory sheets, and market reports in one click." },
+            ].map((c,i)=>(
+              <motion.div key={i} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.08}}>
+                <Card className="h-full p-6">
+                  <div className="text-4xl mb-3">{c.icon}</div>
+                  <h3 className="font-bold text-slate-800 text-lg mb-2">{c.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{c.desc}</p>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Comparison table */}
+          <div className="max-w-2xl mx-auto">
+            <h3 className="text-2xl font-bold text-slate-900 text-center mb-6">AgroWave vs Traditional Farming</h3>
+            <Card hover={false} className="overflow-hidden p-0">
+              <table className="w-full">
+                <thead>
+                  <tr style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                    <th className="text-left text-sm font-bold text-white px-5 py-3">Feature</th>
+                    <th className="text-center text-sm font-bold text-white px-5 py-3">AgroWave</th>
+                    <th className="text-center text-sm font-bold text-white px-5 py-3">Traditional</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARE.map((row,i)=>(
+                    <tr key={i} className={`border-b border-slate-50 ${i%2===0?"bg-slate-50/50":"bg-white"}`}>
+                      <td className="px-5 py-3 text-sm text-slate-700">{row.feature}</td>
+                      <td className="px-5 py-3 text-center">
+                        {typeof row.aw === "boolean"
+                          ? row.aw ? <CheckCircle2 className="w-5 h-5 text-brand-500 mx-auto"/> : <X className="w-5 h-5 text-slate-300 mx-auto"/>
+                          : <span className="badge badge-green">{row.aw}</span>}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        {typeof row.trad === "boolean"
+                          ? row.trad ? <CheckCircle2 className="w-5 h-5 text-brand-500 mx-auto"/> : <span className="text-slate-300 font-bold text-lg">✕</span>
+                          : <span className="badge badge-red">{row.trad}</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <div className="section-divider"/>
+
+      {/* HOW IT WORKS */}
+      <section id="how-it-works" className="section section-blue">
+        <div className="container">
+          <div className="text-center mb-16">
+            <div className="section-label mb-4">Simple Process</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">Up and running in 3 steps</h2>
+            <p className="text-slate-500 text-lg max-w-lg mx-auto">No hardware. No installation. Just open your browser and start farming smarter.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {STEPS.map((s,i) => (
+              <motion.div key={i} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.15}}>
+                <div className="text-center">
+                  <div className="relative inline-flex items-center justify-center w-20 h-20 mb-5">
+                    <div className="absolute inset-0 rounded-full bg-brand-100 animate-pulse opacity-60"/>
+                    <div className="relative w-16 h-16 rounded-2xl bg-brand-grad flex items-center justify-center shadow-green">
+                      <s.icon className="w-8 h-8 text-white"/>
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">{s.n}</div>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-3">{s.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{s.desc}</p>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── FEATURES ─────────────────────────────────────────── */}
-      <section className="section" style={{background:"linear-gradient(160deg,#EFF6FF 0%,#F0FDF4 100%)"}}>
-        <div className="container">
-          <div className="text-center mb-14">
-            <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
-              <span className="section-label mb-4"><Zap className="w-3.5 h-3.5"/> Platform Features</span>
-              <h2 className="text-4xl font-bold text-slate-900 mt-4 mb-4">
-                Everything Your Farm <span className="grad-text">Needs</span>
-              </h2>
-              <p className="text-slate-500 text-lg max-w-xl mx-auto">
-                Eight powerful modules working together in one unified smart farming platform.
-              </p>
-            </motion.div>
-          </div>
+      <div className="section-divider"/>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {FEATURES.map((f,i) => {
-              const Icon = f.icon;
-              return (
-                <motion.div key={i} initial={{opacity:0,scale:.95}} whileInView={{opacity:1,scale:1}} viewport={{once:true}} transition={{delay:i*0.06}}
-                  whileHover={{scale:1.03,y:-4}}
-                  className="card p-6 border-2 border-slate-100 hover:border-brand-200 transition-all cursor-default"
-                  style={{boxShadow:"0 2px 16px rgba(0,0,0,0.04)"}}>
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-                    style={{background:f.bg}}>
-                    <Icon className="w-6 h-6" style={{color:f.color}}/>
+      {/* BENEFITS */}
+      <section id="benefits" className="section section-mixed">
+        <div className="container">
+          <div className="text-center mb-16">
+            <div className="section-label mb-4">Proven Results</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">Real results for real farmers</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            {BENEFITS.map((b,i) => (
+              <motion.div key={i} initial={{opacity:0,scale:.94}} whileInView={{opacity:1,scale:1}} viewport={{once:true}} transition={{delay:i*0.1}}>
+                <Card className="text-center p-8">
+                  <div className="text-4xl font-bold grad-text mb-2">{b.stat}</div>
+                  <div className="font-semibold text-slate-800 mb-1">{b.label}</div>
+                  <div className="text-xs text-slate-400 leading-relaxed">{b.detail}</div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <Card hover={false} className="p-8">
+              <h3 className="font-bold text-xl text-slate-800 mb-5">Why AgroWave Works</h3>
+              <div className="space-y-4">
+                {[
+                  "Built specifically for Indian crops and growing conditions",
+                  "Uses real MSP data — no guesswork on minimum prices",
+                  "Hyper-local forecasts at plot level, not district level",
+                  "No login required — open and use immediately",
+                  "Works on mobile, tablet, and desktop equally well",
+                  "Data persists locally — your farm data stays with you",
+                ].map((item,i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-brand-500 mt-0.5 flex-shrink-0"/>
+                    <span className="text-slate-600 text-sm">{item}</span>
                   </div>
-                  <h3 className="font-bold text-slate-800 mb-2 leading-tight">{f.title}</h3>
-                  <p className="text-slate-500 text-xs leading-relaxed">{f.desc}</p>
+                ))}
+              </div>
+            </Card>
+            <Card hover={false} className="p-8 bg-brand-grad text-white border-0">
+              <h3 className="font-bold text-xl mb-5">This Season's Impact</h3>
+              <div className="space-y-4">
+                {[
+                  { l:"Irrigation water saved", v:"38%" },
+                  { l:"Pesticide cost reduction", v:"22%" },
+                  { l:"Yield improvement avg", v:"23%" },
+                  { l:"Better price realization", v:"₹18K/season" },
+                  { l:"Pest losses prevented", v:"₹12K avg" },
+                ].map((s,i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <span className="text-green-100 text-sm">{s.l}</span>
+                    <span className="font-bold text-white">{s.v}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <div className="section-divider"/>
+
+      {/* LIVE MARKET PREVIEW */}
+      <section id="market-preview" className="section section-white">
+        <div className="container">
+          <div className="flex items-end justify-between mb-10 flex-wrap gap-4">
+            <div>
+              <div className="section-label mb-3">Live Market Data</div>
+              <h2 className="text-4xl font-bold text-slate-900">Today's Mandi Rates</h2>
+              <p className="text-slate-500 mt-2 text-sm">Updated every 60 seconds from 600+ markets</p>
+            </div>
+            <Link href="/market" className="btn btn-outline">Full Analysis <ArrowRight className="w-4 h-4"/></Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {Object.entries(CROPS).slice(0,8).map(([k,v],i) => {
+              const p = prices[k]; const up = (p?.pct||0) >= 0;
+              return (
+                <motion.div key={k} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.06}}>
+                  <Card className="p-5 cursor-pointer" hover>
+                    <div className="flex justify-between mb-3">
+                      <span className="text-3xl">{v.emoji}</span>
+                      <span className={`badge ${up?"badge-green":"badge-red"}`}>{up?"▲":"▼"}{Math.abs(p?.pct||0).toFixed(1)}%</span>
+                    </div>
+                    <div className="font-semibold text-slate-600 text-sm uppercase tracking-wide mb-1">{k}</div>
+                    <div className="text-2xl font-bold text-slate-900">₹{(p?.current||v.base).toLocaleString("en-IN")}</div>
+                    <div className="text-xs text-slate-400 mt-1">per {v.unit}</div>
+                    {v.msp>0 && <div className="text-xs text-brand-600 font-medium mt-1">MSP ₹{v.msp.toLocaleString("en-IN")}</div>}
+                  </Card>
                 </motion.div>
               );
             })}
@@ -260,255 +614,198 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── LIVE PLOT PREVIEW ────────────────────────────────── */}
-      <section className="section" style={{background:"linear-gradient(135deg,#0F172A 0%,#1E293B 50%,#0F2D27 100%)"}}>
+      <div className="section-divider"/>
+
+      {/* CROP CALENDAR */}
+      <section className="section section-amber">
+        <div className="container max-w-4xl">
+          <div className="text-center mb-12">
+            <div className="section-label mb-3">Seasonal Guide</div>
+            <h2 className="text-3xl font-bold text-slate-900">Indian Crop Calendar 2026</h2>
+            <p className="text-slate-500 mt-2">Know when to plant and harvest each crop</p>
+          </div>
+          <Card hover={false} className="overflow-x-auto p-6">
+            <div className="min-w-[640px]">
+              <div className="grid grid-cols-12 gap-1 mb-3">
+                {MONTHS.map(m => <div key={m} className="text-center text-xs font-semibold text-slate-400">{m}</div>)}
+              </div>
+              <div className="space-y-3">
+                {CROP_CALENDAR.map((c,ci) => {
+                  const len = c.end >= c.start ? c.end - c.start + 1 : (12-c.start+1)+c.end;
+                  const left = ((c.start-1)/12)*100;
+                  const width = (len/12)*100;
+                  return (
+                    <motion.div key={c.name} initial={{opacity:0,x:-16}} whileInView={{opacity:1,x:0}} viewport={{once:true}} transition={{delay:ci*0.08}}
+                      className="grid grid-cols-12 gap-1 items-center group">
+                      <div className="col-span-12 relative h-9 bg-slate-100 rounded-xl overflow-hidden">
+                        <div className="absolute inset-y-1 flex items-center pl-2 z-10">
+                          <span className="text-xs font-semibold text-slate-500 group-hover:text-slate-700">{c.name}</span>
+                        </div>
+                        <motion.div initial={{width:0}} whileInView={{width:`${width}%`}} viewport={{once:true}} transition={{duration:0.9,delay:0.2+ci*0.06}}
+                          className="absolute top-1 bottom-1 rounded-lg opacity-80"
+                          style={{left:`${left}%`, background:c.color}}/>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-6 mt-5 justify-center flex-wrap">
+                {[{c:"#10B981",l:"Kharif (Jun–Nov)"},{c:"#3B82F6",l:"Rabi (Nov–Apr)"},{c:"#F59E0B",l:"Zaid (Mar–Jun)"}].map(x => (
+                  <span key={x.l} className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                    <span className="w-3 h-3 rounded" style={{background:x.c}}/>{x.l}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      <div className="section-divider"/>
+
+      {/* TESTIMONIALS */}
+      <section id="testimonials" className="section section-subtle">
         <div className="container">
           <div className="text-center mb-14">
-            <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
-              <span className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-5">
-                <span className="dot-live"/> KHARIF 2026 — LIVE DATA
-              </span>
-              <h2 className="text-4xl font-bold text-white mb-4">
-                6 Plots · <span className="grad-text">Real-Time Monitoring</span>
-              </h2>
-              <p className="text-slate-400 text-lg max-w-xl mx-auto">
-                Every card shows live moisture, health, temperature and NPK. Data updates via WebSocket every 5 seconds.
-              </p>
-            </motion.div>
+            <div className="section-label mb-4">Farmer Stories</div>
+            <h2 className="text-4xl font-bold text-slate-900 mb-3">Trusted by farmers across India</h2>
+            <p className="text-slate-500">Real feedback from real farmers using AgroWave every day</p>
           </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-            {PLOT_PREVIEW.map((p,i) => (
-              <motion.div key={i} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.07}}
-                whileHover={{scale:1.02}}
-                className="rounded-2xl p-5 cursor-pointer transition-all"
-                style={{
-                  background:"rgba(255,255,255,0.06)",
-                  border:`1.5px solid ${p.color}30`,
-                  backdropFilter:"blur(12px)",
-                }}>
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="font-bold text-white">{p.name}</p>
-                    <p className="text-xs text-slate-400">{p.crop} · Kharif 2026</p>
+          <div className="grid md:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((t,i) => (
+              <motion.div key={i} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.12}}>
+                <Card className="p-8 h-full flex flex-col">
+                  <div className="flex gap-1 mb-5">
+                    {[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400"/>)}
                   </div>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full border"
-                    style={{background:`${p.color}20`,color:p.color,borderColor:`${p.color}40`}}>{p.badge}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="relative w-16 h-16 flex-shrink-0">
-                    <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-                      <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6"/>
-                      <circle cx="32" cy="32" r="26" fill="none" strokeWidth="6"
-                        stroke={p.color} strokeDasharray={`${(p.moisture/100)*163} 163`}
-                        strokeLinecap="round"/>
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">{p.moisture}%</span>
+                  <p className="text-slate-700 leading-relaxed mb-6 flex-1 text-sm italic">"{t.quote}"</p>
+                  <div className="flex items-center gap-3 border-t border-slate-100 pt-5">
+                    <div className="w-10 h-10 rounded-xl bg-brand-100 border border-brand-200 flex items-center justify-center font-bold text-brand-700 text-sm">{t.img}</div>
+                    <div>
+                      <p className="font-semibold text-slate-800 text-sm">{t.name}</p>
+                      <p className="text-xs text-slate-400">{t.loc} · {t.crop}</p>
                     </div>
                   </div>
-                  <div className="flex-1 space-y-2">
-                    {[
-                      {l:"Health",   v:p.health,  max:100, c:p.color},
-                      {l:"Temp",     v:p.temp,    max:45,  c:"#F59E0B"},
-                    ].map(s=>(
-                      <div key={s.l}>
-                        <div className="flex justify-between mb-0.5">
-                          <span className="text-[10px] text-slate-400">{s.l}</span>
-                          <span className="text-[10px] text-slate-300 font-mono">{s.v}{s.l==="Temp"?"°C":"%"}</span>
-                        </div>
-                        <div className="h-1.5 rounded-full" style={{background:"rgba(255,255,255,0.1)"}}>
-                          <div className="h-full rounded-full" style={{width:`${(s.v/s.max)*100}%`,background:s.c}}/>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                </Card>
               </motion.div>
             ))}
-          </div>
-
-          <div className="text-center">
-            <Link href="/dashboard" className="btn btn-primary text-base px-8 py-3.5"
-              style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 8px 24px rgba(16,185,129,0.4)"}}>
-              Open Live Dashboard <ArrowRight className="w-5 h-5"/>
-            </Link>
           </div>
         </div>
       </section>
 
-      {/* ─── COMPARISON TABLE ─────────────────────────────────── */}
-      <section className="section" style={{background:"linear-gradient(160deg,#FFFBEB 0%,#F0FDF4 100%)"}}>
-        <div className="container max-w-4xl">
-          <div className="text-center mb-14">
-            <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
-              <span className="section-label mb-4"><Award className="w-3.5 h-3.5"/> Comparison</span>
-              <h2 className="text-4xl font-bold text-slate-900 mt-4 mb-4">
-                AgroWave vs <span className="grad-text">The Alternatives</span>
-              </h2>
-            </motion.div>
-          </div>
+      <div className="section-divider"/>
 
-          <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
-            className="card overflow-hidden p-0" style={{boxShadow:"0 8px 40px rgba(0,0,0,0.08)"}}>
-            <table className="w-full">
-              <thead>
-                <tr style={{background:"linear-gradient(135deg,#F0FDF4,#F8FAFC)",borderBottom:"2px solid #E2E8F0"}}>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-slate-600">Feature</th>
-                  <th className="px-6 py-4 text-center text-sm font-bold" style={{color:"#059669"}}>🌾 AgroWave</th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-slate-500">Basic App</th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-slate-400">Manual</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {COMPARISONS.map((r,i)=>(
-                  <tr key={i} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-700 font-medium">{r.feature}</td>
-                    {[r.ours,r.basic,r.manual].map((v,j)=>(
-                      <td key={j} className="px-6 py-4 text-center">
-                        {v ? <CheckCircle className="w-5 h-5 mx-auto" style={{color:"#059669"}}/>
-                           : <span className="text-slate-200 text-xl">—</span>}
-                      </td>
-                    ))}
-                  </tr>
+      {/* CTA */}
+      <section className="section" style={{background:"linear-gradient(135deg,#059669 0%,#10B981 50%,#34D399 100%)"}}>
+        <div className="container text-center">
+          <motion.div initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
+            <div className="inline-flex items-center gap-2 bg-white/20 text-white px-4 py-1.5 rounded-full text-sm font-semibold mb-6">
+              <Zap className="w-4 h-4"/> No login · No installation · Instant access
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-5">Ready to farm smarter?</h2>
+            <p className="text-green-100 text-lg mb-10 max-w-lg mx-auto">Join thousands of farmers already using AgroWave. Open the dashboard and start making data-driven decisions today.</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/dashboard" className="btn text-base px-10 py-4 rounded-xl bg-white text-brand-700 hover:bg-brand-50 font-bold shadow-lg hover:shadow-xl transition-all">
+                Open Farm Dashboard <ArrowRight className="w-5 h-5"/>
+              </Link>
+              <button onClick={()=>document.getElementById("guide")?.scrollIntoView({behavior:"smooth"})}
+                className="btn text-base px-10 py-4 rounded-xl border-2 border-white/50 text-white hover:bg-white/10 font-semibold transition-all">
+                <BookOpen className="w-4 h-4"/> View Platform Guide
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <div className="section-divider"/>
+
+      {/* CONTACT HOME SECTION */}
+      <section id="contact-section" className="section section-dark">
+        <div className="container">
+          <div className="grid md:grid-cols-2 gap-16 items-center max-w-5xl mx-auto">
+            <motion.div initial={{opacity:0,x:-24}} whileInView={{opacity:1,x:0}} viewport={{once:true}}>
+              <div className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-6">
+                <Mail className="w-4 h-4"/> Get In Touch
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                Questions about<br/><span className="grad-text">AgroWave?</span>
+              </h2>
+              <p className="text-slate-400 text-lg mb-8 leading-relaxed">
+                We're here to help Indian farmers succeed. Reach out for support, partnerships, or feedback.
+              </p>
+              <div className="space-y-4 mb-8">
+                {[
+                  {icon:"📞", label:"Kisan Helpline", val:"1800-180-1551"},
+                  {icon:"📧", label:"Email", val:"hello@agrowave.farm"},
+                  {icon:"📍", label:"Location", val:"Hyderabad, Telangana"},
+                ].map((c,i)=>(
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-xl">{c.icon}</span>
+                    <div>
+                      <div className="text-slate-400 text-xs font-semibold uppercase tracking-wide">{c.label}</div>
+                      <div className="text-white font-semibold">{c.val}</div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── TESTIMONIALS ─────────────────────────────────────── */}
-      <section className="section" style={{background:"linear-gradient(160deg,#F5F3FF 0%,#EDE9FE 30%,#F0FDF4 100%)"}}>
-        <div className="container">
-          <div className="text-center mb-14">
-            <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
-              <span className="section-label mb-4"><Star className="w-3.5 h-3.5"/> Testimonials</span>
-              <h2 className="text-4xl font-bold text-slate-900 mt-4 mb-4">
-                Trusted by <span className="grad-text">Real Farmers</span>
-              </h2>
+              </div>
+              <Link href="/contact" className="btn btn-primary text-base px-8 py-3.5 rounded-xl" style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                Open Contact Page <ArrowRight className="w-5 h-5"/>
+              </Link>
+            </motion.div>
+            <motion.div initial={{opacity:0,x:24}} whileInView={{opacity:1,x:0}} viewport={{once:true}}>
+              <ContactMiniForm/>
             </motion.div>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {TESTIMONIALS.map((t,i) => (
-              <motion.div key={i} initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.1}}
-                whileHover={{scale:1.02,y:-3}}
-                className="card p-7 border-2 border-slate-100 hover:border-violet-200"
-                style={{boxShadow:"0 4px 20px rgba(139,92,246,0.06)"}}>
-                <div className="flex mb-4">
-                  {[...Array(t.stars)].map((_,j) => <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400"/>)}
-                </div>
-                <p className="text-slate-600 text-sm leading-relaxed mb-5 italic">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold">
-                    {t.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-800 text-sm">{t.name}</p>
-                    <p className="text-xs text-slate-400">{t.loc}, India</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
+    </div>
+  );
+}
 
-      {/* ─── CONTACT ─────────────────────────────────────────── */}
-      <section id="contact" className="section" style={{background:"linear-gradient(135deg,#0F172A 0%,#1E293B 50%,#0F2D27 100%)"}}>
-        <div className="container max-w-3xl text-center">
-          <motion.div initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
-            <span className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-6">
-              <Mail className="w-4 h-4"/> Contact Us
-            </span>
-            <h2 className="text-4xl font-bold text-white mb-4">
-              Get in <span className="grad-text">Touch</span>
-            </h2>
-            <p className="text-slate-400 text-lg mb-10">
-              Questions, partnerships, or feedback? We'd love to hear from you.
-            </p>
+function ContactMiniForm() {
+  const [form, setForm] = React.useState({name:"",email:"",msg:""});
+  const [sent, setSent] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
 
-            <div className="grid md:grid-cols-3 gap-4 mb-10">
-              {[
-                {icon:Phone, title:"Kisan Helpline", val:"1800-180-1551",  sub:"Mon–Sat, 6am–10pm"},
-                {icon:Mail,  title:"Email Us",       val:"hello@agrowave.farm", sub:"Reply < 24 hours"},
-                {icon:Globe, title:"Headquarters",   val:"Hyderabad, TG", sub:"India"},
-              ].map((c,i)=>{
-                const Icon = c.icon;
-                return (
-                  <motion.div key={i} initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.1}}
-                    className="rounded-2xl p-6 text-center"
-                    style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)"}}>
-                    <Icon className="w-6 h-6 text-green-400 mx-auto mb-3"/>
-                    <p className="text-xs text-slate-400 mb-1">{c.title}</p>
-                    <p className="font-bold text-white">{c.val}</p>
-                    <p className="text-xs text-slate-500 mt-1">{c.sub}</p>
-                  </motion.div>
-                );
-              })}
-            </div>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.msg) return;
+    setBusy(true);
+    try {
+      await fetch("/api/contact", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name:form.name,email:form.email,message:form.msg,subject:"Home Page Contact"}) });
+      setSent(true);
+    } finally { setBusy(false); }
+  };
 
-            <Link href="/contact" className="btn btn-primary text-base px-8 py-3.5 inline-flex"
-              style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 8px 24px rgba(16,185,129,0.4)"}}>
-              Send a Message <ArrowRight className="w-5 h-5"/>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+  if (sent) return (
+    <div className="rounded-2xl p-8 text-center" style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(16,185,129,0.3)"}}>
+      <div className="text-5xl mb-4">✅</div>
+      <h3 className="text-xl font-bold text-white mb-2">Message Sent!</h3>
+      <p className="text-slate-400">We'll reply to <span className="text-green-400">{form.email}</span> within 24h.</p>
+    </div>
+  );
 
-      {/* ─── FOOTER ────────────────────────────────────────────── */}
-      <footer style={{background:"#060F0C",borderTop:"1px solid rgba(16,185,129,0.15)"}} className="py-16">
-        <div className="container">
-          <div className="grid md:grid-cols-4 gap-10 mb-12">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center">
-                  <Sprout className="w-5 h-5 text-white"/>
-                </div>
-                <div>
-                  <p className="font-bold text-white text-sm">AgroWave</p>
-                  <p className="text-[10px] text-green-400 uppercase tracking-wider">Smart Farming</p>
-                </div>
-              </div>
-              <p className="text-slate-500 text-xs leading-relaxed">AI-powered precision agriculture platform for Kharif 2026 — built with Next.js 14, WebSockets, and real-time data.</p>
-            </div>
-            {[
-              {title:"Platform", links:[
-                {l:"Dashboard",      h:"/dashboard"},
-                {l:"My Fields",      h:"/field-monitor"},
-                {l:"Land View",      h:"/land"},
-                {l:"Weather",        h:"/weather"},
-              ]},
-              {title:"Tools", links:[
-                {l:"Market Prices",  h:"/market"},
-                {l:"Inventory Hub",  h:"/inventory"},
-                {l:"Farm Calendar",  h:"/calendar"},
-                {l:"AI Assistant",   h:"/dashboard"},
-              ]},
-              {title:"Company", links:[
-                {l:"Contact Us",     h:"/contact"},
-                {l:"About",          h:"/about"},
-                {l:"Privacy Policy", h:"#"},
-                {l:"Open Farm →",    h:"/dashboard"},
-              ]},
-            ].map((col,i)=>(
-              <div key={i}>
-                <h4 className="font-bold text-slate-300 text-xs uppercase tracking-widest mb-4">{col.title}</h4>
-                <ul className="space-y-2">
-                  {col.links.map(l=>(
-                    <li key={l.l}><Link href={l.h} className="text-slate-500 hover:text-green-400 transition-colors text-sm">{l.l}</Link></li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-slate-600 text-xs">© 2026 AgroWave Smart Farming. Built for Kharif 2026.</p>
-            <p className="text-slate-600 text-xs">Made with 💚 for Indian Farmers · Next.js 14 + WebSockets + AI</p>
-          </div>
-        </div>
-      </footer>
-    </main>
+  return (
+    <form onSubmit={handleSubmit} className="rounded-2xl p-8 space-y-4" style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",backdropFilter:"blur(10px)"}}>
+      <h3 className="font-bold text-xl text-white mb-5 flex items-center gap-2">📩 Quick Message</h3>
+      <div>
+        <label className="text-xs font-semibold text-slate-400 block mb-1.5">YOUR NAME</label>
+        <input required placeholder="Ramesh Kumar" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}
+          style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.15)",color:"#fff"}}/>
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-slate-400 block mb-1.5">EMAIL</label>
+        <input required type="email" placeholder="farmer@example.com" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}
+          style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.15)",color:"#fff"}}/>
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-slate-400 block mb-1.5">MESSAGE</label>
+        <textarea required rows={3} placeholder="How can AgroWave help?" value={form.msg} onChange={e=>setForm(p=>({...p,msg:e.target.value}))}
+          style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.15)",color:"#fff"}}/>
+      </div>
+      <button type="submit" disabled={busy} className="btn btn-primary w-full py-3" style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+        {busy ? "Sending…" : "Send Message"}
+      </button>
+    </form>
   );
 }

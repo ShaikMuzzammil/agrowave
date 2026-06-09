@@ -23,6 +23,7 @@ const NAV = [
 
 const HOME_SECTIONS = [
   {id:"hero",s:"Home"},{id:"features",s:"Features"},
+  {id:"guide",s:"Guide"},{id:"why",s:"Why AgroWave"},
   {id:"how-it-works",s:"How It Works"},{id:"benefits",s:"Benefits"},
   {id:"market-preview",s:"Market"},{id:"testimonials",s:"Stories"},
   {id:"contact-section",s:"Contact"},

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Bell, Calculator, X, Search, Printer, ChevronDown, CheckCircle } from "lucide-react";
+import { TrendingUp, Bell, Calculator, X, Search, Printer, Info, ChevronDown } from "lucide-react";
 import { CROPS, getLivePrices, fmtINR, sparkline, COST_PRESETS, YIELD_DEFAULTS } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import Card from "@/components/Card";
@@ -78,26 +78,26 @@ export default function Market() {
   };
 
   const TABS = [
-    {id:"prices",     l:"Live Prices",    icon:"📈"},
-    {id:"calculator", l:"P&L Calculator", icon:"🧮"},
-    {id:"mandis",     l:"Mandi Rates",    icon:"🏪"},
-    {id:"alerts",     l:"Price Alerts",   icon:"🔔"},
+    {id:"prices",     l:"Live Prices",    icon:TrendingUp},
+    {id:"calculator", l:"P&L Calculator", icon:Calculator},
+    {id:"mandis",     l:"Mandi Rates",    icon:Search},
+    {id:"alerts",     l:"Price Alerts",   icon:Bell},
   ] as const;
 
-  const CROP_KEYS = Object.keys(CROPS);
+  const HINT: Record<string,string> = {
+    prices:     "Click any crop card to view its 30-day price history chart below.",
+    calculator: "Select your crop to auto-fill costs. Adjust area and yield to simulate profit scenarios.",
+    mandis:     "Prices shown are mandi estimates for the selected crop. Switch crops via the filter above.",
+    alerts:     "Set a target price and you'll receive a notification when the crop reaches that level.",
+  };
 
   return (
     <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#F8FAFC 0%,#ECFDF5 50%,#EFF6FF 100%)"}}>
       <PriceTicker/>
-
       {/* Header strip */}
-      <div style={{background:"linear-gradient(135deg,#0F172A,#1E293B)"}} className="py-12">
+      <div style={{background:"linear-gradient(135deg,#0F172A,#1E293B)"}} className="py-10">
         <div className="container flex items-end justify-between flex-wrap gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="dot-live" style={{background:"#A7F3D0"}}/>
-              <span className="text-green-300 text-xs font-bold tracking-widest">LIVE MARKET DATA</span>
-            </div>
             <motion.h1 initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} className="text-4xl font-bold text-white mb-1">
               Market <span className="grad-text">Intelligence</span>
             </motion.h1>
@@ -111,82 +111,96 @@ export default function Market() {
       </div>
 
       <div className="container py-8">
-        {/* Tab navigation — fully visible selected state */}
-        <div className="flex flex-wrap gap-2 mb-8 p-2 rounded-2xl"
-          style={{background:"#fff",border:"1.5px solid #E2E8F0",boxShadow:"0 2px 12px rgba(0,0,0,0.04)"}}>
+        {/* Tabs — strong visible active state */}
+        <div className="flex gap-2 flex-wrap mb-5 p-1.5 rounded-2xl w-fit"
+          style={{background:"#fff",border:"2px solid #E2E8F0",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`market-tab${tab===t.id?" market-tab-active":""}`}>
-              <span>{t.icon}</span> {t.l}
+            <button key={t.id} onClick={() => setTab(t.id)} className={`tab-btn${tab===t.id?" active":""}`}>
+              <t.icon className="w-4 h-4"/>{t.l}
             </button>
           ))}
         </div>
 
-        {/* ── TAB: LIVE PRICES ── */}
-        {tab === "prices" && (
-          <div>
-            {/* Crop selector — highly visible selected state */}
-            <div className="flex flex-wrap gap-2 mb-6 pb-6 border-b border-slate-100">
-              {CROP_KEYS.map(k => {
-                const v = CROPS[k as keyof typeof CROPS];
-                return (
-                  <button key={k} onClick={()=>setCrop(k)}
-                    className={`crop-tab${crop===k?" crop-tab-active":""}`}>
-                    <span>{v.emoji}</span> {k.toUpperCase()}
-                  </button>
-                );
-              })}
-            </div>
+        {/* Hint banner */}
+        <div className="hint-banner mb-6">
+          <Info className="w-4 h-4 flex-shrink-0"/>
+          <span>{HINT[tab]}</span>
+        </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+        {/* PRICES */}
+        {tab==="prices" && (
+          <div>
+            <div className="flex gap-2 flex-wrap mb-6">
+              {Object.entries(CROPS).map(([k,v]) => (
+                <button key={k} onClick={()=>setCrop(k)} className={`filter-pill${crop===k?" active":""}`}>
+                  {v.emoji} {k.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
               {Object.entries(CROPS).map(([k,v],i) => {
-                const p = prices[k]; const up = (p?.pct||0) >= 0;
-                const isSelected = crop === k;
+                const p = prices[k]; const up = (p?.pct||0)>=0;
                 return (
-                  <motion.div key={k} initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:i*0.04}}
-                    onClick={()=>setCrop(k)}>
-                    <Card className={`p-5 cursor-pointer transition-all ${isSelected?"border-brand-400 shadow-green ring-2 ring-brand-100":""}`} hover>
+                  <motion.div key={k} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}}
+                    onClick={() => setCrop(k)}>
+                    <Card className={`cursor-pointer p-5 transition-all ${crop===k?"border-brand-400 ring-2 ring-brand-200 shadow-soft":""}`}>
                       <div className="flex justify-between mb-3">
                         <span className="text-3xl">{v.emoji}</span>
                         <span className={`badge ${up?"badge-green":"badge-red"}`}>{up?"▲":"▼"}{Math.abs(p?.pct||0).toFixed(1)}%</span>
                       </div>
-                      <div className="font-semibold text-slate-600 text-xs uppercase tracking-wide mb-1">{k}</div>
+                      <div className="text-sm font-semibold text-slate-500 uppercase mb-1">{k}</div>
                       <div className="text-2xl font-bold text-slate-900">₹{(p?.current||v.base).toLocaleString("en-IN")}</div>
-                      <div className="text-xs text-slate-400 mt-1">per {v.unit}</div>
-                      {v.msp>0 && <div className="text-xs text-brand-600 font-medium mt-1">MSP ₹{v.msp.toLocaleString("en-IN")}</div>}
+                      <div className="text-xs text-slate-400 mt-0.5">per {v.unit}</div>
+                      {v.msp>0 && <div className="text-xs text-brand-600 font-semibold mt-1">MSP ₹{v.msp.toLocaleString("en-IN")}</div>}
+                      {sl[k] && (
+                        <div className="mt-3 h-9">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={sl[k].slice(-12)}>
+                              <Line type="monotone" dataKey="v" stroke={up?"#10B981":"#F43F5E"} strokeWidth={1.5} dot={false}/>
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
                     </Card>
                   </motion.div>
                 );
               })}
             </div>
-
-            {/* Selected crop chart */}
-            {sl[crop] && (
-              <Card hover={false} className="p-6">
-                <div className="flex items-center justify-between mb-4">
+            {crop && sl[crop] && (
+              <Card hover={false} style={{boxShadow:"0 4px 24px rgba(0,0,0,0.07)"}}>
+                <div className="flex items-start justify-between mb-5">
                   <div>
-                    <h3 className="font-bold text-slate-800">
-                      {CROPS[crop as keyof typeof CROPS]?.emoji} {crop.charAt(0).toUpperCase()+crop.slice(1)} — 30-Day Price Trend
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1">Simulated from real MSP baseline data</p>
+                    <h3 className="text-xl font-bold text-slate-800">{CROPS[crop as keyof typeof CROPS]?.emoji} {crop.toUpperCase()} — 30 Day Price History</h3>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-3xl font-bold text-slate-900">₹{(prices[crop]?.current||CROPS[crop as keyof typeof CROPS]?.base).toLocaleString("en-IN")}</span>
+                      <span className={`badge ${(prices[crop]?.pct||0)>=0?"badge-green":"badge-red"} text-sm`}>
+                        {(prices[crop]?.pct||0)>=0?"+":""}{prices[crop]?.pct||0}%
+                      </span>
+                    </div>
                   </div>
-                  <span className={`badge ${(prices[crop]?.pct||0)>=0?"badge-green":"badge-red"} text-sm px-3 py-1.5`}>
-                    {(prices[crop]?.pct||0)>=0?"▲":"▼"} {Math.abs(prices[crop]?.pct||0).toFixed(2)}% today
-                  </span>
+                  {CROPS[crop as keyof typeof CROPS]?.msp > 0 && (
+                    <div className="text-right">
+                      <div className="text-xs text-slate-400">Minimum Support Price</div>
+                      <div className="text-lg font-bold text-brand-700">₹{CROPS[crop as keyof typeof CROPS]?.msp.toLocaleString("en-IN")}</div>
+                      <div className="text-xs text-brand-600 font-medium">
+                        {(((prices[crop]?.current||CROPS[crop as keyof typeof CROPS]?.base)/CROPS[crop as keyof typeof CROPS]?.msp-1)*100).toFixed(1)}% above MSP
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={sl[crop]} margin={{top:4,right:4,left:-10,bottom:0}}>
+                  <AreaChart data={sl[crop]}>
                     <defs>
-                      <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#10B981" stopOpacity={0.3}/>
+                      <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#10B981" stopOpacity={0.15}/>
                         <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9"/>
-                    <XAxis dataKey="i" tick={{fontSize:10,fill:"#94A3B8"}} tickLine={false}/>
-                    <YAxis tick={{fontSize:10,fill:"#94A3B8"}} tickLine={false} axisLine={false}/>
-                    <Tooltip {...TT} formatter={(v:any)=>[`₹${v}`,""]}/>
-                    <Area type="monotone" dataKey="v" stroke="#059669" fill="url(#priceGrad)" strokeWidth={2.5}/>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false}/>
+                    <XAxis dataKey="i" tick={{fill:"#94A3B8",fontSize:10}} axisLine={false} tickLine={false}/>
+                    <YAxis tick={{fill:"#94A3B8",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`₹${v}`} width={65}/>
+                    <Tooltip {...TT} formatter={(v:any)=>[`₹${Number(v).toLocaleString("en-IN")}`, "Price"]}/>
+                    <Area type="monotone" dataKey="v" stroke="#10B981" fill="url(#pg)" strokeWidth={2.5} name="Price ₹"/>
                   </AreaChart>
                 </ResponsiveContainer>
               </Card>
@@ -194,183 +208,168 @@ export default function Market() {
           </div>
         )}
 
-        {/* ── TAB: P&L CALCULATOR ── */}
-        {tab === "calculator" && (
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Card hover={false} className="p-6">
-              <h3 className="font-bold text-slate-800 text-lg mb-5 flex items-center gap-2">
-                🧮 Crop P&L Calculator
-              </h3>
+        {/* CALCULATOR */}
+        {tab==="calculator" && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} className="grid md:grid-cols-2 gap-6">
+            <Card hover={false}>
+              <h3 className="font-bold text-slate-800 mb-5 text-lg">P&L Calculator</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block mb-1.5">Select Crop</label>
-                  <select value={calc.crop} onChange={e=>setCalc(p=>({...p,crop:e.target.value}))}>
-                    {Object.keys(CROPS).map(k=><option key={k} value={k}>{CROPS[k as keyof typeof CROPS]?.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</option>)}
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">CROP</label>
+                  <select value={calc.crop} onChange={e=>setCalc(p=>({...p,crop:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
+                    {Object.keys(CROPS).map(k=>(
+                      <option key={k} value={k}>{CROPS[k as keyof typeof CROPS].emoji} {k.toUpperCase()}</option>
+                    ))}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    {l:"Area (acres)",k:"area",step:0.5},
-                    {l:"Expected Yield (qtl/acre)",k:"yield",step:1},
-                    {l:"Expected Price (₹/qtl)",k:"price",step:50},
-                    {l:"Seed Cost (₹/acre)",k:"seed",step:100},
-                    {l:"Fertilizer (₹/acre)",k:"fert",step:100},
-                    {l:"Labor (₹/acre)",k:"labor",step:100},
-                    {l:"Irrigation (₹/acre)",k:"irr",step:100},
-                    {l:"Pesticides (₹/acre)",k:"pest",step:100},
+                    {l:"Area (acres)",  k:"area",  min:0.5, step:0.5},
+                    {l:"Yield (kg/ac)", k:"yield", min:1,   step:1},
+                    {l:"Price (₹/qtl)",k:"price", min:100, step:50},
+                    {l:"Seed (₹/ac)",  k:"seed",  min:0,   step:100},
+                    {l:"Fertilizer (₹/ac)",k:"fert",min:0, step:100},
+                    {l:"Labor (₹/ac)", k:"labor", min:0,   step:100},
+                    {l:"Irrigation (₹/ac)",k:"irr",min:0,  step:100},
+                    {l:"Pesticide (₹/ac)",k:"pest",min:0,  step:100},
                   ].map(f=>(
                     <div key={f.k}>
-                      <label className="block mb-1.5">{f.l}</label>
-                      <input type="number" min={0} step={f.step}
-                        value={calc[f.k as keyof typeof calc] as number}
-                        onChange={e=>setCalc(p=>({...p,[f.k]:+e.target.value}))}/>
+                      <label className="text-xs font-semibold text-slate-500 block mb-1">{f.l}</label>
+                      <input type="number" min={f.min} step={f.step} value={(calc as any)[f.k]}
+                        onChange={e=>setCalc(p=>({...p,[f.k]:+e.target.value}))}
+                        style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                     </div>
                   ))}
                 </div>
               </div>
             </Card>
-
-            <div className="space-y-4">
-              <Card hover={false} className="p-6" style={{background:res.profit>=0?"linear-gradient(135deg,#F0FDF4,#ECFDF5)":"linear-gradient(135deg,#FFF1F2,#FEF2F2)"}}>
-                <h3 className="font-bold text-lg mb-4" style={{color:res.profit>=0?"#047857":"#991B1B"}}>
-                  {res.profit>=0?"✅ Profitable":"❌ Loss Projected"} — Analysis
-                </h3>
+            <Card hover={false} style={{background:"linear-gradient(160deg,#0F172A,#1E293B)"}}>
+              <h3 className="font-bold text-white mb-5 text-lg">Results</h3>
+              <div className="space-y-4">
                 {[
-                  {l:"Total Yield",   v:`${res.totalYield.toFixed(1)} qtl`},
-                  {l:"Gross Revenue", v:fmtINR(res.revenue), bold:true},
-                  {l:"Total Cost",    v:fmtINR(res.totalCost)},
-                  {l:"Net Profit",    v:fmtINR(res.profit), highlight:true},
-                  {l:"Profit Margin", v:`${res.margin.toFixed(1)}%`},
-                  {l:"Break-even",    v:`₹${res.breakEven.toFixed(0)}/qtl`},
-                  {l:"ROI",          v:`${res.roi.toFixed(1)}%`},
-                ].map(r=>(
-                  <div key={r.l} className={`flex justify-between py-2 border-b border-slate-100 last:border-0 ${r.highlight?"font-bold text-lg":"text-sm"}`}>
-                    <span className="text-slate-600">{r.l}</span>
-                    <span style={{color: r.highlight?(res.profit>=0?"#059669":"#DC2626"):"inherit"}} className={r.bold?"font-semibold":""}>{r.v}</span>
+                  {l:"Total Yield",    v:res.totalYield.toFixed(0)+" kg",           c:"#A7F3D0"},
+                  {l:"Gross Revenue",  v:fmtINR(res.revenue),                       c:"#86EFAC"},
+                  {l:"Total Cost",     v:fmtINR(res.totalCost),                     c:"#FCA5A5"},
+                  {l:"Net Profit",     v:fmtINR(res.profit),                        c:res.profit>=0?"#4ADE80":"#F87171"},
+                  {l:"Profit Margin",  v:res.margin.toFixed(1)+"%",                 c:res.margin>=0?"#4ADE80":"#F87171"},
+                  {l:"Break-even",     v:"₹"+res.breakEven.toFixed(0)+"/qtl",       c:"#93C5FD"},
+                  {l:"ROI",            v:res.roi.toFixed(1)+"%",                    c:res.roi>=0?"#4ADE80":"#F87171"},
+                ].map(s=>(
+                  <div key={s.l} className="flex items-center justify-between">
+                    <span className="text-slate-400 text-sm">{s.l}</span>
+                    <span className="font-bold text-base" style={{color:s.c}}>{s.v}</span>
                   </div>
                 ))}
-              </Card>
-              <div className="rounded-2xl p-5" style={{background:"linear-gradient(135deg,#EFF6FF,#DBEAFE)",border:"1.5px solid #BFDBFE"}}>
-                <h4 className="font-bold text-blue-800 mb-3">💡 Market Insight</h4>
-                <p className="text-blue-700 text-sm leading-relaxed">
-                  Current {calc.crop} MSP: ₹{CROPS[calc.crop as keyof typeof CROPS]?.msp?.toLocaleString("en-IN") || "N/A"}/qtl.
-                  Your break-even is ₹{res.breakEven.toFixed(0)}/qtl — 
-                  {res.breakEven < (CROPS[calc.crop as keyof typeof CROPS]?.msp||0) ? " you're protected even at MSP." : " consider negotiating directly with buyers for better prices."}
+              </div>
+              <div className="mt-6 p-4 rounded-xl" style={{background:"rgba(16,185,129,0.12)",border:"1px solid rgba(16,185,129,0.3)"}}>
+                <p className="text-green-300 text-xs font-semibold">{res.profit>=0?"✅ Profitable":"⚠️ Loss-making"} crop at current rates</p>
+                <p className="text-slate-400 text-xs mt-1">
+                  {res.profit>=0
+                    ? `Net margin of ${res.margin.toFixed(1)}% — consider selling when price exceeds ₹${(res.breakEven*1.25).toFixed(0)}/qtl.`
+                    : `Reduce input costs or wait for price to exceed ₹${res.breakEven.toFixed(0)}/qtl break-even.`}
                 </p>
               </div>
-            </div>
-          </div>
+            </Card>
+          </motion.div>
         )}
 
-        {/* ── TAB: MANDI RATES ── */}
-        {tab === "mandis" && (
-          <div>
-            <div className="flex flex-wrap gap-2 mb-6">
-              {CROP_KEYS.slice(0,10).map(k=>(
-                <button key={k} onClick={()=>setCrop(k)}
-                  className={`crop-tab${crop===k?" crop-tab-active":""}`}>
-                  {CROPS[k as keyof typeof CROPS]?.emoji} {k.toUpperCase()}
+        {/* MANDIS */}
+        {tab==="mandis" && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}}>
+            <div className="flex gap-2 flex-wrap mb-6">
+              {Object.entries(CROPS).map(([k,v]) => (
+                <button key={k} onClick={()=>setCrop(k)} className={`filter-pill${crop===k?" active":""}`}>
+                  {v.emoji} {k.toUpperCase()}
                 </button>
               ))}
             </div>
-            <Card hover={false} className="overflow-hidden p-0">
-              <div className="px-6 py-4 border-b border-slate-100" style={{background:"linear-gradient(135deg,#F0FDF4,#F8FAFC)"}}>
-                <h3 className="font-bold text-slate-800">Mandi Arrival Data — {crop.charAt(0).toUpperCase()+crop.slice(1)}</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Prices shown per quintal (100 kg)</p>
+            <Card hover={false}>
+              <h3 className="font-bold text-slate-800 mb-4 text-lg">{CROPS[crop as keyof typeof CROPS]?.emoji} {crop.toUpperCase()} Mandi Rates</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr style={{background:"#F8FAFC"}} className="border-b border-slate-100">
+                      {["Mandi","Location","Today's Price","Arrivals","vs MSP"].map(h=>(
+                        <th key={h} className="text-left text-xs font-bold text-slate-500 uppercase tracking-wider px-4 py-3">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mandiRows.length===0
+                      ? <tr><td colSpan={5} className="text-center py-8 text-slate-400 text-sm">No mandi data for selected crop.</td></tr>
+                      : mandiRows.map((m,i)=>{
+                        const msp = CROPS[crop as keyof typeof CROPS]?.msp||0;
+                        const diff = msp>0 ? ((m.price-msp)/msp*100) : 0;
+                        return (
+                          <tr key={i} className="border-b border-slate-50 hover:bg-brand-50/20 transition-colors">
+                            <td className="px-4 py-3 font-semibold text-slate-800 text-sm">{m.name}</td>
+                            <td className="px-4 py-3 text-slate-500 text-sm">{m.loc}</td>
+                            <td className="px-4 py-3 font-bold text-slate-900">₹{m.price.toLocaleString("en-IN")}/qtl</td>
+                            <td className="px-4 py-3 text-slate-500 text-sm">{m.arrival}</td>
+                            <td className="px-4 py-3">
+                              {msp>0
+                                ? <span className={`badge ${diff>=0?"badge-green":"badge-red"}`}>{diff>=0?"+":""}{diff.toFixed(1)}%</span>
+                                : <span className="text-slate-300 text-xs">N/A</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
               </div>
-              <table className="w-full">
-                <thead>
-                  <tr style={{background:"#F8FAFC",borderBottom:"1.5px solid #E2E8F0"}}>
-                    {["Mandi","Location","Today's Price","Arrival","vs MSP"].map(h=>(
-                      <th key={h} className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wide">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {mandiRows.map((m,i)=>{
-                    const msp = CROPS[crop as keyof typeof CROPS]?.msp||0;
-                    const vs = msp>0 ? ((m.price-msp)/msp*100) : 0;
-                    return (
-                      <tr key={i} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-6 py-4 font-semibold text-slate-800 text-sm">{m.name}</td>
-                        <td className="px-6 py-4"><span className="badge badge-blue">{m.loc}</span></td>
-                        <td className="px-6 py-4 font-bold text-slate-900">₹{m.price.toLocaleString("en-IN")}/qtl</td>
-                        <td className="px-6 py-4 text-sm text-slate-500">{m.arrival}</td>
-                        <td className="px-6 py-4">
-                          {msp>0 ? <span className={`badge ${vs>=0?"badge-green":"badge-red"}`}>{vs>=0?"+":""}{vs.toFixed(1)}%</span> : <span className="text-slate-300 text-xs">N/A</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {mandiRows.length===0&&<tr><td colSpan={5} className="text-center py-8 text-slate-400">No mandi data for {crop}</td></tr>}
-                </tbody>
-              </table>
             </Card>
-          </div>
+          </motion.div>
         )}
 
-        {/* ── TAB: PRICE ALERTS ── */}
-        {tab === "alerts" && (
-          <div className="max-w-xl mx-auto">
-            <Card hover={false} className="p-8">
-              <h3 className="font-bold text-xl text-slate-800 mb-2">🔔 Set Price Alert</h3>
-              <p className="text-slate-500 text-sm mb-6">Get notified when a commodity crosses your target price</p>
-
-              {alertSaved && (
-                <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}}
-                  className="flex items-center gap-3 p-4 rounded-xl mb-5"
-                  style={{background:"#F0FDF4",border:"1.5px solid #A7F3D0"}}>
-                  <CheckCircle className="w-5 h-5 text-brand-600"/>
-                  <p className="text-brand-700 font-semibold text-sm">Alert saved! You'll be notified via the bell icon.</p>
-                </motion.div>
-              )}
-
-              <div className="space-y-5">
+        {/* ALERTS */}
+        {tab==="alerts" && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} className="max-w-lg mx-auto">
+            <Card hover={false}>
+              <h3 className="font-bold text-slate-800 mb-2 text-lg">Set Price Alert</h3>
+              <p className="text-sm text-slate-500 mb-5">Get notified when a crop reaches your target price.</p>
+              <div className="space-y-4">
                 <div>
-                  <label className="block mb-1.5">Commodity</label>
-                  <select value={alertForm.commodity} onChange={e=>setAlertForm(p=>({...p,commodity:e.target.value}))}>
-                    {Object.keys(CROPS).map(k=><option key={k} value={k}>{CROPS[k as keyof typeof CROPS]?.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</option>)}
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">COMMODITY</label>
+                  <select value={alertForm.commodity} onChange={e=>setAlertForm(p=>({...p,commodity:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
+                    {Object.keys(CROPS).map(k=>(
+                      <option key={k} value={k}>{CROPS[k as keyof typeof CROPS].emoji} {k.toUpperCase()}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block mb-2">Alert When Price Is</label>
-                  <div className="flex gap-3">
-                    {(["above","below"] as const).map(t=>(
-                      <button key={t} onClick={()=>setAlertForm(p=>({...p,type:t}))}
-                        className={`filter-pill flex-1 justify-center${alertForm.type===t?" filter-pill-active":""}`}>
-                        {t==="above"?"▲ Above Threshold":"▼ Below Threshold"}
-                      </button>
-                    ))}
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">ALERT WHEN PRICE IS</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input placeholder="Enter price (₹/qtl)" value={alertForm.threshold}
+                      onChange={e=>setAlertForm(p=>({...p,threshold:e.target.value}))}
+                      style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
+                    <select value={alertForm.type} onChange={e=>setAlertForm(p=>({...p,type:e.target.value as any}))}
+                      style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
+                      <option value="above">▲ Above Threshold</option>
+                      <option value="below">▼ Below Threshold</option>
+                    </select>
                   </div>
                 </div>
                 <div>
-                  <label className="block mb-1.5">Target Price (₹/qtl)</label>
-                  <input type="number" placeholder="e.g. 2300" value={alertForm.threshold}
-                    onChange={e=>setAlertForm(p=>({...p,threshold:e.target.value}))}/>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">TARGET PRICE (₹/qtl)</label>
+                  <input placeholder="e.g. 2300" value={alertForm.threshold}
+                    onChange={e=>setAlertForm(p=>({...p,threshold:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
                 <div>
-                  <label className="block mb-1.5">Email (optional)</label>
-                  <input type="email" placeholder="farmer@example.com" value={alertForm.email}
-                    onChange={e=>setAlertForm(p=>({...p,email:e.target.value}))}/>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">EMAIL (OPTIONAL)</label>
+                  <input type="email" placeholder="you@example.com for email alerts" value={alertForm.email}
+                    onChange={e=>setAlertForm(p=>({...p,email:e.target.value}))}
+                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
                 <button onClick={saveAlert} className="btn btn-primary w-full py-3"
                   style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
-                  <Bell className="w-4 h-4"/> Save Alert
+                  {alertSaved ? "✅ Alert Saved!" : "🔔 Set Price Alert"}
                 </button>
               </div>
-
-              <div className="mt-6 p-4 rounded-xl" style={{background:"#FFF7ED",border:"1.5px solid #FED7AA"}}>
-                <p className="text-amber-800 text-xs font-semibold uppercase tracking-wide mb-1">Current Price</p>
-                <p className="text-amber-700 text-lg font-bold">
-                  {CROPS[alertForm.commodity as keyof typeof CROPS]?.emoji}{" "}
-                  ₹{(prices[alertForm.commodity]?.current||CROPS[alertForm.commodity as keyof typeof CROPS]?.base||2000).toLocaleString("en-IN")}/qtl
-                </p>
-                {CROPS[alertForm.commodity as keyof typeof CROPS]?.msp > 0 && (
-                  <p className="text-amber-600 text-xs mt-1">MSP: ₹{CROPS[alertForm.commodity as keyof typeof CROPS]?.msp?.toLocaleString("en-IN")}/qtl</p>
-                )}
-              </div>
             </Card>
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
