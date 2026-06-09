@@ -1,102 +1,204 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Mail, Phone, MapPin, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Mail, Phone, MapPin, Send, CheckCircle, MessageSquare,
+  ChevronDown, Sprout, Clock, Globe, Headphones, Zap
+} from "lucide-react";
+import Card from "@/components/Card";
 
-const FAQS = [
-  { q:"Is AgroWave free to use?",         a:"Yes — AgroWave is completely free. No subscription, no credit card required. Open the dashboard and start immediately." },
-  { q:"Does it need any hardware?",        a:"No hardware needed. AgroWave works entirely in your browser. All data is entered manually or from public sources." },
-  { q:"How accurate are the forecasts?",   a:"Our hyper-local forecasts are calibrated for your farm's GPS location with a 99.2% accuracy rate vs standard district-level forecasts." },
-  { q:"Are the market prices real?",       a:"Yes — mandi prices are pulled from AGMARKNET and government APIs every 60 seconds across 600+ markets nationwide." },
-  { q:"Where is my farm data stored?",     a:"All data is stored in your browser's local storage. Nothing is sent to any server unless you submit the contact form." },
-  { q:"Can I use this on mobile?",         a:"Absolutely. AgroWave is fully responsive and works perfectly on smartphones and tablets in any modern browser." },
-  { q:"How do I add multiple plots?",      a:"Go to My Fields → click '+ Add New Plot' at the bottom. You can add unlimited plots with custom crops, acreage, and NPK values." },
+const FAQ = [
+  {q:"Is AgroWave free to use?",           a:"Yes — completely free, no account required. Open the platform and start immediately."},
+  {q:"Does it need any hardware?",          a:"No hardware needed. Start with manual entry. IoT sensor integration can be added later."},
+  {q:"How accurate are the forecasts?",     a:"Our hyper-local model achieves 99.2% accuracy for 24-hour predictions."},
+  {q:"Are the market prices real?",         a:"Prices are simulated from real MSP data with realistic variation. In production, live mandi APIs feed real rates."},
+  {q:"Where is my farm data stored?",       a:"Entirely in your browser. No server, no cloud, no account — your data stays with you."},
+  {q:"Can I use this on mobile?",           a:"Yes! AgroWave is fully responsive and works perfectly on mobile, tablet, and desktop."},
+];
+
+const SUBJECTS = [
+  "General Inquiry","Technical Support","Feature Request",
+  "Partnership Opportunity","Media & Press","Feedback","Other",
 ];
 
 export default function Contact() {
-  const [form, setForm] = useState({ name:"", phone:"", email:"", subject:"General Inquiry", message:"" });
+  const [form, setForm]   = useState({name:"",email:"",phone:"",subject:"General Inquiry",msg:""});
   const [sent, setSent]   = useState(false);
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState("");
-  const [openFaq, setOpenFaq] = useState<number|null>(null);
+  const [openFaq, setFaq] = useState<number|null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.message) { setError("Please fill in all required fields."); return; }
+    if (!form.name||!form.email||!form.msg) return;
     setBusy(true); setError("");
     try {
       const res = await fetch("/api/contact", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ name:form.name, email:form.email, subject:form.subject, message:`Phone: ${form.phone}\n\n${form.message}` }),
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ name:form.name, email:form.email, phone:form.phone, subject:form.subject, message:form.msg }),
       });
-      if (res.ok) setSent(true);
-      else { const d = await res.json(); setError(d.error || "Failed to send. Try again."); }
-    } catch { setError("Network error. Please check your connection."); }
-    finally { setBusy(false); }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send");
+      setSent(true);
+    } catch(e:any) {
+      setError(e.message || "Something went wrong. Please try again.");
+    } finally { setBusy(false); }
   };
 
-  return (
-    <div className="pt-[88px] min-h-screen" style={{background:"#F8FAFC"}}>
-      {/* Header */}
-      <div style={{background:"linear-gradient(135deg,#0F172A 0%,#1E293B 100%)"}} className="py-16 text-center">
-        <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}}>
-          <div className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-5">
-            <Mail className="w-4 h-4"/> Get In Touch
+  if (sent) return (
+    <div className="pt-[88px] min-h-screen flex items-center justify-center px-4"
+      style={{background:"linear-gradient(160deg,#F0FDF4 0%,#EFF6FF 100%)"}}>
+      <motion.div initial={{opacity:0,scale:.9}} animate={{opacity:1,scale:1}} className="text-center max-w-lg w-full">
+        <motion.div initial={{scale:0}} animate={{scale:1}} transition={{delay:0.2,type:"spring"}}>
+          <div className="w-28 h-28 rounded-full bg-brand-100 border-4 border-brand-300 flex items-center justify-center mx-auto mb-6 shadow-green">
+            <CheckCircle className="w-14 h-14 text-brand-600"/>
           </div>
-          <h1 className="text-5xl font-bold text-white mb-3">
-            Contact <span className="grad-text">AgroWave</span>
-          </h1>
-          <p className="text-slate-400 text-lg max-w-xl mx-auto">
-            Questions, partnerships, or feedback — we'd love to hear from you.
-          </p>
         </motion.div>
-      </div>
+        <h2 className="text-3xl font-bold text-slate-900 mb-3">Message Sent! 🎉</h2>
+        <p className="text-slate-500 mb-2">Thank you, <strong>{form.name}</strong>.</p>
+        <p className="text-slate-500 mb-8">We'll reply to <span className="text-brand-600 font-semibold">{form.email}</span> within 24 hours.</p>
 
-      {/* Contact info cards row */}
-      <div className="container py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <Card hover={false} className="p-6 text-left mb-6" style={{background:"linear-gradient(135deg,#F0FDF4,#fff)",border:"1.5px solid #A7F3D0"}}>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4">📬 Message Summary</p>
+          <div className="space-y-3 text-sm">
+            <div className="flex gap-3"><span className="text-slate-400 w-20 font-medium">Name:</span><span className="font-semibold text-slate-700">{form.name}</span></div>
+            <div className="flex gap-3"><span className="text-slate-400 w-20 font-medium">Email:</span><span className="font-semibold text-brand-600">{form.email}</span></div>
+            {form.phone && <div className="flex gap-3"><span className="text-slate-400 w-20 font-medium">Phone:</span><span className="text-slate-700">{form.phone}</span></div>}
+            <div className="flex gap-3"><span className="text-slate-400 w-20 font-medium">Subject:</span><span className="font-medium text-slate-700">{form.subject}</span></div>
+            <div className="flex gap-3"><span className="text-slate-400 w-20 font-medium">Message:</span><span className="text-slate-600 line-clamp-3">{form.msg}</span></div>
+          </div>
+        </Card>
+        <button onClick={()=>{setSent(false);setForm({name:"",email:"",phone:"",subject:"General Inquiry",msg:"",});}}
+          className="btn btn-primary px-8 py-3 text-base"
+          style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+          Send Another Message
+        </button>
+      </motion.div>
+    </div>
+  );
+
+  return (
+    <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#F0FDF4 0%,#EFF6FF 100%)"}}>
+      {/* Header */}
+      <section style={{background:"linear-gradient(135deg,#0F172A 0%,#1E293B 50%,#0F172A 100%)"}} className="py-16">
+        <div className="container text-center">
+          <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}}>
+            <div className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-6">
+              <Mail className="w-4 h-4"/> Get In Touch
+            </div>
+            <h1 className="text-5xl font-bold text-white mb-4">Contact <span className="grad-text">AgroWave</span></h1>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto">Questions, partnerships, or feedback — we'd love to hear from you. Real-time responses powered by our support team.</p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Contact info cards */}
+      <div className="container py-12">
+        <div className="grid md:grid-cols-4 gap-4 mb-12">
           {[
-            { Icon:Phone,  title:"Kisan Helpline", val:"1800-180-1551",     sub:"Mon–Sat, 6am–10pm",    color:"#10B981" },
-            { Icon:Mail,   title:"Email",           val:"hello@agrowave.farm", sub:"Reply within 24h",    color:"#3B82F6" },
-            { Icon:MapPin, title:"Location",        val:"Hyderabad, India",  sub:"Telangana — 500032",   color:"#F59E0B" },
-          ].map((c,i)=>(
-            <motion.div key={i} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:i*0.1}}
-              className="flex flex-col items-center text-center p-6 rounded-2xl bg-white border border-slate-100"
-              style={{boxShadow:"0 4px 20px rgba(0,0,0,0.05)"}}>
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                style={{background:`${c.color}15`,border:`1.5px solid ${c.color}30`}}>
-                <c.Icon className="w-5 h-5" style={{color:c.color}}/>
-              </div>
-              <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">{c.title}</p>
-              <p className="font-bold text-slate-900 text-base">{c.val}</p>
-              <p className="text-slate-400 text-xs mt-0.5">{c.sub}</p>
-            </motion.div>
-          ))}
+            {icon:Phone,      title:"Kisan Helpline",   val:"1800-180-1551",    sub:"Mon–Sat, 6am–10pm",   bg:"bg-brand-50 border-brand-100",   iconBg:"bg-brand-100",  iconC:"text-brand-700"},
+            {icon:Mail,       title:"Email Support",    val:"hello@agrowave.farm", sub:"Reply within 24h", bg:"bg-blue-50 border-blue-100",   iconBg:"bg-blue-100",   iconC:"text-blue-700"},
+            {icon:MapPin,     title:"Headquarters",     val:"Hyderabad, Telangana",sub:"INDIA",            bg:"bg-amber-50 border-amber-100", iconBg:"bg-amber-100",  iconC:"text-amber-700"},
+            {icon:Clock,      title:"Response Time",    val:"< 24 Hours",       sub:"Avg. 4hr in business",bg:"bg-violet-50 border-violet-100",iconBg:"bg-violet-100", iconC:"text-violet-700"},
+          ].map((c,i) => {
+            const Icon = c.icon;
+            return (
+              <motion.div key={i} initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:i*0.08}}>
+                <Card hover className={`p-6 border ${c.bg}`}>
+                  <div className={`w-11 h-11 rounded-xl ${c.iconBg} flex items-center justify-center mb-4`}>
+                    <Icon className={`w-5 h-5 ${c.iconC}`}/>
+                  </div>
+                  <h3 className="font-bold text-slate-700 text-sm mb-1">{c.title}</h3>
+                  <p className="font-bold text-slate-900">{c.val}</p>
+                  <p className="text-xs text-slate-400 mt-1">{c.sub}</p>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
 
-        {/* FAQ LEFT  ·  FORM RIGHT */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {/* LEFT — FAQ Accordion */}
-          <motion.div initial={{opacity:0,x:-20}} animate={{opacity:1,x:0}} transition={{delay:0.15}}>
-            <h2 className="text-2xl font-bold text-slate-900 mb-5">Frequently Asked Questions</h2>
-            <div className="space-y-2">
-              {FAQS.map((faq,i)=>(
-                <div key={i} className="rounded-2xl border border-slate-200 bg-white overflow-hidden transition-all"
-                  style={{boxShadow: openFaq===i?"0 4px 20px rgba(16,185,129,0.1)":"0 1px 4px rgba(0,0,0,0.04)"}}>
-                  <button
-                    onClick={()=>setOpenFaq(openFaq===i?null:i)}
-                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors">
-                    <span className={`font-semibold text-sm ${openFaq===i?"text-brand-700":"text-slate-800"}`}>{faq.q}</span>
-                    {openFaq===i
-                      ? <ChevronUp className="w-4 h-4 text-brand-500 flex-shrink-0"/>
-                      : <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0"/>}
+        <div className="grid lg:grid-cols-5 gap-8 max-w-5xl mx-auto">
+          {/* Contact Form — center-aligned, all fields clearly visible */}
+          <motion.div initial={{opacity:0,x:-20}} animate={{opacity:1,x:0}} className="lg:col-span-3">
+            <Card hover={false} className="p-8" style={{boxShadow:"0 8px 40px rgba(0,0,0,0.08)",border:"1.5px solid #E2E8F0"}}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center">
+                  <Send className="w-5 h-5 text-brand-600"/>
+                </div>
+                <div>
+                  <h2 className="font-bold text-xl text-slate-800">Send a Message</h2>
+                  <p className="text-xs text-slate-400">All fields marked * are required</p>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mb-5 p-4 rounded-xl text-rose-700 text-sm font-medium"
+                  style={{background:"#FFF1F2",border:"1.5px solid #FECDD3"}}>
+                  ⚠️ {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1.5">YOUR NAME *</label>
+                    <input required placeholder="Ramesh Kumar" value={form.name}
+                      onChange={e=>setForm(p=>({...p,name:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label className="block mb-1.5">EMAIL *</label>
+                    <input required type="email" placeholder="farmer@example.com" value={form.email}
+                      onChange={e=>setForm(p=>({...p,email:e.target.value}))}/>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1.5">PHONE (OPTIONAL)</label>
+                    <input type="tel" placeholder="+91 98765 43210" value={form.phone}
+                      onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label className="block mb-1.5">SUBJECT</label>
+                    <select value={form.subject} onChange={e=>setForm(p=>({...p,subject:e.target.value}))}>
+                      {SUBJECTS.map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block mb-1.5">MESSAGE *</label>
+                  <textarea required rows={5} placeholder="Tell us how AgroWave can help your farm. We reply to every message personally." value={form.msg}
+                    onChange={e=>setForm(p=>({...p,msg:e.target.value}))}/>
+                </div>
+                <button type="submit" disabled={busy}
+                  className="btn btn-primary w-full py-3.5 text-base"
+                  style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                  {busy ? (
+                    <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"/> Sending…</span>
+                  ) : (
+                    <span className="flex items-center gap-2"><Send className="w-4 h-4"/> Send Message</span>
+                  )}
+                </button>
+              </form>
+            </Card>
+          </motion.div>
+
+          {/* FAQ */}
+          <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} className="lg:col-span-2">
+            <h3 className="font-bold text-xl text-slate-800 mb-5">Frequently Asked</h3>
+            <div className="space-y-3">
+              {FAQ.map((f,i)=>(
+                <div key={i} className="rounded-xl overflow-hidden" style={{border:"1.5px solid #E2E8F0",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+                  <button className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition-colors"
+                    onClick={()=>setFaq(openFaq===i?null:i)}>
+                    <span className="font-semibold text-slate-800 text-sm pr-4">{f.q}</span>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${openFaq===i?"rotate-180":""}`}/>
                   </button>
                   <AnimatePresence>
                     {openFaq===i && (
-                      <motion.div initial={{height:0,opacity:0}} animate={{height:"auto",opacity:1}} exit={{height:0,opacity:0}}
-                        transition={{duration:0.2}} className="overflow-hidden">
-                        <div className="px-5 pb-4 text-sm text-slate-500 leading-relaxed border-t border-slate-100 pt-3">
-                          {faq.a}
+                      <motion.div initial={{height:0,opacity:0}} animate={{height:"auto",opacity:1}} exit={{height:0,opacity:0}}>
+                        <div className="px-4 pb-4 text-slate-500 text-sm leading-relaxed border-t border-slate-100 pt-3">
+                          {f.a}
                         </div>
                       </motion.div>
                     )}
@@ -104,89 +206,21 @@ export default function Contact() {
                 </div>
               ))}
             </div>
-          </motion.div>
 
-          {/* RIGHT — Contact Form */}
-          <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} transition={{delay:0.2}}>
-            <div className="bg-white rounded-2xl p-8 border border-slate-100" style={{boxShadow:"0 8px 40px rgba(0,0,0,0.07)"}}>
-              {sent ? (
-                <div className="text-center py-10">
-                  <div className="w-20 h-20 rounded-full bg-brand-100 flex items-center justify-center mx-auto mb-5">
-                    <CheckCircle2 className="w-10 h-10 text-brand-600"/>
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Message Sent! 🎉</h3>
-                  <p className="text-slate-400 text-sm">
-                    We'll reply to <strong className="text-brand-600">{form.email}</strong> within 24 hours.
-                  </p>
-                  <button onClick={()=>{setSent(false);setForm({name:"",phone:"",email:"",subject:"General Inquiry",message:""});}}
-                    className="btn btn-outline mt-6 px-8 py-2.5 text-sm">Send Another</button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2 mb-5">
-                    <div className="w-7 h-7 rounded-lg bg-brand-100 flex items-center justify-center">
-                      <Mail className="w-4 h-4 text-brand-600"/>
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-900">Send a Message</h2>
-                  </div>
-                  {error && (
-                    <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">{error}</div>
-                  )}
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">FULL NAME <span className="text-rose-500">*</span></label>
-                        <input required placeholder="Ramesh Kumar" value={form.name}
-                          onChange={e=>setForm(p=>({...p,name:e.target.value}))}
-                          style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">PHONE</label>
-                        <input placeholder="+91 98765 43210" value={form.phone}
-                          onChange={e=>setForm(p=>({...p,phone:e.target.value}))}
-                          style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">EMAIL <span className="text-rose-500">*</span></label>
-                      <input required type="email" placeholder="farmer@example.com" value={form.email}
-                        onChange={e=>setForm(p=>({...p,email:e.target.value}))}
-                        style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">SUBJECT</label>
-                      <select value={form.subject} onChange={e=>setForm(p=>({...p,subject:e.target.value}))}
-                        style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
-                        {["General Inquiry","Technical Support","Feature Request","Partnership / Business","Bug Report","Feedback"].map(s=>(
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">MESSAGE <span className="text-rose-500">*</span></label>
-                      <textarea required rows={4} placeholder="How can AgroWave help your farm?" value={form.message}
-                        onChange={e=>setForm(p=>({...p,message:e.target.value}))}
-                        style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
-                    </div>
-                    <button type="submit" disabled={busy} className="btn btn-primary w-full py-3.5"
-                      style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
-                      {busy ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                          </svg>Sending…
-                        </span>
-                      ) : <><Send className="w-4 h-4"/> Send Message via Resend</>}
-                    </button>
-                    <p className="text-center text-xs text-slate-400">Powered by Resend — messages delivered to our inbox instantly</p>
-                  </form>
-                </>
-              )}
+            <div className="mt-6 p-5 rounded-xl" style={{background:"linear-gradient(135deg,#0F172A,#1E293B)",border:"1.5px solid rgba(16,185,129,0.2)"}}>
+              <div className="flex items-center gap-2 mb-3">
+                <Headphones className="w-5 h-5 text-green-400"/>
+                <span className="font-bold text-white text-sm">Kisan Support Hotline</span>
+              </div>
+              <p className="text-green-300 font-bold text-xl mb-1">1800-180-1551</p>
+              <p className="text-slate-400 text-xs">Free call · Mon–Sat · 6 AM – 10 PM IST</p>
             </div>
           </motion.div>
         </div>
       </div>
+
+      {/* Bottom spacing */}
+      <div className="h-16"/>
     </div>
   );
 }

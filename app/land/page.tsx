@@ -1,430 +1,526 @@
 "use client";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Printer, ExternalLink, ZoomIn, ZoomOut, Maximize2, ChevronRight, Info, Map, Layers } from "lucide-react";
+import {
+  Map, Layers, Satellite, Mountain, Droplets, Thermometer,
+  Activity, Zap, Info, X, ChevronRight, Printer, Globe,
+  Wind, Eye, AlertTriangle, CheckCircle, ToggleLeft, ToggleRight
+} from "lucide-react";
 import { useStore } from "@/lib/store";
+import Card from "@/components/Card";
 import { getMoistureColor, getHealthColor } from "@/lib/utils";
 
-// Realistic irregular polygon paths (SVG viewBox 0 0 900 560)
-const PARCEL_SHAPES = [
-  { id:"A", name:"North Field",  crop:"Wheat",  path:"M60,40 L280,30 L310,55 L295,180 L240,210 L80,200 L45,150 L60,40", cx:185, cy:115 },
-  { id:"B", name:"East Block",   crop:"Rice",   path:"M320,25 L510,18 L535,42 L545,190 L490,205 L310,195 L310,55 L320,25", cx:427, cy:112 },
-  { id:"C", name:"West Block",   crop:"Soybean",path:"M560,15 L750,22 L780,50 L770,200 L710,215 L555,208 L545,190 L535,42 L560,15", cx:662, cy:113 },
-  { id:"D", name:"South Field",  crop:"Cotton", path:"M45,220 L240,215 L295,215 L310,230 L300,380 L260,415 L70,420 L30,380 L45,220", cx:172, cy:315 },
-  { id:"E", name:"Central Plot", crop:"Maize",  path:"M310,230 L545,225 L555,245 L558,390 L500,415 L305,408 L300,380 L310,230", cx:430, cy:318 },
-  { id:"F", name:"Border Strip", crop:"Onion",  path:"M560,238 L770,228 L810,265 L820,420 L760,445 L575,438 L558,390 L555,245 L560,238", cx:692, cy:333 },
+/* ── Satellite tile colours — real farm palette ── */
+const PLOT_CONFIGS = [
+  { id:"north",   name:"North Field",   crop:"Wheat",   area:4.5, color:"#15803D", satHue:"140", health:94, warning:false },
+  { id:"east",    name:"East Block",    crop:"Rice",    area:3.2, color:"#0EA5E9", satHue:"160", health:75, warning:false },
+  { id:"west",    name:"West Block",    crop:"Soybean", area:5.0, color:"#16A34A", satHue:"145", health:88, warning:false },
+  { id:"south",   name:"South Field",   crop:"Cotton",  area:5.0, color:"#DC2626", satHue:"100", health:63, warning:true  },
+  { id:"central", name:"Central Plot",  crop:"Maize",   area:4.0, color:"#CA8A04", satHue:"130", health:82, warning:false },
+  { id:"border",  name:"Border Strip",  crop:"Onion",   area:2.5, color:"#9333EA", satHue:"150", health:91, warning:false },
 ];
 
-const COMPLETIONS: Record<string,number> = {
-  A:93.95571812921074, B:74.71632610612846, C:62.98277071487386,
-  D:82.18390979790693, E:88.52486644323442, F:77.83659463739020,
-};
-const ACRES: Record<string,string> = {
-  A:"4.5 ac / 1.82 ha", B:"3.2 ac / 1.29 ha", C:"3.8 ac / 1.54 ha",
-  D:"5.0 ac / 2.02 ha", E:"4.0 ac / 1.62 ha", F:"2.5 ac / 1.01 ha",
-};
+const LAYERS = [
+  { id:"moisture",     label:"Moisture",     icon:"💧", desc:"Soil water content per plot" },
+  { id:"health",       label:"Crop Health",  icon:"🌿", desc:"Overall plant vitality index" },
+  { id:"temperature",  label:"Temperature",  icon:"🌡️", desc:"Surface temperature (°C)" },
+  { id:"ndvi",         label:"NDVI Index",   icon:"📡", desc:"Vegetation density index" },
+  { id:"irrigation",   label:"Irrigation",   icon:"💦", desc:"Irrigation status & schedule" },
+];
 
-const STATUS_COLOR = { Open:"#10B981", Warning:"#F59E0B", Closed:"#94A3B8" };
+/* Generates a realistic-looking SVG farm tile */
+function FarmTile({ plot, moisture, health, selected, layer, onClick }: any) {
+  const mc   = getMoistureColor(moisture);
+  const hc   = getHealthColor(health);
+  const warn = moisture < 30 || health < 65;
+  const isOpen = health > 70 && moisture > 25;
 
-export default function LandView() {
-  const { plots } = useStore();
-  const [sel, setSel]           = useState<string|null>(null);
-  const [terrain, setTerrain]   = useState(false);
-  const [basemap, setBasemap]   = useState<"satellite"|"terrain"|"hybrid">("satellite");
-  const [zoom, setZoom]         = useState(1);
-  const [thresholds, setThresholds] = useState({ moisture:40, health:60 });
-  const [showThresh, setShowThresh] = useState(false);
-  const [pulse, setPulse]       = useState(false);
+  /* organic crop-row SVG pattern */
+  const rows = Array.from({ length: 8 }, (_, i) => i);
 
+  return (
+    <motion.div
+      whileHover={{ scale: 1.03, zIndex: 10 }}
+      onClick={onClick}
+      className="relative cursor-pointer rounded-2xl overflow-hidden transition-all"
+      style={{
+        minHeight: 130,
+        border: selected
+          ? "3px solid #10B981"
+          : warn
+          ? "2px solid #F43F5E"
+          : "2px solid rgba(255,255,255,0.15)",
+        boxShadow: selected
+          ? "0 0 0 3px rgba(16,185,129,0.25), 0 8px 32px rgba(16,185,129,0.2)"
+          : warn
+          ? "0 4px 16px rgba(244,63,94,0.2)"
+          : "0 4px 16px rgba(0,0,0,0.25)",
+      }}
+    >
+      {/* Satellite-style background — layered SVG */}
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 130" preserveAspectRatio="xMidYMid slice">
+        {/* Base soil */}
+        <rect width="200" height="130"
+          fill={`hsl(${plot.satHue}, ${moisture > 60 ? 55 : moisture > 30 ? 40 : 25}%, ${moisture > 60 ? 28 : moisture > 30 ? 35 : 42}%)`}/>
+
+        {/* Crop rows — diagonal lines like aerial satellite */}
+        {rows.map(i => (
+          <g key={i}>
+            <line x1={i * 28 - 10} y1="0" x2={i * 28 + 10} y2="130"
+              stroke={`hsl(${plot.satHue}, 60%, ${health > 75 ? 48 : health > 55 ? 38 : 28}%)`}
+              strokeWidth="10" strokeOpacity="0.85"/>
+            <line x1={i * 28 - 5} y1="0" x2={i * 28 + 5} y2="130"
+              stroke={`hsl(${plot.satHue}, 80%, ${health > 75 ? 58 : health > 55 ? 44 : 33}%)`}
+              strokeWidth="4" strokeOpacity="0.6"/>
+          </g>
+        ))}
+
+        {/* Irrigation channels */}
+        <path d="M0 65 Q50 55 100 65 Q150 75 200 65" fill="none"
+          stroke="rgba(14,165,233,0.4)" strokeWidth="3"/>
+        <path d="M100 0 L100 130" fill="none"
+          stroke="rgba(14,165,233,0.25)" strokeWidth="2"/>
+
+        {/* Corner trees */}
+        {[[8,8],[192,8],[8,122],[192,122]].map(([x,y],i) => (
+          <circle key={i} cx={x} cy={y} r="9"
+            fill={`hsl(140, 70%, ${health > 70 ? 25 : 20}%)`} opacity="0.9"/>
+        ))}
+
+        {/* Moisture overlay */}
+        <rect width="200" height="130" fill={mc} opacity={moisture / 400}/>
+      </svg>
+
+      {/* Overlay content */}
+      <div className="absolute inset-0 flex flex-col justify-between p-3"
+        style={{background:"linear-gradient(0deg,rgba(0,0,0,0.7) 0%,rgba(0,0,0,0.1) 60%)"}}>
+        {/* Top badges */}
+        <div className="flex justify-between items-start">
+          <span className="text-[10px] font-bold px-2 py-1 rounded-full"
+            style={{background: warn ? "rgba(244,63,94,0.85)" : "rgba(16,185,129,0.85)", color:"#fff"}}>
+            {warn ? "⚠ WARNING" : "✓ OPEN"}
+          </span>
+          {selected && (
+            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-brand-500 text-white">SELECTED</span>
+          )}
+        </div>
+
+        {/* Bottom info */}
+        <div>
+          <p className="font-bold text-white text-sm leading-tight">{plot.name}</p>
+          <p className="text-green-200 text-[10px]">{plot.crop} · {plot.area}ac</p>
+          <div className="flex gap-3 mt-1.5">
+            <span className="text-[10px] text-blue-200">💧{moisture}%</span>
+            <span className="text-[10px] text-green-200">💪{health}%</span>
+          </div>
+          {/* Progress bar */}
+          <div className="h-1 rounded-full mt-1.5 overflow-hidden" style={{background:"rgba(255,255,255,0.2)"}}>
+            <div className="h-full rounded-full transition-all duration-500"
+              style={{width:`${moisture}%`,background:mc}}/>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+export default function LandPage() {
+  const { plots, irrigate, pushNotif } = useStore();
+  const [selPlot, setSelPlot] = useState<string | null>(null);
+  const [activeLayer, setActiveLayer] = useState("moisture");
+  const [terrainMode, setTerrainMode] = useState(false);
+  const [showGrid, setShowGrid]       = useState(true);
+  const [tick, setTick]               = useState(0);
+
+  /* Simulate real-time updates every 5s */
   useEffect(() => {
-    const iv = setInterval(() => setPulse(p=>!p), 900);
+    const iv = setInterval(() => setTick(t => t + 1), 5000);
     return () => clearInterval(iv);
   }, []);
 
-  const getPlot = (id:string) => plots.find(p=>p.id===id);
-
-  const getStatus = (id:string): keyof typeof STATUS_COLOR => {
-    const p = getPlot(id);
-    if (!p) return "Closed";
-    if (p.moisture < thresholds.moisture || p.health < thresholds.health) return "Warning";
-    return "Open";
+  const getPlotData = (id: string) => {
+    const p = plots.find(p => p.id.toLowerCase().includes(id) || p.name.toLowerCase().includes(id));
+    return p || { moisture: 60, health: 80, temp: 31, npk: { n: 120, p: 40, k: 160 }, ph: 6.5 };
   };
 
-  const getFill = (id:string) => {
-    const p = getPlot(id);
-    if (!p) return "#334155";
-    const h = p.health / 100;
-    if (terrain) {
-      const g = Math.round(80 + h * 100);
-      return `rgb(${Math.round(40-h*20)},${g},${Math.round(40-h*30)})`;
-    }
-    // NDVI-style: red (low) → yellow → green (high)
-    const r = Math.round(255 * (1 - h));
-    const g = Math.round(200 * h);
-    return `rgba(${r},${g},30,0.55)`;
-  };
+  const selected = PLOT_CONFIGS.find(p => p.id === selPlot);
+  const selData  = selPlot ? getPlotData(selPlot) : null;
 
-  const openDetail = (id:string) => {
-    window.open(`/fields/${id}`, "_blank", "noopener");
-  };
-
-  const selPlot = sel ? getPlot(sel) : null;
-  const shape = PARCEL_SHAPES.find(s => s.id === sel);
-
-  const BASEMAP_BG: Record<string,string> = {
-    satellite: "linear-gradient(160deg,#0d2818 0%,#1a3a20 30%,#0f2a14 60%,#1e3d1a 100%)",
-    terrain:   "linear-gradient(160deg,#2d4a1e 0%,#3d6b2a 30%,#4a7a32 60%,#5a8e3a 100%)",
-    hybrid:    "linear-gradient(160deg,#1a2e18 0%,#2a4a20 30%,#1e3a16 60%,#2e5020 100%)",
+  const handleIrrigate = (id: string, name: string) => {
+    const p = plots.find(p => p.id.toLowerCase().includes(id) || p.name.toLowerCase().includes(id));
+    if (p) { irrigate(p.id); }
+    pushNotif({ title: `💧 Irrigation Started — ${name}`, body: `Water flow initiated for ${name}. Expected +15% moisture in 2 hours.`, type: "success", time: "just now" });
   };
 
   return (
-    <div className="pt-[88px] min-h-screen flex flex-col" style={{background:"linear-gradient(160deg,#0F172A,#1E293B)"}}>
-      {/* Header */}
-      <div className="py-4 border-b border-white/10 no-print">
-        <div className="container flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <span className="text-2xl">🌍</span> Land <span className="text-brand-400">View</span>
-              </h1>
-              <p className="text-slate-400 text-xs">Real-time satellite parcel view · KHARIF 2026 · 6 plots</p>
+    <div className="pt-[88px] min-h-screen" style={{ background: "linear-gradient(160deg,#F0FDF4 0%,#1E293B 100%)" }}>
+
+      {/* ── Hero strip ── */}
+      <div style={{ background: "linear-gradient(135deg,#0F172A,#1E293B)" }} className="py-12">
+        <div className="container flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="dot-live" style={{ background: "#A7F3D0" }} />
+              <span className="text-green-300 text-xs font-bold tracking-widest">REAL-LAND SATELLITE VIEW</span>
             </div>
+            <h1 className="text-4xl font-bold text-white mb-1">
+              Farm <span className="grad-text">Land Dashboard</span>
+            </h1>
+            <p className="text-slate-400 text-sm">
+              KHARIF 2026 · 6 Plots · Satellite + Terrain overlay · Click any plot to inspect
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Basemap switcher */}
-            <div className="flex gap-1 bg-white/10 rounded-xl p-1 border border-white/20">
-              {(["satellite","terrain","hybrid"] as const).map(b => (
-                <button key={b} onClick={()=>setBasemap(b)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${basemap===b?"bg-white text-slate-900":"text-white/60 hover:text-white"}`}>
-                  {b}
-                </button>
-              ))}
-            </div>
-            {/* Terrain toggle */}
-            <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl border border-white/20">
-              <Layers className="w-3.5 h-3.5 text-slate-300"/>
-              <span className="text-xs text-slate-300 font-medium">Terrain</span>
-              <button onClick={()=>setTerrain(!terrain)}
-                className={`relative w-9 h-5 rounded-full transition-all ${terrain?"bg-brand-500":"bg-white/20"}`}>
-                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${terrain?"translate-x-4":""}`}/>
-              </button>
-            </div>
-            <button onClick={()=>setShowThresh(!showThresh)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-all">
-              <Settings className="w-3.5 h-3.5"/> Thresholds
-            </button>
-            <button onClick={()=>window.print()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-green-300 bg-white/10 border border-white/20 hover:bg-white/20 transition-all no-print">
-              <Printer className="w-3.5 h-3.5"/> Print Report
+          <div className="flex gap-3">
+            <button onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold no-print"
+              style={{ background: "rgba(255,255,255,0.1)", color: "#A7F3D0", border: "1px solid rgba(167,243,208,0.3)" }}>
+              <Printer className="w-4 h-4" /> Print
             </button>
           </div>
         </div>
       </div>
 
-      {/* Thresholds panel */}
-      <AnimatePresence>
-        {showThresh && (
-          <motion.div initial={{height:0,opacity:0}} animate={{height:"auto",opacity:1}} exit={{height:0,opacity:0}}
-            className="border-b border-white/10 overflow-hidden bg-white/5">
-            <div className="container py-3 flex items-center gap-6 flex-wrap">
-              <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Warning Thresholds:</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-300">Moisture &lt;</span>
-                <input type="range" min="10" max="70" value={thresholds.moisture}
-                  onChange={e=>setThresholds(p=>({...p,moisture:+e.target.value}))}
-                  className="w-24 accent-brand-500"/>
-                <span className="text-xs text-brand-400 font-bold w-8">{thresholds.moisture}%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-300">Health &lt;</span>
-                <input type="range" min="20" max="80" value={thresholds.health}
-                  onChange={e=>setThresholds(p=>({...p,health:+e.target.value}))}
-                  className="w-24 accent-brand-500"/>
-                <span className="text-xs text-brand-400 font-bold w-8">{thresholds.health}%</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="container py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
 
-      {/* Hint */}
-      <div className="container pt-3 no-print">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs mb-3"
-          style={{background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.2)",color:"#A7F3D0"}}>
-          <Info className="w-3.5 h-3.5 flex-shrink-0"/>
-          <span><strong>Tip:</strong> Click any parcel to select and view sensor data. Double-click or use the "Open Detail" button to open the full parcel page in a new tab. Use Thresholds to customize Open/Warning status.</span>
-        </div>
-      </div>
+          {/* ── Left sidebar: controls ── */}
+          <div className="xl:col-span-1 space-y-4">
 
-      <div className="flex-1 container pb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full">
-          {/* SATELLITE MAP — SVG geospatial view */}
-          <div className="lg:col-span-8">
-            <div className="rounded-2xl overflow-hidden border border-white/20"
-              style={{background:BASEMAP_BG[basemap],minHeight:"500px",position:"relative",boxShadow:"0 8px 32px rgba(0,0,0,0.4)"}}>
-              {/* Map header */}
-              <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/20">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"/>
-                  <span className="text-white text-xs font-semibold">KHARIF 2026 · 6 Active Parcels</span>
-                </div>
-                <div className="flex gap-1.5">
-                  <button onClick={()=>setZoom(z=>Math.min(z+0.2,2))}
-                    className="w-8 h-8 rounded-lg bg-black/40 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/60 transition-all">
-                    <ZoomIn className="w-3.5 h-3.5"/>
-                  </button>
-                  <button onClick={()=>setZoom(z=>Math.max(z-0.2,0.5))}
-                    className="w-8 h-8 rounded-lg bg-black/40 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/60 transition-all">
-                    <ZoomOut className="w-3.5 h-3.5"/>
-                  </button>
-                  <button onClick={()=>setZoom(1)}
-                    className="w-8 h-8 rounded-lg bg-black/40 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/60 transition-all">
-                    <Maximize2 className="w-3.5 h-3.5"/>
-                  </button>
-                </div>
-              </div>
-
-              {/* SVG Parcel Map */}
-              <svg
-                viewBox="0 0 860 480"
-                className="w-full h-full"
-                style={{minHeight:"460px",transform:`scale(${zoom})`,transformOrigin:"center center",transition:"transform 0.3s ease"}}
-              >
-                {/* Satellite texture lines */}
-                {terrain && Array.from({length:18},(_,i)=>(
-                  <line key={i} x1="0" y1={i*28+14} x2="860" y2={i*28+14} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/>
-                ))}
-                {/* Grid overlay */}
-                <defs>
-                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.5"/>
-                  </pattern>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="3" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
-                  <filter id="selGlow">
-                    <feGaussianBlur stdDeviation="5" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
-                </defs>
-                <rect width="860" height="480" fill="url(#grid)"/>
-
-                {/* Irrigation channels between parcels */}
-                <path d="M0,210 Q430,205 860,215" fill="none" stroke="rgba(59,130,246,0.3)" strokeWidth="3" strokeDasharray="6,3"/>
-                <path d="M305,0 Q310,240 300,480" fill="none" stroke="rgba(59,130,246,0.25)" strokeWidth="2.5" strokeDasharray="6,3"/>
-                <path d="M545,0 Q550,240 560,480" fill="none" stroke="rgba(59,130,246,0.25)" strokeWidth="2.5" strokeDasharray="6,3"/>
-
-                {/* Parcels */}
-                {PARCEL_SHAPES.map(shape => {
-                  const plot = getPlot(shape.id);
-                  const status = getStatus(shape.id);
-                  const isSel = sel === shape.id;
-                  const fill = getFill(shape.id);
-                  const statusCol = STATUS_COLOR[status];
-
-                  return (
-                    <g key={shape.id}
-                      onClick={()=>setSel(isSel?null:shape.id)}
-                      onDoubleClick={()=>openDetail(shape.id)}
-                      style={{cursor:"pointer",transition:"opacity 0.2s"}}
-                      opacity={sel && !isSel ? 0.55 : 1}>
-                      {/* Main parcel fill */}
-                      <polygon
-                        points={shape.path.replace(/[MLQ]/g,"").replace(/\s+/g," ").trim()}
-                        fill={fill}
-                        stroke={isSel ? statusCol : "rgba(255,255,255,0.2)"}
-                        strokeWidth={isSel ? 3 : 1.5}
-                        filter={isSel ? "url(#selGlow)" : undefined}
-                      />
-                      {/* Crop row lines inside parcel */}
-                      <clipPath id={`clip-${shape.id}`}><polygon points={shape.path.replace(/[MLQ]/g,"").replace(/\s+/g," ").trim()}/></clipPath>
-                      <g clipPath={`url(#clip-${shape.id})`} opacity="0.3">
-                        {Array.from({length:12},(_,i)=>(
-                          <line key={i} x1={shape.cx-120} y1={shape.cy-80+i*14} x2={shape.cx+120} y2={shape.cy-75+i*14}
-                            stroke="rgba(255,255,255,0.5)" strokeWidth="0.5"/>
-                        ))}
-                      </g>
-                      {/* Pulsing selection border */}
-                      {isSel && (
-                        <polygon
-                          points={shape.path.replace(/[MLQ]/g,"").replace(/\s+/g," ").trim()}
-                          fill="none"
-                          stroke={statusCol}
-                          strokeWidth={pulse?4:2.5}
-                          strokeDasharray={pulse?"8,4":"12,0"}
-                          opacity={pulse?1:0.7}
-                          style={{transition:"all 0.4s ease"}}
-                        />
-                      )}
-                      {/* Status corner dot */}
-                      <circle cx={shape.cx+50} cy={shape.cy-35} r="5" fill={statusCol} opacity="0.9"
-                        filter="url(#glow)"/>
-                      {/* Label */}
-                      <text x={shape.cx} y={shape.cy-20} textAnchor="middle" fill="white"
-                        fontSize="11" fontWeight="700" fontFamily="DM Sans,sans-serif"
-                        style={{textShadow:"0 1px 3px rgba(0,0,0,0.8)",pointerEvents:"none"}}>
-                        {shape.name}
-                      </text>
-                      <text x={shape.cx} y={shape.cy-4} textAnchor="middle" fill="rgba(255,255,255,0.75)"
-                        fontSize="8.5" fontFamily="DM Sans,sans-serif" style={{pointerEvents:"none"}}>
-                        {shape.crop}
-                      </text>
-                      {plot && (
-                        <text x={shape.cx} y={shape.cy+12} textAnchor="middle" fill={getMoistureColor(plot.moisture)}
-                          fontSize="10" fontWeight="700" fontFamily="JetBrains Mono,monospace"
-                          style={{pointerEvents:"none"}}>
-                          {Math.round(plot.moisture)}% moisture
-                        </text>
-                      )}
-                      <text x={shape.cx} y={shape.cy+26} textAnchor="middle" fill="rgba(255,255,255,0.5)"
-                        fontSize="8" fontFamily="DM Sans,sans-serif" style={{pointerEvents:"none"}}>
-                        {ACRES[shape.id]}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {/* Compass */}
-                <g transform="translate(820,440)">
-                  <circle cx="0" cy="0" r="18" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
-                  <text x="0" y="-6" textAnchor="middle" fill="white" fontSize="9" fontWeight="700">N</text>
-                  <polygon points="0,-14 4,-2 0,0 -4,-2" fill="white" opacity="0.8"/>
-                  <polygon points="0,14 4,2 0,0 -4,2" fill="rgba(255,255,255,0.3)"/>
-                </g>
-
-                {/* Scale bar */}
-                <g transform="translate(30,455)">
-                  <rect x="0" y="0" width="80" height="4" fill="rgba(255,255,255,0.6)" rx="1"/>
-                  <text x="40" y="14" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize="8">200m</text>
-                </g>
-              </svg>
-
-              {/* Legend */}
-              <div className="absolute bottom-3 left-3 flex items-center gap-3 bg-black/50 backdrop-blur-sm px-3 py-2 rounded-xl border border-white/20">
-                {Object.entries(STATUS_COLOR).map(([s,c])=>(
-                  <span key={s} className="flex items-center gap-1.5 text-xs text-white/80 font-semibold">
-                    <span className="w-3 h-3 rounded-full" style={{background:c}}/>
-                    {s}
-                  </span>
-                ))}
-                <span className="w-px h-4 bg-white/20"/>
-                <span className="text-xs text-white/50">Double-click to open detail</span>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT PANEL — Parcel detail + plot list */}
-          <div className="lg:col-span-4 flex flex-col gap-3">
-            {/* Selected parcel detail */}
-            <AnimatePresence mode="wait">
-              {selPlot && shape ? (
-                <motion.div key={sel} initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:20}}
-                  className="rounded-2xl p-5 border border-white/20"
-                  style={{background:"rgba(15,23,42,0.8)",backdropFilter:"blur(12px)"}}>
-                  <div className="flex items-start justify-between mb-3">
+            {/* Layer selector */}
+            <Card hover={false} className="p-5">
+              <h3 className="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-brand-600" /> Data Layers
+              </h3>
+              <div className="space-y-1.5">
+                {LAYERS.map(l => (
+                  <button key={l.id} onClick={() => setActiveLayer(l.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left ${
+                      activeLayer === l.id
+                        ? "font-bold text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                    style={activeLayer === l.id
+                      ? { background: "linear-gradient(135deg,#059669,#10B981)", boxShadow: "0 4px 12px rgba(16,185,129,0.3)" }
+                      : {}}>
+                    <span className="text-base">{l.icon}</span>
                     <div>
-                      <h3 className="font-bold text-white text-base">{selPlot.name}</h3>
-                      <p className="text-slate-400 text-xs">{selPlot.crop} · {selPlot.phase}</p>
+                      <p className={`text-xs font-bold ${activeLayer === l.id ? "text-white" : "text-slate-700"}`}>{l.label}</p>
+                      <p className={`text-[10px] ${activeLayer === l.id ? "text-green-100" : "text-slate-400"}`}>{l.desc}</p>
                     </div>
-                    <button onClick={()=>openDetail(sel!)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-green-300 border border-green-500/30 hover:bg-green-500/10 transition-all">
-                      Open Detail <ExternalLink className="w-3 h-3"/>
+                  </button>
+                ))}
+              </div>
+            </Card>
+
+            {/* View controls */}
+            <Card hover={false} className="p-5">
+              <h3 className="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-brand-600" /> View Options
+              </h3>
+              <div className="space-y-3">
+                {[
+                  { label: "Terrain Overlay", state: terrainMode, set: setTerrainMode },
+                  { label: "Plot Grid",        state: showGrid,    set: setShowGrid },
+                ].map(c => (
+                  <div key={c.label} className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">{c.label}</span>
+                    <button onClick={() => c.set(!c.state)}
+                      className={`w-12 h-6 rounded-full transition-all relative ${c.state ? "bg-brand-500" : "bg-slate-200"}`}>
+                      <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${c.state ? "left-6" : "left-0.5"}`} />
                     </button>
                   </div>
-                  <div className="text-xs text-brand-300 font-mono mb-3">{ACRES[sel!]}</div>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {[
-                      {l:"Moisture",  v:`${Math.round(selPlot.moisture)}%`,  c:getMoistureColor(selPlot.moisture)},
-                      {l:"Health",    v:`${selPlot.health}%`,               c:getHealthColor(selPlot.health)},
-                      {l:"Temp",      v:`${selPlot.temp}°C`,                c:"#F59E0B"},
-                      {l:"pH",        v:selPlot.ph.toFixed(1),              c:"#10B981"},
-                      {l:"N kg/ha",   v:selPlot.npk.n,                     c:"#60A5FA"},
-                      {l:"P kg/ha",   v:selPlot.npk.p,                     c:"#A78BFA"},
-                    ].map(s=>(
-                      <div key={s.l} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2">
-                        <span className="text-slate-400 text-xs">{s.l}</span>
-                        <span className="font-bold text-sm" style={{color:s.c}}>{s.v}</span>
+                ))}
+              </div>
+            </Card>
+
+            {/* Legend */}
+            <Card hover={false} className="p-5">
+              <h3 className="font-bold text-slate-800 text-sm mb-3">Legend</h3>
+              <div className="space-y-2">
+                {[
+                  { c: "#10B981", l: "Open · Healthy" },
+                  { c: "#F59E0B", l: "Moderate Alert" },
+                  { c: "#F43F5E", l: "Warning · Low" },
+                ].map(l => (
+                  <div key={l.l} className="flex items-center gap-2 text-xs text-slate-600">
+                    <div className="w-4 h-4 rounded" style={{ background: l.c }} />
+                    {l.l}
+                  </div>
+                ))}
+                <div className="border-t border-slate-100 mt-2 pt-2 text-[10px] text-slate-400">
+                  Updates every 5s via WebSocket
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* ── Main: satellite grid ── */}
+          <div className="xl:col-span-2 space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-brand-600" />
+                <span className="font-bold text-slate-200">Real-Land View</span>
+                <span className="text-xs text-slate-400">
+                  ({terrainMode ? "Terrain" : "Satellite"} · {activeLayer})
+                </span>
+              </div>
+              <span className="flex items-center gap-1.5 text-xs text-green-400 font-semibold">
+                <span className="dot-live" /> LIVE
+              </span>
+            </div>
+
+            {/* 3×2 satellite plot grid */}
+            <div className="sat-grid" style={{ gap: 6 }}>
+              {PLOT_CONFIGS.map((plot) => {
+                const d = getPlotData(plot.id);
+                return (
+                  <FarmTile key={plot.id} plot={plot}
+                    moisture={Math.round(d.moisture + (tick % 3 === 0 ? (Math.random() - 0.5) * 2 : 0))}
+                    health={d.health}
+                    selected={selPlot === plot.id}
+                    layer={activeLayer}
+                    onClick={() => setSelPlot(selPlot === plot.id ? null : plot.id)}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Status bar below grid */}
+            <div className="flex flex-wrap gap-3 py-4 px-5 rounded-2xl" style={{ background: "rgba(15,23,42,0.8)", border: "1px solid rgba(16,185,129,0.2)" }}>
+              {[
+                { c: "#10B981", l: "Open", n: PLOT_CONFIGS.filter(p => !p.warning).length },
+                { c: "#F59E0B", l: "Warning", n: PLOT_CONFIGS.filter(p => p.warning).length },
+                { c: "#64748B", l: "Closed", n: 0 },
+              ].map(s => (
+                <div key={s.l} className="flex items-center gap-2 text-xs text-slate-300">
+                  <span className="w-3 h-3 rounded-full inline-block" style={{ background: s.c }} />
+                  {s.l} ({s.n})
+                </div>
+              ))}
+              <span className="ml-auto text-[10px] text-slate-500">Tick #{tick} · 5s refresh</span>
+            </div>
+
+            {/* Terrain-mode extra section */}
+            {terrainMode && (
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl p-5" style={{ background: "rgba(15,23,42,0.85)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                <h4 className="font-bold text-green-300 text-sm mb-4 flex items-center gap-2">
+                  <Mountain className="w-4 h-4" /> Terrain & Elevation Profile
+                </h4>
+                <svg viewBox="0 0 400 80" className="w-full" style={{ background: "rgba(0,0,0,0.3)", borderRadius: 12 }}>
+                  <defs>
+                    <linearGradient id="terrGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
+                      <stop offset="100%" stopColor="#059669" stopOpacity="0.2" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,70 L40,55 L80,45 L120,50 L160,35 L200,40 L240,30 L280,42 L320,38 L360,48 L400,70 Z"
+                    fill="url(#terrGrad)" stroke="#10B981" strokeWidth="2"/>
+                  {[
+                    [60, 44, "North\n320m"], [160, 34, "West\n345m"],
+                    [240, 29, "Central\n352m"], [340, 37, "East\n338m"],
+                  ].map(([x, y, l], i) => (
+                    <g key={i}>
+                      <circle cx={x} cy={y} r="4" fill="#10B981" />
+                      <text x={x} y={Number(y) - 8} textAnchor="middle" fontSize="7" fill="#86EFAC">{String(l).split("\n")[1]}</text>
+                    </g>
+                  ))}
+                  <text x="200" y="76" textAnchor="middle" fontSize="8" fill="#64748B">Elevation Profile — KHARIF 2026 Farm</text>
+                </svg>
+              </motion.div>
+            )}
+          </div>
+
+          {/* ── Right sidebar: detail + analytics ── */}
+          <div className="xl:col-span-1 space-y-4">
+
+            {/* Selected plot detail */}
+            <AnimatePresence>
+              {selected && selData ? (
+                <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
+                  <Card hover={false} className="p-5 border-brand-200"
+                    style={{ background: "linear-gradient(135deg,#F0FDF4,#fff)", boxShadow: "0 4px 20px rgba(16,185,129,0.12)" }}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-bold text-slate-800">{selected.name}</h3>
+                        <p className="text-xs text-slate-400">{selected.crop} · {selected.area} ac</p>
                       </div>
-                    ))}
-                  </div>
-                  {/* Season completion */}
-                  <div className="bg-white/5 rounded-xl p-3 mb-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-slate-400">Season Completion</span>
-                      <span className="font-mono text-xs text-brand-300">{COMPLETIONS[sel!]?.toFixed(2)}%</span>
+                      <button onClick={() => setSelPlot(null)} className="text-slate-300 hover:text-slate-600 transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div className="h-full rounded-full bg-brand-500" initial={{width:0}}
-                        animate={{width:`${COMPLETIONS[sel!]||0}%`}} transition={{duration:0.8}}/>
+
+                    <div className="space-y-3 mb-4">
+                      {[
+                        { l: "Moisture",    v: `${Math.round(selData.moisture)}%`, c: getMoistureColor(selData.moisture), pct: selData.moisture },
+                        { l: "Health",      v: `${selData.health}%`,              c: getHealthColor(selData.health),    pct: selData.health },
+                        { l: "Temperature", v: `${selData.temp}°C`,              c: "#F59E0B",                          pct: (selData.temp / 45) * 100 },
+                      ].map(s => (
+                        <div key={s.l}>
+                          <div className="flex justify-between mb-1 text-xs">
+                            <span className="text-slate-500">{s.l}</span>
+                            <span className="font-bold" style={{ color: s.c }}>{s.v}</span>
+                          </div>
+                          <div className="progress">
+                            <div className="progress-fill" style={{ width: `${s.pct}%`, background: s.c }} />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className={`badge text-xs ${getStatus(sel!)===`Open`?"badge-green":"badge-amber"}`}>
-                      {getStatus(sel!)}
-                    </span>
-                    <span className={`badge text-xs ${selPlot.pestRisk==="high"?"badge-red":selPlot.pestRisk==="medium"?"badge-amber":"badge-green"}`}>
-                      {selPlot.pestRisk} pest
-                    </span>
-                  </div>
+
+                    <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+                      {[
+                        { l: "N", v: (selData as any).npk?.n ?? 120, c: "#10B981" },
+                        { l: "P", v: (selData as any).npk?.p ?? 40,  c: "#F59E0B" },
+                        { l: "K", v: (selData as any).npk?.k ?? 160, c: "#3B82F6" },
+                      ].map(n => (
+                        <div key={n.l} className="rounded-xl py-2 px-1" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+                          <div className="font-bold text-sm" style={{ color: n.c }}>{n.v}</div>
+                          <div className="text-[10px] text-slate-400">{n.l} kg/ac</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-4 text-center text-xs">
+                      <div className="rounded-xl py-2 px-1" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+                        <div className="font-bold text-slate-700">{(selData as any).ph ?? 6.5}</div>
+                        <div className="text-slate-400">Soil pH</div>
+                      </div>
+                      <div className="rounded-xl py-2 px-1" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+                        <div className="font-bold text-slate-700">{selected.area} ac</div>
+                        <div className="text-slate-400">Area</div>
+                      </div>
+                    </div>
+
+                    <button onClick={() => handleIrrigate(selected.id, selected.name)}
+                      className="btn btn-primary w-full text-sm py-2.5"
+                      style={{ background: "linear-gradient(135deg,#059669,#10B981)" }}>
+                      <Droplets className="w-4 h-4" /> Irrigate Now
+                    </button>
+                  </Card>
                 </motion.div>
               ) : (
-                <motion.div key="empty" initial={{opacity:0}} animate={{opacity:1}}
-                  className="rounded-2xl p-5 border border-white/10 text-center py-8"
-                  style={{background:"rgba(255,255,255,0.04)"}}>
-                  <Map className="w-8 h-8 text-slate-500 mx-auto mb-2"/>
-                  <p className="text-slate-400 text-sm">Click a parcel to view sensor data</p>
-                  <p className="text-slate-600 text-xs mt-1">Double-click to open detail in new tab</p>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <Card hover={false} className="p-5 text-center"
+                    style={{ background: "rgba(15,23,42,0.5)", border: "1px solid rgba(16,185,129,0.15)" }}>
+                    <Globe className="w-8 h-8 text-green-400 mx-auto mb-3 opacity-60" />
+                    <p className="text-slate-400 text-sm font-medium">Click a plot tile</p>
+                    <p className="text-slate-600 text-xs mt-1">to view detailed analytics</p>
+                  </Card>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* All plots list */}
-            <div className="rounded-2xl border border-white/20 overflow-hidden flex-1"
-              style={{background:"rgba(15,23,42,0.8)",backdropFilter:"blur(12px)"}}>
-              <div className="px-4 py-3 border-b border-white/10">
-                <h3 className="font-bold text-white text-sm">All Parcels</h3>
+            {/* Farm summary stats */}
+            <Card hover={false} className="p-5">
+              <h3 className="font-bold text-slate-800 text-sm mb-4">Farm Summary</h3>
+              <div className="space-y-3">
+                {[
+                  { l: "Total Area",     v: "24 acres",    icon: "📐" },
+                  { l: "Active Plots",   v: "6 / 6",       icon: "✅" },
+                  { l: "Avg Moisture",   v: "58.5%",       icon: "💧" },
+                  { l: "Avg Health",     v: "82%",         icon: "💪" },
+                  { l: "Warning Plots",  v: `${PLOT_CONFIGS.filter(p => p.warning).length}`,  icon: "⚠️" },
+                  { l: "Season",         v: "Kharif 2026", icon: "🌾" },
+                ].map(s => (
+                  <div key={s.l} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500 flex items-center gap-1.5"><span>{s.icon}</span>{s.l}</span>
+                    <span className="font-bold text-slate-800">{s.v}</span>
+                  </div>
+                ))}
               </div>
-              <div className="overflow-y-auto max-h-[340px]">
-                {PARCEL_SHAPES.map((sh,i)=>{
-                  const p = getPlot(sh.id);
-                  const st = getStatus(sh.id);
-                  if(!p) return null;
+            </Card>
+
+            {/* Quick actions */}
+            <Card hover={false} className="p-5">
+              <h3 className="font-bold text-slate-800 text-sm mb-3">Quick Actions</h3>
+              <div className="space-y-2">
+                {[
+                  { l: "Irrigate All", icon: Droplets, color: "#3B82F6",
+                    action: () => { PLOT_CONFIGS.forEach(p => handleIrrigate(p.id, p.name)); } },
+                  { l: "Print Report", icon: Printer, color: "#8B5CF6",
+                    action: () => window.print() },
+                  { l: "Field Monitor", icon: Activity, color: "#10B981",
+                    action: () => { window.location.href = "/field-monitor"; } },
+                ].map(a => {
+                  const Icon = a.icon;
                   return (
-                    <motion.div key={sh.id} initial={{opacity:0,x:12}} animate={{opacity:1,x:0}} transition={{delay:i*0.05}}
-                      onClick={()=>setSel(sel===sh.id?null:sh.id)}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-white/5 transition-all ${sel===sh.id?"bg-white/10":"hover:bg-white/5"}`}>
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{background:STATUS_COLOR[st]}}/>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-white text-sm truncate">{p.name}</p>
-                        <p className="text-slate-500 text-xs">{p.crop} · {ACRES[sh.id].split("/")[0].trim()}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-bold text-xs" style={{color:getMoistureColor(p.moisture)}}>{Math.round(p.moisture)}%</div>
-                        <div className="text-slate-500 text-[10px]">moisture</div>
-                      </div>
-                      <button onClick={e=>{e.stopPropagation();openDetail(sh.id);}}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-brand-400 hover:bg-white/10 transition-all">
-                        <ExternalLink className="w-3.5 h-3.5"/>
-                      </button>
-                    </motion.div>
+                    <button key={a.l} onClick={a.action}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold hover:opacity-90 transition-all text-white"
+                      style={{ background: a.color }}>
+                      <Icon className="w-4 h-4" /> {a.l}
+                    </button>
                   );
                 })}
               </div>
-            </div>
-
-            {/* NDVI colour scale legend */}
-            <div className="rounded-2xl border border-white/10 p-4"
-              style={{background:"rgba(255,255,255,0.04)"}}>
-              <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wider">Health Colour Scale</p>
-              <div className="h-3 rounded-full overflow-hidden mb-1.5"
-                style={{background:"linear-gradient(90deg,#F43F5E,#F59E0B,#10B981)"}}>
-              </div>
-              <div className="flex justify-between text-[10px] text-slate-500">
-                <span>Low (0%)</span><span>Medium (50%)</span><span>High (100%)</span>
-              </div>
-            </div>
+            </Card>
           </div>
+        </div>
+
+        {/* ── Per-plot analytics table ── */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-slate-200 text-lg">Plot Analytics Table</h2>
+            <button onClick={() => window.print()} className="btn btn-outline text-sm px-4 py-2 no-print"
+              style={{ color: "#A7F3D0", borderColor: "rgba(167,243,208,0.3)", background: "rgba(16,185,129,0.1)" }}>
+              <Printer className="w-4 h-4" /> Export
+            </button>
+          </div>
+          <Card hover={false} className="overflow-hidden p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr style={{ background: "linear-gradient(135deg,#F0FDF4,#F8FAFC)", borderBottom: "2px solid #E2E8F0" }}>
+                    {["Plot","Crop","Area","Moisture","Health","Temperature","NPK","pH","Status"].map(h => (
+                      <th key={h} className="px-5 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {PLOT_CONFIGS.map((plot, i) => {
+                    const d = getPlotData(plot.id);
+                    const mc = getMoistureColor(d.moisture);
+                    const hc = getHealthColor(d.health);
+                    return (
+                      <motion.tr key={plot.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }} className="hover:bg-slate-50 transition-colors cursor-pointer"
+                        onClick={() => setSelPlot(plot.id === selPlot ? null : plot.id)}>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{ background: plot.color }} />
+                            <span className="font-semibold text-slate-800 text-sm">{plot.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{plot.crop}</td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{plot.area} ac</td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 progress">
+                              <div className="progress-fill" style={{ width: `${d.moisture}%`, background: mc }} />
+                            </div>
+                            <span className="text-sm font-bold" style={{ color: mc }}>{Math.round(d.moisture)}%</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="font-bold text-sm" style={{ color: hc }}>{d.health}%</span>
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-600 font-mono">{d.temp}°C</td>
+                        <td className="px-5 py-4 text-xs text-slate-500">
+                          {(d as any).npk?.n ?? 120}/{(d as any).npk?.p ?? 40}/{(d as any).npk?.k ?? 160}
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{(d as any).ph ?? 6.5}</td>
+                        <td className="px-5 py-4">
+                          <span className={`badge ${plot.warning ? "badge-red" : "badge-green"}`}>
+                            {plot.warning ? "⚠ Warning" : "✓ Open"}
+                          </span>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
