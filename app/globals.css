@@ -423,3 +423,264 @@ select option { background: #fff; color: var(--slate-800); }
 .data-row:last-child { border-bottom: none; }
 .data-row .label { color: #64748B; font-weight: 500; }
 .data-row .value { font-weight: 700; color: #1E293B; }
+
+/* =====================================================
+   ENHANCED v4 — VISIBILITY & OVERFLOW FIXES
+   ===================================================== */
+
+/* Prevent ANY value overflow in cards */
+.card *,
+.card p,
+.card span,
+.card div {
+  max-width: 100%;
+}
+
+/* Force truncation on long values */
+.value-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* AUTO button clear states */
+.auto-btn-on {
+  background: linear-gradient(135deg, #059669, #10B981) !important;
+  color: #ffffff !important;
+  border: 1.5px solid #059669 !important;
+  box-shadow: 0 2px 10px rgba(16,185,129,0.4) !important;
+  font-weight: 700 !important;
+}
+.auto-btn-off {
+  background: #F8FAFC !important;
+  color: #94A3B8 !important;
+  border: 1.5px solid #CBD5E1 !important;
+}
+
+/* Better price ticker scroll */
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-track {
+  display: flex;
+  animation: tickerScroll 35s linear infinite;
+  width: max-content;
+}
+.ticker-track:hover { animation-play-state: paused; }
+
+/* Filter pill contrast fix */
+.filter-pill.active,
+.filter-pill[data-active="true"] {
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
+  border-color: #047857 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(16,185,129,0.50) !important;
+  transform: translateY(-1px);
+  font-weight: 700 !important;
+}
+
+/* Inventory table text always readable */
+.inv-table td {
+  color: #1E293B;
+  font-size: 13px;
+}
+.inv-table th {
+  color: #64748B;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Contact page form input — on dark bg */
+.contact-input {
+  background: rgba(255,255,255,0.08) !important;
+  border: 1.5px solid rgba(255,255,255,0.15) !important;
+  color: #fff !important;
+}
+.contact-input::placeholder { color: rgba(255,255,255,0.4) !important; }
+.contact-input:focus {
+  background: rgba(255,255,255,0.12) !important;
+  border-color: rgba(16,185,129,0.6) !important;
+}
+
+/* Market tab active bar */
+.market-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #F1F5F9;
+  border-radius: 12px;
+}
+.market-tab-bar .tab-item {
+  flex: 1;
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.market-tab-bar .tab-item.active {
+  background: linear-gradient(135deg, #059669, #10B981) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.35) !important;
+}
+.market-tab-bar .tab-item:hover:not(.active) {
+  background: #E2E8F0;
+  color: #334155;
+}
+
+/* SVG Land map polish */
+.land-plot-polygon {
+  transition: filter 0.2s, opacity 0.2s;
+  cursor: pointer;
+}
+.land-plot-polygon:hover {
+  filter: brightness(1.2);
+}
+.land-plot-polygon.selected {
+  filter: drop-shadow(0 0 8px rgba(16,185,129,0.8));
+}
+
+/* NDVI color classes */
+.ndvi-excellent { fill: #16A34A; }
+.ndvi-good      { fill: #22C55E; }
+.ndvi-moderate  { fill: #84CC16; }
+.ndvi-stressed  { fill: #EAB308; }
+.ndvi-critical  { fill: #EF4444; }
+
+/* Nav active glow */
+.nav-item-active {
+  background: linear-gradient(135deg, #ECFDF5, #D1FAE5) !important;
+  color: #059669 !important;
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.18) !important;
+  font-weight: 700 !important;
+}
+
+/* Section spacing improvement */
+.section + .section-divider + .section {
+  padding-top: 100px;
+}
+
+/* Stats card text — always readable */
+.stat-val {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Better hint banner */
+.hint-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(59,130,246,0.06));
+  border: 1.5px solid rgba(16,185,129,0.25);
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #047857;
+  line-height: 1.6;
+}
+.hint-banner strong { color: #065f46; font-weight: 700; }
+
+/* Weather page improvements */
+.weather-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+/* Calendar improvements */
+.calendar-task-card {
+  border-left: 3px solid;
+  padding: 12px 14px;
+  border-radius: 0 12px 12px 0;
+  background: white;
+  transition: all 0.18s;
+}
+.calendar-task-card:hover {
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Responsive nav overflow */
+@media (max-width: 1100px) {
+  .nav-links-wrap {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-links-wrap::-webkit-scrollbar { display: none; }
+}
+
+/* Prevent long field names from breaking layout */
+.field-name-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+/* Better modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(15,23,42,0.70);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeInOverlay 0.2s ease;
+}
+
+/* Improved comparison table */
+.compare-table tr:hover {
+  background: rgba(16,185,129,0.03);
+}
+
+/* Notification badge pulse */
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+.notif-badge-pulse {
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+/* Footer link hover */
+.footer-link:hover {
+  color: #10B981 !important;
+  text-decoration: underline;
+}
+
+/* Print page cleanup */
+@media print {
+  .no-print { display: none !important; }
+  nav, header { display: none !important; }
+  body { background: white !important; color: #000 !important; }
+  .card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+  .section { padding: 24px 0 !important; }
+  @page { margin: 1.5cm; size: A4; }
+  .print-section { break-inside: avoid; }
+}
+
+/* ── TICKER ANIMATION (used by PriceTicker.tsx) ── */
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}

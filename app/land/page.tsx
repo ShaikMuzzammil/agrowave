@@ -2,9 +2,9 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Droplets, Activity, AlertTriangle, Settings, X, Printer,
-  ChevronRight, Thermometer, Wind, Cloud, TrendingUp, Leaf,
-  BarChart3, Info, CheckCircle, RefreshCw, Map as MapIcon, Layers
+  Droplets, Settings, X, Printer,
+  ChevronRight, Leaf,
+  BarChart3, Info, CheckCircle, RefreshCw, Map as MapIcon
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { getHealthColor, getMoistureColor, FORECAST } from "@/lib/utils";
@@ -13,17 +13,25 @@ import {
   ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis
 } from "recharts";
 
-/* ─── PLOT DEFINITIONS ─────────────────────────────────────── */
 const LAND_PLOTS = [
-  { id:"NF", name:"North Field",  crop:"Wheat",   phase:"Tillering",       color:"#10B981", pos:{x:5,y:5,w:44,h:44} },
-  { id:"EB", name:"East Block",   crop:"Rice",    phase:"Panicle Init.",   color:"#3B82F6", pos:{x:52,y:5,w:44,h:44} },
-  { id:"WB", name:"West Block",   crop:"Soybean", phase:"Pod Fill",        color:"#F59E0B", pos:{x:5,y:52,w:44,h:44} },
-  { id:"SF", name:"South Field",  crop:"Cotton",  phase:"Boll Formation",  color:"#F43F5E", pos:{x:52,y:52,w:44,h:44} },
-  { id:"CP", name:"Central Plot", crop:"Maize",   phase:"Silking",         color:"#8B5CF6", pos:{x:28.5,y:28.5,w:43,h:43} },
-  { id:"BS", name:"Border Strip", crop:"Onion",   phase:"Bulb Dev.",       color:"#EC4899", pos:{x:0,y:0,w:100,h:100} },
+  { id:"NF", name:"North Field",  crop:"Wheat",   phase:"Tillering",       color:"#10B981" },
+  { id:"EB", name:"East Block",   crop:"Rice",    phase:"Panicle Init.",   color:"#3B82F6" },
+  { id:"WB", name:"West Block",   crop:"Soybean", phase:"Pod Fill",        color:"#F59E0B" },
+  { id:"SF", name:"South Field",  crop:"Cotton",  phase:"Boll Formation",  color:"#F43F5E" },
+  { id:"CP", name:"Central Plot", crop:"Maize",   phase:"Silking",         color:"#8B5CF6" },
+  { id:"BS", name:"Border Strip", crop:"Onion",   phase:"Bulb Dev.",       color:"#EC4899" },
 ];
 
-/* ─── DEFAULT THRESHOLDS ────────────────────────────────────── */
+/* Irregular polygon shapes for real-land feel — points as "x,y" SVG polygon format */
+const PLOT_POLYGONS: Record<string, {points: string; labelX: number; labelY: number}> = {
+  NF: { points:"20,12 210,8 218,142 100,150 22,148", labelX:116, labelY:82 },
+  EB: { points:"228,8 410,12 415,148 230,142 220,80", labelX:316, labelY:82 },
+  WB: { points:"22,162 180,158 185,278 24,285", labelX:104, labelY:222 },
+  SF: { points:"425,8 585,15 578,148 420,155", labelX:500, labelY:82 },
+  CP: { points:"192,158 425,162 422,282 188,278", labelX:307, labelY:222 },
+  BS: { points:"430,162 588,158 592,288 428,282", labelX:510, labelY:222 },
+};
+
 const DEFAULT_THRESHOLDS = {
   NF_health:90, NF_moisture:85,
   EB_pest:"medium", EB_temp:33,
@@ -33,7 +41,6 @@ const DEFAULT_THRESHOLDS = {
   BS_rainDays:2,
 };
 
-/* ─── MOCK SENSOR DATA PER PLOT ─────────────────────────────── */
 const BASE_SENSOR: Record<string,any> = {
   NF:{ health:94, moisture:92, temp:32, pH:6.8, npk:{n:142,p:46,k:180}, pest:"low",   rainfall:12, rainDays:1, growthStage:"Tillering",   weekHistory:[82,85,88,90,91,93,94] },
   EB:{ health:75, moisture:49, temp:34, pH:6.2, npk:{n:118,p:38,k:165}, pest:"medium",rainfall:18, rainDays:2, growthStage:"Panicle Init.",weekHistory:[68,70,72,73,74,74,75] },
@@ -45,27 +52,29 @@ const BASE_SENSOR: Record<string,any> = {
 
 function calcOpenStatus(id:string, sensor:any, thresholds:typeof DEFAULT_THRESHOLDS) {
   switch(id) {
-    case "NF": return { open: sensor.health >= thresholds.NF_health && sensor.moisture >= thresholds.NF_moisture,
-                        reason: `Health ≥${thresholds.NF_health}% AND Moisture ≥${thresholds.NF_moisture}%` };
-    case "EB": return { open: sensor.pest === thresholds.EB_pest || sensor.temp > thresholds.EB_temp,
-                        reason: `Pest="${thresholds.EB_pest}" OR Temp >${thresholds.EB_temp}°C` };
-    case "WB": return { open: sensor.growthStage === "Pod Fill" && sensor.rainfall < thresholds.WB_rainfall,
-                        reason: `Growth="Pod Fill" AND Rainfall <${thresholds.WB_rainfall}mm/week` };
-    case "SF": return { open: sensor.npk.n < thresholds.SF_npk || sensor.npk.p < thresholds.SF_npk || sensor.npk.k < thresholds.SF_npk,
-                        reason: `Any NPK < ${thresholds.SF_npk} (low nutrition)` };
-    case "CP": return { open: sensor.growthStage === "Silking" && sensor.pH >= thresholds.CP_pH_lo && sensor.pH <= thresholds.CP_pH_hi,
-                        reason: `Stage="Silking" AND pH ${thresholds.CP_pH_lo}–${thresholds.CP_pH_hi}` };
-    case "BS": return { open: sensor.growthStage === "Bulb Dev." && sensor.rainDays >= thresholds.BS_rainDays,
-                        reason: `Stage="Bulb Dev." AND ≥${thresholds.BS_rainDays} rain days in 7-day forecast` };
+    case "NF": return { open: sensor.health>=thresholds.NF_health && sensor.moisture>=thresholds.NF_moisture, reason:`Health ≥${thresholds.NF_health}% AND Moisture ≥${thresholds.NF_moisture}%` };
+    case "EB": return { open: sensor.pest===thresholds.EB_pest || sensor.temp>thresholds.EB_temp, reason:`Pest="${thresholds.EB_pest}" OR Temp >${thresholds.EB_temp}°C` };
+    case "WB": return { open: sensor.growthStage==="Pod Fill" && sensor.rainfall<thresholds.WB_rainfall, reason:`Growth="Pod Fill" AND Rainfall <${thresholds.WB_rainfall}mm/week` };
+    case "SF": return { open: sensor.npk.n<thresholds.SF_npk || sensor.npk.p<thresholds.SF_npk || sensor.npk.k<thresholds.SF_npk, reason:`Any NPK < ${thresholds.SF_npk} (low nutrition)` };
+    case "CP": return { open: sensor.growthStage==="Silking" && sensor.pH>=thresholds.CP_pH_lo && sensor.pH<=thresholds.CP_pH_hi, reason:`Stage="Silking" AND pH ${thresholds.CP_pH_lo}–${thresholds.CP_pH_hi}` };
+    case "BS": return { open: sensor.growthStage==="Bulb Dev." && sensor.rainDays>=thresholds.BS_rainDays, reason:`Stage="Bulb Dev." AND ≥${thresholds.BS_rainDays} rain days` };
     default: return { open:false, reason:"Unknown" };
   }
 }
 
-function calcWarning(sensor:any) {
-  return sensor.health < 70 || sensor.pest === "high" || sensor.moisture < 40;
+function getNDVIColor(health:number, moisture:number) {
+  const score = (health*0.6 + moisture*0.4);
+  if (score >= 85) return "#16A34A";
+  if (score >= 70) return "#22C55E";
+  if (score >= 55) return "#84CC16";
+  if (score >= 40) return "#EAB308";
+  return "#EF4444";
 }
 
-/* ─── RADAR DATA ────────────────────────────────────────────── */
+function calcWarning(sensor:any) {
+  return sensor.health<70 || sensor.pest==="high" || sensor.moisture<40;
+}
+
 function buildRadarData(sensor:any) {
   return [
     {s:"Moisture", v:Math.round(sensor.moisture)},
@@ -86,6 +95,7 @@ export default function Land() {
   const [showTerrain, setShowTerrain] = useState(false);
   const [irrigating, setIrrigating] = useState<string|null>(null);
   const [now, setNow] = useState(new Date());
+  const [showHint, setShowHint] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -114,8 +124,6 @@ export default function Land() {
     setTimeout(()=>setIrrigating(null),2000);
   };
 
-  const handlePrint = () => window.print();
-
   const plotStatuses = LAND_PLOTS.map(p => {
     const s = sensors[p.id];
     const {open,reason} = calcOpenStatus(p.id, s, thresholds);
@@ -126,7 +134,6 @@ export default function Land() {
   const openCount = plotStatuses.filter(p=>p.open).length;
   const warnCount = plotStatuses.filter(p=>p.warning).length;
   const selData   = selPlot ? plotStatuses.find(p=>p.id===selPlot) : null;
-
   const totalAcres = 23.0;
   const seasonDay  = 47;
 
@@ -170,7 +177,7 @@ export default function Land() {
               style={{background:"rgba(255,255,255,0.08)",color:"#A7F3D0",border:"1px solid rgba(167,243,208,0.3)"}}>
               <Settings className="w-4 h-4"/> Thresholds
             </button>
-            <button onClick={handlePrint}
+            <button onClick={()=>window.print()}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
               style={{background:"linear-gradient(135deg,#059669,#10B981)",color:"#fff",boxShadow:"0 4px 14px rgba(16,185,129,0.4)"}}>
               <Printer className="w-4 h-4"/> Print Report
@@ -178,13 +185,30 @@ export default function Land() {
           </div>
         </div>
 
+        {/* Hint banner */}
+        <AnimatePresence>
+          {showHint && (
+            <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} exit={{opacity:0,height:0}}
+              className="flex items-start justify-between gap-3 mb-5 rounded-xl p-3"
+              style={{background:"rgba(16,185,129,0.12)",border:"1.5px solid rgba(16,185,129,0.3)"}}>
+              <div className="flex items-start gap-2 text-green-300 text-xs">
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-green-400"/>
+                <span><strong className="text-green-200">Land View Guide:</strong> Click any plot polygon on the map to see full sensor data. Green = OPEN (conditions met), Amber = WARNING, Red = needs attention. Use <strong className="text-green-200">Terrain overlay</strong> to switch view. Click <strong className="text-green-200">Thresholds</strong> to customize open/close rules per plot.</span>
+              </div>
+              <button onClick={()=>setShowHint(false)} className="flex-shrink-0 text-green-400 hover:text-green-200 p-1">
+                <X className="w-4 h-4"/>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Summary cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
-            {label:"Total Acreage",    val:`${totalAcres} ac`,      icon:"🌾", col:"rgba(16,185,129,0.15)", border:"rgba(16,185,129,0.3)",  text:"#A7F3D0"},
-            {label:"Sections Open",   val:`${openCount} / 6`,       icon:"🔓", col:"rgba(59,130,246,0.15)",  border:"rgba(59,130,246,0.3)",   text:"#93C5FD"},
-            {label:"Active Warnings", val:`${warnCount} plots`,     icon:"⚠️", col:warnCount>0?"rgba(245,158,11,0.15)":"rgba(16,185,129,0.1)", border:warnCount>0?"rgba(245,158,11,0.4)":"rgba(16,185,129,0.2)", text:warnCount>0?"#FCD34D":"#A7F3D0"},
-            {label:"Season Day",      val:`Day ${seasonDay}/120`,   icon:"📅", col:"rgba(139,92,246,0.15)", border:"rgba(139,92,246,0.3)",  text:"#C4B5FD"},
+            {label:"Total Acreage",    val:`${totalAcres} ac`,    icon:"🌾", col:"rgba(16,185,129,0.15)", border:"rgba(16,185,129,0.3)",  text:"#A7F3D0"},
+            {label:"Sections Open",   val:`${openCount} / 6`,     icon:"🔓", col:"rgba(59,130,246,0.15)",  border:"rgba(59,130,246,0.3)",   text:"#93C5FD"},
+            {label:"Active Warnings", val:`${warnCount} plots`,   icon:"⚠️", col:warnCount>0?"rgba(245,158,11,0.15)":"rgba(16,185,129,0.1)", border:warnCount>0?"rgba(245,158,11,0.4)":"rgba(16,185,129,0.2)", text:warnCount>0?"#FCD34D":"#A7F3D0"},
+            {label:"Season Day",      val:`Day ${seasonDay}/120`, icon:"📅", col:"rgba(139,92,246,0.15)", border:"rgba(139,92,246,0.3)",  text:"#C4B5FD"},
           ].map((s,i)=>(
             <motion.div key={i} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:i*0.08}}>
               <div className="rounded-xl p-4 flex items-center gap-3" style={{background:s.col,border:`1px solid ${s.border}`}}>
@@ -211,16 +235,16 @@ export default function Land() {
                 onClick={()=>setSelPlot(p.id===selPlot?null:p.id)}
                 className="rounded-xl p-3 cursor-pointer transition-all"
                 style={{
-                  background: p.open ? "rgba(16,185,129,0.12)" : p.warning ? "rgba(245,158,11,0.10)" : "rgba(255,255,255,0.05)",
-                  border: p.open ? "1.5px solid rgba(16,185,129,0.5)" : p.warning ? "1.5px solid rgba(245,158,11,0.5)" : "1px solid rgba(255,255,255,0.1)",
-                  boxShadow: selPlot===p.id ? "0 0 0 2px #10B981" : "none",
+                  background: selPlot===p.id ? "rgba(16,185,129,0.2)" : p.open?"rgba(16,185,129,0.12)":p.warning?"rgba(245,158,11,0.10)":"rgba(255,255,255,0.05)",
+                  border: selPlot===p.id ? "2px solid #10B981" : p.open?"1.5px solid rgba(16,185,129,0.5)":p.warning?"1.5px solid rgba(245,158,11,0.5)":"1px solid rgba(255,255,255,0.1)",
+                  boxShadow: selPlot===p.id ? "0 0 0 2px rgba(16,185,129,0.2)" : "none",
                 }}>
                 <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <span className="font-bold text-white text-sm">{p.name}</span>
-                    <div className="text-xs text-slate-400">{p.crop} · {p.phase}</div>
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold text-white text-sm block truncate">{p.name}</span>
+                    <div className="text-xs text-slate-400 truncate">{p.crop} · {p.phase}</div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.open?"bg-green-500/20 text-green-300":p.warning?"bg-amber-500/20 text-amber-300":"bg-slate-500/20 text-slate-400"}`}>
                       {p.open?"🔓 OPEN":p.warning?"⚠️ WARN":"🔒 CLOSED"}
                     </span>
@@ -240,50 +264,96 @@ export default function Land() {
 
           {/* CENTER: Live Farm Map + Satellite View */}
           <div className="lg:col-span-6 space-y-4">
-            {/* Farm Map */}
+            {/* Farm Map — Polygon SVG */}
             <div className="rounded-2xl overflow-hidden" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)"}}>
               <div className="flex items-center justify-between px-4 py-3 border-b" style={{borderColor:"rgba(255,255,255,0.08)"}}>
-                <h3 className="font-bold text-white text-sm flex items-center gap-2"><MapIcon className="w-4 h-4 text-green-400"/> Live Farm Map</h3>
+                <h3 className="font-bold text-white text-sm flex items-center gap-2"><MapIcon className="w-4 h-4 text-green-400"/> Live Farm Map — Polygon View</h3>
                 <span className="text-xs text-slate-400">Click any plot for details</span>
               </div>
               <div className="p-3">
-                <svg viewBox="0 0 600 280" className="w-full rounded-xl" style={{height:260}}>
-                  <rect width="600" height="280" fill="#0F2027" rx="12"/>
-                  {/* Grid lines */}
-                  {[1,2,3].map(i=><line key={`h${i}`} x1="0" y1={70*i} x2="600" y2={70*i} stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>)}
-                  {[1,2,3].map(i=><line key={`v${i}`} x1={150*i} y1="0" x2={150*i} y2="280" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>)}
-                  {plotStatuses.map((p,i)=>{
-                    const positions=[
-                      {x:10,y:10,w:178,h:120},{x:202,y:10,w:188,h:120},{x:404,y:10,w:184,h:120},
-                      {x:10,y:144,w:178,h:120},{x:202,y:144,w:188,h:120},{x:404,y:144,w:184,h:120}
-                    ];
-                    const pos=positions[i];
-                    const col=p.open?"#10B981":p.warning?"#F59E0B":"#475569";
-                    const isSel=selPlot===p.id;
+                <svg viewBox="0 0 610 295" className="w-full rounded-xl" style={{height:270}}>
+                  <defs>
+                    <pattern id="farmFieldBg" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+                      <rect width="24" height="24" fill="#0a2010"/>
+                      <line x1="0" y1="12" x2="24" y2="12" stroke="#1a3a1a" strokeWidth="0.5"/>
+                      <line x1="12" y1="0" x2="12" y2="24" stroke="#1a3a1a" strokeWidth="0.5"/>
+                    </pattern>
+                    {/* NDVI gradient fills per status */}
+                    {plotStatuses.map(p=>(
+                      <radialGradient key={p.id} id={`grad-${p.id}`} cx="50%" cy="50%" r="60%">
+                        <stop offset="0%" stopColor={getNDVIColor(p.sensor.health,p.sensor.moisture)} stopOpacity={selPlot===p.id?0.55:0.35}/>
+                        <stop offset="100%" stopColor={getNDVIColor(p.sensor.health,p.sensor.moisture)} stopOpacity={selPlot===p.id?0.28:0.15}/>
+                      </radialGradient>
+                    ))}
+                  </defs>
+                  <rect width="610" height="295" fill="url(#farmFieldBg)" rx="12"/>
+                  {/* Dirt paths between fields */}
+                  <rect x="210" y="0" width="14" height="295" fill="#3D2B1F" opacity="0.8"/>
+                  <rect x="406" y="0" width="14" height="295" fill="#3D2B1F" opacity="0.8"/>
+                  <rect x="0" y="148" width="610" height="14" fill="#3D2B1F" opacity="0.8"/>
+                  {/* Tree cluster decorations */}
+                  {[{cx:35,cy:18},{cx:55,cy:32},{cx:25,cy:40},{cx:68,cy:14},{cx:45,cy:50}].map((t,i)=>(
+                    <g key={i} style={{pointerEvents:"none"}}>
+                      <circle cx={t.cx} cy={t.cy} r={9} fill="#1a5c1a" opacity={0.9}/>
+                      <circle cx={t.cx} cy={t.cy} r={6} fill="#22882a" opacity={0.7}/>
+                    </g>
+                  ))}
+                  {/* Irrigation channel */}
+                  <path d="M595,0 Q575,75 585,148 Q598,210 575,295" stroke="#3B82F6" strokeWidth="3.5" fill="none" opacity="0.45" strokeLinecap="round"/>
+                  {/* Plot polygons with NDVI fill */}
+                  {plotStatuses.map((p)=>{
+                    const poly = PLOT_POLYGONS[p.id];
+                    if(!poly) return null;
+                    const isSel = selPlot===p.id;
+                    const strokeCol = p.open?"#10B981":p.warning?"#F59E0B":"#475569";
+                    const ndvi = getNDVIColor(p.sensor.health, p.sensor.moisture);
                     return (
                       <g key={p.id} className="cursor-pointer" onClick={()=>setSelPlot(p.id===selPlot?null:p.id)}>
-                        <rect x={pos.x} y={pos.y} width={pos.w} height={pos.h} rx={10}
-                          fill={col} fillOpacity={isSel?.18:.07}
-                          stroke={col} strokeWidth={isSel?2.5:1.5} strokeOpacity={isSel?1:.6}/>
-                        {p.open && <rect x={pos.x+4} y={pos.y+4} width={pos.w-8} height={3} rx={1.5} fill={col} opacity={0.5}/>}
-                        <text x={pos.x+pos.w/2} y={pos.y+26} textAnchor="middle" fill="#fff" fontSize="12" fontWeight="700" fontFamily="DM Sans">{p.name}</text>
-                        <text x={pos.x+pos.w/2} y={pos.y+43} textAnchor="middle" fill="#94A3B8" fontSize="9" fontFamily="DM Sans">{p.crop} · {p.phase}</text>
-                        <rect x={pos.x+14} y={pos.y+54} width={pos.w-28} height={5} rx={2.5} fill="rgba(255,255,255,0.1)"/>
-                        <rect x={pos.x+14} y={pos.y+54} width={Math.max(4,(p.sensor.moisture/100)*(pos.w-28))} height={5} rx={2.5} fill={col}/>
-                        <text x={pos.x+pos.w/2} y={pos.y+75} textAnchor="middle" fill={col} fontSize="11" fontWeight="600" fontFamily="DM Sans">{Math.round(p.sensor.moisture)}% moisture</text>
-                        <text x={pos.x+pos.w/2} y={pos.y+91} textAnchor="middle" fill="#64748B" fontSize="9" fontFamily="DM Sans">pH {p.sensor.pH} · NPK {p.sensor.npk.n}/{p.sensor.npk.p}/{p.sensor.npk.k}</text>
-                        <text x={pos.x+pos.w/2} y={pos.y+108} textAnchor="middle" fontSize="9" fontFamily="DM Sans"
-                          fill={p.open?"#34D399":p.warning?"#FCD34D":"#64748B"}>
-                          {p.open?"✓ OPEN":p.warning?"⚠ WARN":"● CLOSED"}
-                        </text>
+                        {/* Crop row lines inside polygon */}
+                        <clipPath id={`clip-${p.id}`}>
+                          <polygon points={poly.points}/>
+                        </clipPath>
+                        <g clipPath={`url(#clip-${p.id})`}>
+                          {Array.from({length:20},(_,r)=>(
+                            <line key={r}
+                              x1={0} y1={8+r*14} x2={610} y2={8+r*14}
+                              stroke={ndvi} strokeWidth="1.5" strokeOpacity={0.2}/>
+                          ))}
+                        </g>
+                        {/* Main polygon fill */}
+                        <polygon
+                          points={poly.points}
+                          fill={`url(#grad-${p.id})`}
+                          stroke={strokeCol}
+                          strokeWidth={isSel?2.5:1.5}
+                          strokeOpacity={isSel?1:0.7}
+                          style={{filter:isSel?`drop-shadow(0 0 8px ${ndvi}99)`:"none"}}
+                        />
+                        {/* Label pill */}
+                        <rect x={poly.labelX-48} y={poly.labelY-18} width={96} height={36} rx={8} fill="rgba(0,0,0,0.72)"/>
+                        <text x={poly.labelX} y={poly.labelY-2} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700" fontFamily="DM Sans">{p.name}</text>
+                        <text x={poly.labelX} y={poly.labelY+12} textAnchor="middle" fill={ndvi} fontSize="9" fontFamily="DM Sans">{p.sensor.health}% health</text>
+                        {/* NDVI dot */}
+                        <circle cx={poly.labelX+42} cy={poly.labelY-10} r={5} fill={ndvi} opacity={0.9}/>
+                        {isSel && <circle cx={poly.labelX+42} cy={poly.labelY-10} r={8} fill="none" stroke={ndvi} strokeWidth={1.5} opacity={0.5}>
+                          <animate attributeName="r" values="5;10;5" dur="2s" repeatCount="indefinite"/>
+                          <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite"/>
+                        </circle>}
                       </g>
                     );
                   })}
+                  {/* Legend */}
+                  {[{c:"#16A34A",l:"Excellent"},{c:"#22C55E",l:"Good"},{c:"#EAB308",l:"Stressed"},{c:"#EF4444",l:"Critical"}].map((x,i)=>(
+                    <g key={x.l}>
+                      <circle cx={10+i*75} cy={285} r={5} fill={x.c}/>
+                      <text x={18+i*75} y={289} fill={x.c} fontSize="9" fontFamily="DM Sans" fontWeight="600">{x.l}</text>
+                    </g>
+                  ))}
                 </svg>
               </div>
             </div>
 
-            {/* Real Land View — Satellite */}
+            {/* Real Land View — Enhanced Satellite */}
             <div className="rounded-2xl overflow-hidden" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(16,185,129,0.2)"}}>
               <div className="flex items-center justify-between px-4 py-3 border-b" style={{borderColor:"rgba(255,255,255,0.08)"}}>
                 <h3 className="font-bold text-white text-sm flex items-center gap-2">
@@ -298,65 +368,65 @@ export default function Land() {
                 </label>
               </div>
               <div className="relative" style={{height:280}}>
-                {/* Satellite background SVG */}
-                <svg viewBox="0 0 600 280" className="w-full h-full" style={{position:"absolute",inset:0}}>
+                <svg viewBox="0 0 610 280" className="w-full h-full" style={{position:"absolute",inset:0}}>
                   <defs>
-                    <pattern id="farmGrid" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+                    <pattern id="satellite" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
                       <rect width="60" height="60" fill="#1a3a1a"/>
-                      <line x1="0" y1="30" x2="60" y2="30" stroke="#2d5a2d" strokeWidth="0.5"/>
-                      <line x1="30" y1="0" x2="30" y2="60" stroke="#2d5a2d" strokeWidth="0.5"/>
+                      <line x1="0" y1="30" x2="60" y2="30" stroke="#2d5a2d" strokeWidth="0.4"/>
+                      <line x1="30" y1="0" x2="30" y2="60" stroke="#2d5a2d" strokeWidth="0.4"/>
                     </pattern>
                     {showTerrain && (
-                      <pattern id="terrain" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
-                        <path d="M0,15 Q7.5,5 15,15 Q22.5,25 30,15" stroke="rgba(74,222,128,0.2)" strokeWidth="0.8" fill="none"/>
+                      <pattern id="terrain2" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M0,20 Q10,8 20,20 Q30,32 40,20" stroke="rgba(74,222,128,0.15)" strokeWidth="0.8" fill="none"/>
                       </pattern>
                     )}
-                    <radialGradient id="plotGlow" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="rgba(16,185,129,0.3)"/>
-                      <stop offset="100%" stopColor="rgba(16,185,129,0)"/>
-                    </radialGradient>
                   </defs>
-                  <rect width="600" height="280" fill="url(#farmGrid)"/>
-                  {showTerrain && <rect width="600" height="280" fill="url(#terrain)" opacity="0.6"/>}
-                  {/* Path-dividers (dirt paths) */}
-                  <rect x="195" y="0" width="14" height="280" fill="#3D2B1F" opacity="0.8"/>
-                  <rect x="399" y="0" width="14" height="280" fill="#3D2B1F" opacity="0.8"/>
-                  <rect x="0" y="133" width="600" height="14" fill="#3D2B1F" opacity="0.8"/>
-                  {/* Tree cluster top-left */}
-                  {[{cx:30,cy:20},{cx:50,cy:35},{cx:20,cy:45},{cx:65,cy:15},{cx:40,cy:55}].map((t,i)=>(
+                  <rect width="610" height="280" fill="url(#satellite)"/>
+                  {showTerrain && <rect width="610" height="280" fill="url(#terrain2)" opacity="0.6"/>}
+                  {/* Paths */}
+                  <rect x="210" y="0" width="14" height="280" fill="#3D2B1F" opacity="0.75"/>
+                  <rect x="406" y="0" width="14" height="280" fill="#3D2B1F" opacity="0.75"/>
+                  <rect x="0" y="133" width="610" height="14" fill="#3D2B1F" opacity="0.75"/>
+                  {/* Tree clusters */}
+                  {[{cx:35,cy:18},{cx:55,cy:32},{cx:25,cy:40},{cx:68,cy:14},{cx:45,cy:50}].map((t,i)=>(
                     <g key={i}>
                       <circle cx={t.cx} cy={t.cy} r={10} fill="#1a5c1a" opacity={0.9}/>
                       <circle cx={t.cx} cy={t.cy} r={7}  fill="#22882a" opacity={0.7}/>
                     </g>
                   ))}
-                  {/* Plots as SVG polygons */}
-                  {plotStatuses.map((p,i)=>{
-                    const positions=[
-                      {x:10,y:10,w:178,h:120},{x:213,y:10,w:178,h:120},{x:415,y:10,w:178,h:120},
-                      {x:10,y:147,w:178,h:120},{x:213,y:147,w:178,h:120},{x:415,y:147,w:178,h:120}
-                    ];
-                    const pos=positions[i];
-                    const col=p.open?"rgba(16,185,129,0.35)":p.warning?"rgba(245,158,11,0.30)":"rgba(100,116,139,0.2)";
-                    const strokeCol=p.open?"#10B981":p.warning?"#F59E0B":"#475569";
+                  {/* Irregular polygon plots with NDVI satellite coloring */}
+                  {plotStatuses.map((p)=>{
+                    const poly = PLOT_POLYGONS[p.id];
+                    if(!poly) return null;
+                    const isSel = selPlot===p.id;
+                    const ndvi = getNDVIColor(p.sensor.health, p.sensor.moisture);
+                    const strokeCol = p.open?"#10B981":p.warning?"#F59E0B":"#475569";
                     return (
-                      <g key={p.id} className="cursor-pointer" style={{cursor:"pointer"}}
-                        onClick={()=>setSelPlot(p.id===selPlot?null:p.id)}>
-                        {/* Crop rows inside field */}
-                        {Array.from({length:Math.floor(pos.h/8)},(_,r)=>(
-                          <line key={r} x1={pos.x+6} y1={pos.y+8+r*8} x2={pos.x+pos.w-6} y2={pos.y+8+r*8}
-                            stroke={p.open?"rgba(16,185,129,0.25)":p.warning?"rgba(245,158,11,0.2)":"rgba(100,116,139,0.15)"} strokeWidth="1.5"/>
-                        ))}
-                        <rect x={pos.x} y={pos.y} width={pos.w} height={pos.h} rx={4}
-                          fill={col} stroke={strokeCol} strokeWidth={selPlot===p.id?2.5:1.5} strokeOpacity={0.8}/>
-                        {/* Tooltip label */}
-                        <rect x={pos.x+pos.w/2-45} y={pos.y+pos.h/2-16} width={90} height={32} rx={6} fill="rgba(0,0,0,0.65)"/>
-                        <text x={pos.x+pos.w/2} y={pos.y+pos.h/2-2} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700" fontFamily="DM Sans">{p.name}</text>
-                        <text x={pos.x+pos.w/2} y={pos.y+pos.h/2+12} textAnchor="middle" fill={strokeCol} fontSize="9" fontFamily="DM Sans">{p.sensor.health}% health</text>
+                      <g key={p.id} onClick={()=>setSelPlot(p.id===selPlot?null:p.id)} style={{cursor:"pointer"}}>
+                        <clipPath id={`sat-clip-${p.id}`}><polygon points={poly.points}/></clipPath>
+                        <g clipPath={`url(#sat-clip-${p.id})`}>
+                          {Array.from({length:22},(_,r)=>(
+                            <line key={r} x1={0} y1={5+r*13} x2={610} y2={5+r*13}
+                              stroke={ndvi} strokeWidth="2" strokeOpacity={0.18}/>
+                          ))}
+                        </g>
+                        <polygon
+                          points={poly.points}
+                          fill={ndvi}
+                          fillOpacity={isSel?0.42:0.28}
+                          stroke={strokeCol}
+                          strokeWidth={isSel?2.5:1.5}
+                          strokeOpacity={0.85}
+                          style={{filter:isSel?`drop-shadow(0 0 6px ${ndvi})`:"none"}}
+                        />
+                        <rect x={poly.labelX-42} y={poly.labelY-16} width={84} height={30} rx={6} fill="rgba(0,0,0,0.68)"/>
+                        <text x={poly.labelX} y={poly.labelY-2} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700" fontFamily="DM Sans">{p.name}</text>
+                        <text x={poly.labelX} y={poly.labelY+11} textAnchor="middle" fill={ndvi} fontSize="8.5" fontFamily="DM Sans">{p.sensor.health}% NDVI health</text>
                       </g>
                     );
                   })}
                   {/* Water stream */}
-                  <path d="M580,0 Q560,70 570,140 Q580,200 560,280" stroke="#3B82F6" strokeWidth="4" fill="none" opacity="0.4" strokeLinecap="round"/>
+                  <path d="M595,0 Q575,70 585,148 Q598,200 575,280" stroke="#3B82F6" strokeWidth="4" fill="none" opacity="0.4" strokeLinecap="round"/>
                 </svg>
                 <div className="absolute bottom-3 left-3 flex gap-2 no-print">
                   {[{c:"#10B981",l:"Open"},{c:"#F59E0B",l:"Warning"},{c:"#475569",l:"Closed"}].map(x=>(
@@ -371,7 +441,6 @@ export default function Land() {
 
           {/* RIGHT: Radar + Forecast */}
           <div className="lg:col-span-3 space-y-4">
-            {/* Farm Health Radar */}
             <div className="rounded-2xl p-4" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)"}}>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Farm Health Radar</p>
               <ResponsiveContainer width="100%" height={175}>
@@ -383,7 +452,6 @@ export default function Land() {
               </ResponsiveContainer>
             </div>
 
-            {/* 7-day forecast */}
             <div className="rounded-2xl p-4" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)"}}>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">7-Day Forecast</p>
               <div className="space-y-2">
@@ -397,19 +465,18 @@ export default function Land() {
                       </div>
                       <span className="text-[9px] text-slate-500">{d.rain}% rain</span>
                     </div>
-                    <span className="text-xs font-semibold text-slate-300 text-right w-18">{d.lo}°–{d.hi}°C</span>
+                    <span className="text-xs font-semibold text-slate-300 text-right">{d.lo}°–{d.hi}°C</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Plot summary table (print) */}
             <div className="print-section rounded-2xl p-4" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)"}}>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Section Status</p>
               <div className="space-y-1.5">
                 {plotStatuses.map(p=>(
                   <div key={p.id} className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300 font-medium">{p.id}</span>
+                    <span className="text-slate-300 font-medium w-8">{p.id}</span>
                     <span className={p.open?"text-green-400":p.warning?"text-amber-400":"text-slate-500"}>
                       {p.open?"● OPEN":p.warning?"⚠ WARN":"○ CLOSED"}
                     </span>
@@ -422,16 +489,15 @@ export default function Land() {
           </div>
         </div>
 
-        {/* ─── SELECTED PLOT MODAL ─────────────────────────────────── */}
+        {/* ── SELECTED PLOT MODAL */}
         <AnimatePresence>
           {selData && (
             <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
               className="fixed inset-0 z-50 flex items-center justify-center p-4 no-print"
-              style={{background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)"}}>
+              style={{background:"rgba(0,0,0,0.75)",backdropFilter:"blur(8px)"}}>
               <motion.div initial={{scale:.92,y:20}} animate={{scale:1,y:0}} exit={{scale:.92,y:20}}
                 className="w-full max-w-2xl rounded-2xl overflow-hidden"
                 style={{background:"linear-gradient(145deg,#0F2027,#1a3a4a)",border:"1px solid rgba(16,185,129,0.3)",boxShadow:"0 24px 80px rgba(0,0,0,0.6)"}}>
-                {/* Header */}
                 <div className="flex items-center justify-between p-5 border-b" style={{borderColor:"rgba(16,185,129,0.2)"}}>
                   <div>
                     <div className="flex items-center gap-3">
@@ -446,25 +512,21 @@ export default function Land() {
                     <X className="w-5 h-5"/>
                   </button>
                 </div>
-
-                {/* Calculation result */}
                 <div className="mx-5 mt-4 p-3 rounded-xl text-sm font-medium" style={{background:selData.open?"rgba(16,185,129,0.12)":"rgba(100,116,139,0.12)",border:`1px solid ${selData.open?"rgba(16,185,129,0.3)":"rgba(100,116,139,0.3)"}`}}>
-                  <span className="text-slate-400 font-semibold text-xs uppercase tracking-wide">Calculation Rule: </span>
+                  <span className="text-slate-400 font-semibold text-xs uppercase tracking-wide">Rule: </span>
                   <span className={selData.open?"text-green-300":"text-slate-400"}>{selData.reason}</span>
-                  <span className={`ml-3 text-xs font-bold ${selData.open?"text-green-400":"text-slate-500"}`}>→ {selData.open?"CONDITIONS MET":"CONDITIONS NOT MET"}</span>
+                  <span className={`ml-3 text-xs font-bold ${selData.open?"text-green-400":"text-slate-500"}`}>→ {selData.open?"CONDITIONS MET":"NOT MET"}</span>
                 </div>
-
-                {/* Metric grid */}
                 <div className="grid grid-cols-4 gap-3 p-5">
                   {[
-                    {l:"Moisture",  v:`${Math.round(selData.sensor.moisture)}%`,   c:"#10B981"},
-                    {l:"Health",    v:`${selData.sensor.health}%`,                c:getHealthColor(selData.sensor.health)},
-                    {l:"Soil pH",   v:selData.sensor.pH,                          c:"#3B82F6"},
-                    {l:"Temp",      v:`${selData.sensor.temp}°C`,                 c:"#F59E0B"},
-                    {l:"Nitrogen",  v:`${selData.sensor.npk.n}`,                  c:"#8B5CF6"},
-                    {l:"Phosphorus",v:`${selData.sensor.npk.p}`,                  c:"#EC4899"},
-                    {l:"Potassium", v:`${selData.sensor.npk.k}`,                  c:"#06B6D4"},
-                    {l:"Pest Risk", v:selData.sensor.pest,                         c:selData.sensor.pest==="high"?"#F43F5E":selData.sensor.pest==="medium"?"#F59E0B":"#10B981"},
+                    {l:"Moisture",  v:`${Math.round(selData.sensor.moisture)}%`,c:"#10B981"},
+                    {l:"Health",    v:`${selData.sensor.health}%`,              c:getHealthColor(selData.sensor.health)},
+                    {l:"Soil pH",   v:selData.sensor.pH,                        c:"#3B82F6"},
+                    {l:"Temp",      v:`${selData.sensor.temp}°C`,               c:"#F59E0B"},
+                    {l:"Nitrogen",  v:`${selData.sensor.npk.n}`,                c:"#8B5CF6"},
+                    {l:"Phosphorus",v:`${selData.sensor.npk.p}`,                c:"#EC4899"},
+                    {l:"Potassium", v:`${selData.sensor.npk.k}`,                c:"#06B6D4"},
+                    {l:"Pest Risk", v:selData.sensor.pest,                       c:selData.sensor.pest==="high"?"#F43F5E":selData.sensor.pest==="medium"?"#F59E0B":"#10B981"},
                   ].map(s=>(
                     <div key={s.l} className="rounded-xl p-3 text-center" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)"}}>
                       <div className="text-xs text-slate-400 mb-1">{s.l}</div>
@@ -472,8 +534,6 @@ export default function Land() {
                     </div>
                   ))}
                 </div>
-
-                {/* 7-day health history */}
                 <div className="px-5 pb-3">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Health Trend — Last 7 Days</p>
                   <ResponsiveContainer width="100%" height={90}>
@@ -486,8 +546,6 @@ export default function Land() {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-
-                {/* Actions */}
                 <div className="flex gap-3 p-5 border-t" style={{borderColor:"rgba(255,255,255,0.08)"}}>
                   <button onClick={()=>handleIrrigate(selData.id)}
                     disabled={irrigating===selData.id}
@@ -509,13 +567,13 @@ export default function Land() {
           )}
         </AnimatePresence>
 
-        {/* ─── PRINT SUMMARY TABLE ─────────────────────────────────── */}
+        {/* Print Summary Table */}
         <div className="rounded-2xl overflow-hidden mb-6" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)"}}>
           <div className="flex items-center justify-between px-5 py-3 border-b" style={{borderColor:"rgba(255,255,255,0.08)"}}>
             <h3 className="font-bold text-white text-sm flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-green-400"/> Section Analysis Table
             </h3>
-            <button onClick={handlePrint} className="flex items-center gap-1.5 text-xs text-green-400 font-semibold hover:text-green-300 no-print">
+            <button onClick={()=>window.print()} className="flex items-center gap-1.5 text-xs text-green-400 font-semibold hover:text-green-300 no-print">
               <Printer className="w-3.5 h-3.5"/> Print
             </button>
           </div>
@@ -523,7 +581,7 @@ export default function Land() {
             <table className="w-full text-sm">
               <thead>
                 <tr style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-                  {["Field","Crop","Status","Reason","Health %","Moisture","Pest Risk","Temp","pH","NPK"].map(h=>(
+                  {["Field","Crop","Status","Reason","Health %","Moisture","Pest","Temp","pH","NPK"].map(h=>(
                     <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-400">{h}</th>
                   ))}
                 </tr>
@@ -533,20 +591,18 @@ export default function Land() {
                   <tr key={p.id} className="border-b transition-colors cursor-pointer hover:bg-white/5"
                     style={{borderColor:"rgba(255,255,255,0.05)"}}
                     onClick={()=>setSelPlot(p.id)}>
-                    <td className="px-4 py-3 font-semibold text-white">{p.name}</td>
+                    <td className="px-4 py-3 font-semibold text-white truncate max-w-[120px]">{p.name}</td>
                     <td className="px-4 py-3 text-slate-300">{p.crop}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-bold px-2 py-1 rounded-full ${p.open?"bg-green-500/20 text-green-300":p.warning?"bg-amber-500/20 text-amber-300":"bg-slate-500/20 text-slate-400"}`}>
                         {p.open?"OPEN":p.warning?"WARNING":"CLOSED"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-400 text-xs max-w-[180px]">{p.reason}</td>
+                    <td className="px-4 py-3 text-slate-400 text-xs max-w-[160px] truncate">{p.reason}</td>
                     <td className="px-4 py-3 font-bold" style={{color:getHealthColor(p.sensor.health)}}>{p.sensor.health}%</td>
                     <td className="px-4 py-3 text-slate-300">{Math.round(p.sensor.moisture)}%</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold ${p.sensor.pest==="high"?"text-red-400":p.sensor.pest==="medium"?"text-amber-400":"text-green-400"}`}>
-                        {p.sensor.pest}
-                      </span>
+                      <span className={`text-xs font-semibold ${p.sensor.pest==="high"?"text-red-400":p.sensor.pest==="medium"?"text-amber-400":"text-green-400"}`}>{p.sensor.pest}</span>
                     </td>
                     <td className="px-4 py-3 text-slate-300">{p.sensor.temp}°C</td>
                     <td className="px-4 py-3 text-slate-300">{p.sensor.pH}</td>
@@ -558,19 +614,18 @@ export default function Land() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="text-center py-6 text-slate-500 text-sm border-t" style={{borderColor:"rgba(255,255,255,0.06)"}}>
           <p className="text-slate-400 italic mb-1">"Family-driven smart farming — every plot opens with care, calculation, and legacy."</p>
           <p className="text-xs">land · Smart Farm Dashboard · AgroWave · Kharif 2026</p>
         </div>
       </div>
 
-      {/* ─── SETTINGS PANEL ─────────────────────────────────────── */}
+      {/* Settings Panel */}
       <AnimatePresence>
         {showSettings && (
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{background:"rgba(0,0,0,0.7)",backdropFilter:"blur(4px)"}}>
+            style={{background:"rgba(0,0,0,0.75)",backdropFilter:"blur(6px)"}}>
             <motion.div initial={{scale:.94,y:20}} animate={{scale:1,y:0}} exit={{scale:.94,y:20}}
               className="w-full max-w-lg rounded-2xl p-6 overflow-y-auto max-h-[90vh]"
               style={{background:"linear-gradient(145deg,#0F2027,#1a3a4a)",border:"1px solid rgba(16,185,129,0.3)"}}>

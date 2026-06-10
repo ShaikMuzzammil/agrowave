@@ -6,19 +6,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sprout, LayoutDashboard, CloudRain, Package, TrendingUp,
   Calendar, Mail, Menu, X, Bell, ChevronRight, Home,
-  Info, Map
+  Map
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 
 const NAV = [
   { href:"/dashboard",     label:"Dashboard",  icon:LayoutDashboard },
-  { href:"/land",          label:"Land",       icon:Map },
-  { href:"/field-monitor", label:"My Fields",  icon:Sprout },
-  { href:"/weather",       label:"Weather",    icon:CloudRain },
-  { href:"/market",        label:"Market",     icon:TrendingUp },
-  { href:"/inventory",     label:"Inventory",  icon:Package },
-  { href:"/calendar",      label:"Calendar",   icon:Calendar },
-  { href:"/contact",       label:"Contact",    icon:Mail },
+  { href:"/land",          label:"Land",        icon:Map },
+  { href:"/field-monitor", label:"My Fields",   icon:Sprout },
+  { href:"/weather",       label:"Weather",     icon:CloudRain },
+  { href:"/market",        label:"Market",      icon:TrendingUp },
+  { href:"/inventory",     label:"Inventory",   icon:Package },
+  { href:"/calendar",      label:"Calendar",    icon:Calendar },
+  { href:"/contact",       label:"Contact",     icon:Mail },
 ];
 
 const HOME_SECTIONS = [
@@ -60,13 +60,14 @@ export default function Navigation() {
   return (
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-white/95 backdrop-blur-xl shadow-sm border-b border-slate-200/80" : "bg-transparent"
+        scrolled ? "bg-white/97 backdrop-blur-xl shadow-sm border-b border-slate-200/80" : "bg-transparent"
       }`}>
         <div className="container">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-brand-grad flex items-center justify-center shadow-green" style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-green"
+                style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
                 <Sprout className="w-5 h-5 text-white"/>
               </div>
               <div>
@@ -76,46 +77,66 @@ export default function Navigation() {
             </Link>
 
             {/* Desktop links */}
-            <div className="hidden lg:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-0.5 nav-links-wrap overflow-x-auto">
               {pathname === "/" ? (
                 HOME_SECTIONS.map(s => (
                   <button key={s.id} onClick={() => scroll(s.id)}
-                    className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                      activeSection===s.id ? "text-brand-600 bg-brand-50" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                    className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                      activeSection===s.id
+                        ? "text-brand-600 bg-brand-50 shadow-sm"
+                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
                     }`}>
                     {s.s}
-                    {activeSection===s.id && <motion.div layoutId="navUnderline" className="absolute bottom-0.5 left-3 right-3 h-0.5 bg-brand-500 rounded-full"/>}
+                    {activeSection===s.id && (
+                      <motion.div layoutId="navUnderline"
+                        className="absolute bottom-0.5 left-3 right-3 h-0.5 bg-brand-500 rounded-full"/>
+                    )}
                   </button>
                 ))
-              ) : NAV.slice(0,7).map(n => {
-                const active = pathname===n.href || (n.href!=="/dashboard" && n.href!=="/" && pathname.startsWith(n.href));
-                const Icon = n.icon;
-                const isLand = n.href === "/land";
-                return (
-                  <Link key={n.href} href={n.href}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all relative ${
-                      active
-                        ? isLand ? "text-white bg-brand-600 shadow-green" : "text-brand-600 bg-brand-50"
-                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                    }`}
-                    style={isLand && !active ? {border:"1.5px solid #A7F3D0",color:"#047857"} : {}}>
-                    <Icon className="w-4 h-4"/>
-                    {isLand ? <span className="font-bold">land</span> : n.label}
-                    {active && !isLand && <motion.div layoutId="navActive" className="absolute bottom-0.5 left-3 right-3 h-0.5 bg-brand-500 rounded-full"/>}
-                  </Link>
-                );
-              })}
+              ) : (
+                NAV.map(n => {
+                  const active = pathname===n.href ||
+                    (n.href!=="/dashboard" && n.href!=="/" && pathname.startsWith(n.href));
+                  const Icon = n.icon;
+                  const isLand = n.href === "/land";
+                  return (
+                    <Link key={n.href} href={n.href}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all relative whitespace-nowrap ${
+                        active
+                          ? isLand
+                            ? "text-white font-bold"
+                            : "text-brand-700 font-semibold"
+                          : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                      }`}
+                      style={active
+                        ? isLand
+                          ? {background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 0 0 2px rgba(16,185,129,0.2)"}
+                          : {background:"linear-gradient(135deg,#ECFDF5,#D1FAE5)",boxShadow:"0 0 0 2px rgba(16,185,129,0.18)"}
+                        : isLand
+                          ? {border:"1.5px solid #A7F3D0",color:"#047857"}
+                          : {}
+                      }>
+                      <Icon className="w-4 h-4 flex-shrink-0"/>
+                      {isLand ? <span className="font-bold">land</span> : n.label}
+                      {active && !isLand && (
+                        <motion.div layoutId="navActive"
+                          className="absolute bottom-0.5 left-3 right-3 h-0.5 bg-brand-500 rounded-full"/>
+                      )}
+                    </Link>
+                  );
+                })
+              )}
             </div>
 
-            {/* Right */}
-            <div className="flex items-center gap-2">
-              {/* Notifications */}
+            {/* Right section */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Notification bell */}
               <div className="relative">
                 <button onClick={() => setShowNotifs(!showNotifs)}
                   className="relative p-2.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-all">
                   <Bell className="w-5 h-5"/>
                   {unread.length > 0 && (
-                    <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center notif-badge-pulse">
                       {unread.length > 9 ? "9+" : unread.length}
                     </span>
                   )}
@@ -135,13 +156,13 @@ export default function Navigation() {
                       </div>
                       <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
                         {notifications.length === 0 ? (
-                          <div className="py-8 text-center text-slate-400 text-sm">No notifications</div>
+                          <div className="py-8 text-center text-slate-400 text-sm">No notifications yet</div>
                         ) : notifications.slice(0,10).map(n => (
                           <button key={n.id} onClick={() => markRead(n.id)}
                             className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors flex items-start gap-3 ${!n.read ? "bg-brand-50/50" : ""}`}>
                             <span className="text-lg mt-0.5">{n.type==="success"?"✅":n.type==="warning"?"⚠️":n.type==="error"?"🚨":"ℹ️"}</span>
                             <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-medium ${!n.read?"text-slate-800":"text-slate-600"}`}>{n.title}</p>
+                              <p className={`text-sm font-medium truncate ${!n.read?"text-slate-800":"text-slate-600"}`}>{n.title}</p>
                               <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{n.body}</p>
                               <p className="text-[10px] text-slate-300 mt-1">{n.time}</p>
                             </div>
@@ -173,8 +194,9 @@ export default function Navigation() {
           </div>
         </div>
 
-        {/* Live strip */}
-        <div className="hidden sm:flex bg-brand-600 px-6 py-1.5 items-center justify-between" style={{background:"#059669"}}>
+        {/* Live status strip */}
+        <div className="hidden sm:flex items-center justify-between px-6 py-1.5"
+          style={{background:"linear-gradient(90deg,#047857,#059669)"}}>
           <div className="flex items-center gap-3">
             <span className="dot-live" style={{background:"#A7F3D0"}}/>
             <span className="text-green-100 text-[11px] font-semibold tracking-widest">LIVE MONITORING</span>
@@ -183,7 +205,9 @@ export default function Navigation() {
           <div className="flex items-center gap-4 text-[11px] text-green-200">
             <span>6 Plots Active</span>
             <span>·</span>
-            <span className={unread.length > 0 ? "text-yellow-300 font-semibold" : ""}>{unread.length} New Alerts</span>
+            <span className={unread.length > 0 ? "text-yellow-300 font-semibold animate-pulse" : ""}>
+              {unread.length > 0 ? `⚠ ${unread.length} New Alerts` : "✓ All Clear"}
+            </span>
           </div>
         </div>
       </nav>
@@ -195,27 +219,46 @@ export default function Navigation() {
             <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
               className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden"
               onClick={() => setOpen(false)}/>
-            <motion.div initial={{x:"100%"}} animate={{x:0}} exit={{x:"100%"}} transition={{type:"spring",damping:25,stiffness:200}}
+            <motion.div initial={{x:"100%"}} animate={{x:0}} exit={{x:"100%"}}
+              transition={{type:"spring",damping:25,stiffness:200}}
               className="fixed top-0 right-0 bottom-0 z-50 w-72 bg-white shadow-float lg:hidden overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b">
-                <span className="font-bold text-slate-800">Menu</span>
-                <button onClick={() => setOpen(false)} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400"><X className="w-5 h-5"/></button>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                    <Sprout className="w-4 h-4 text-white"/>
+                  </div>
+                  <span className="font-bold text-slate-800">AgroWave</span>
+                </div>
+                <button onClick={() => setOpen(false)} className="p-2 rounded-xl hover:bg-slate-100 text-slate-400">
+                  <X className="w-5 h-5"/>
+                </button>
               </div>
               <div className="p-4 space-y-1">
-                {NAV.map(n => { const Icon=n.icon; const isLand=n.href==="/land"; return (
-                  <Link key={n.href} href={n.href} onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all ${
-                      pathname===n.href
-                        ? isLand ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-700"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}>
-                    <Icon className="w-4 h-4"/> {isLand ? "land" : n.label}
-                    {isLand && <span className="ml-auto badge badge-green text-[9px]">NEW</span>}
-                  </Link>
-                );})}
+                {NAV.map(n => {
+                  const Icon=n.icon;
+                  const isLand=n.href==="/land";
+                  const active=pathname===n.href;
+                  return (
+                    <Link key={n.href} href={n.href} onClick={() => setOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all ${
+                        active
+                          ? isLand ? "text-white font-bold" : "text-brand-700 bg-brand-50"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                      style={active && isLand ? {background:"linear-gradient(135deg,#059669,#10B981)"} : {}}>
+                      <Icon className="w-4 h-4"/>
+                      {isLand ? "land" : n.label}
+                      {isLand && !active && <span className="ml-auto badge badge-green text-[9px]">NEW</span>}
+                    </Link>
+                  );
+                })}
                 <div className="pt-3 border-t">
-                  <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-primary w-full justify-center"
-                    style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>Open Farm Dashboard</Link>
+                  <Link href="/dashboard" onClick={() => setOpen(false)}
+                    className="btn btn-primary w-full justify-center"
+                    style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                    Open Farm Dashboard
+                  </Link>
                 </div>
               </div>
             </motion.div>

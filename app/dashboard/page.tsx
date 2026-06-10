@@ -19,13 +19,9 @@ const TT = { contentStyle:{background:"#fff",border:"1px solid #E2E8F0",borderRa
 const RAIN=[{d:"Mon",r:12},{d:"Tue",r:0},{d:"Wed",r:45},{d:"Thu",r:8},{d:"Fri",r:0},{d:"Sat",r:22},{d:"Sun",r:5}];
 const TEMP=[{d:"Mon",hi:33,lo:23},{d:"Tue",hi:34,lo:23},{d:"Wed",hi:32,lo:22},{d:"Thu",hi:33,lo:23},{d:"Fri",hi:35,lo:24},{d:"Sat",hi:37,lo:25},{d:"Sun",hi:38,lo:27}];
 
+/* Fixed completions — 2 decimal places only, no overflow */
 const COMPLETIONS: Record<string,number> = {
-  A: 93.95571812921074,
-  B: 74.71632610612846,
-  C: 62.98277071487386,
-  D: 82.18390979790693,
-  E: 88.52486644323442,
-  F: 77.83659463739020,
+  A: 93.96, B: 74.72, C: 62.98, D: 82.18, E: 88.52, F: 77.84,
 };
 
 export default function Dashboard() {
@@ -119,7 +115,7 @@ export default function Dashboard() {
               className="hint-banner mb-5 flex items-start justify-between gap-3">
               <div className="flex items-start gap-2">
                 <Info className="w-4 h-4 flex-shrink-0 mt-0.5"/>
-                <span><strong>Dashboard Guide:</strong> Click any <strong>field card</strong> on the left to expand details. Use <strong>Irrigate All</strong> to water every plot. The centre map shows live moisture — click any plot tile for details. The <strong>Farm Health Radar</strong> (right) summarises all 6 plots.</span>
+                <span><strong>Dashboard Guide:</strong> Click any <strong>field card</strong> on the left to expand details. Use <strong>Irrigate All</strong> to water every plot. The centre map shows live moisture — click any plot tile for details. The <strong>Farm Health Radar</strong> (right) summarises all 6 plots. Toggle <strong>AUTO</strong> on each card for automatic irrigation below 35% moisture.</span>
               </div>
               <button onClick={()=>setShowHint(false)} className="flex-shrink-0 text-brand-500 hover:text-brand-700 p-1">
                 <X className="w-4 h-4"/>
@@ -131,9 +127,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* ── LEFT — Plot list ── */}
           <div className="lg:col-span-3 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between sticky top-[72px] bg-white/80 backdrop-blur z-10 py-2 px-1 rounded-xl">
               <h2 className="font-bold text-slate-700 text-sm uppercase tracking-wider">Field Overview</h2>
-              <button onClick={irrigateAll} className="flex items-center gap-1 text-xs text-brand-600 font-semibold hover:text-brand-700">
+              <button onClick={irrigateAll} className="flex items-center gap-1 text-xs text-brand-600 font-semibold hover:text-brand-700 bg-brand-50 px-2 py-1 rounded-lg border border-brand-100">
                 <RefreshCw className="w-3 h-3"/> Irrigate All
               </button>
             </div>
@@ -147,11 +143,11 @@ export default function Dashboard() {
                   className={`card cursor-pointer transition-all border-2 ${sel===p.id?"border-brand-400 ring-2 ring-brand-100":"border-slate-200 hover:border-brand-200"}`}
                   style={{boxShadow:sel===p.id?"0 4px 20px rgba(16,185,129,0.14)":"0 2px 8px rgba(0,0,0,0.04)"}}>
                   <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-bold text-slate-800 text-sm">{p.name}</p>
-                      <p className="text-[11px] text-slate-400">{p.crop} · {p.size}ac · {p.phase}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-slate-800 text-sm truncate">{p.name}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{p.crop} · {p.size}ac · {p.phase}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0 ml-2">
                       <span className="font-bold text-sm" style={{color:mc}}>{Math.round(p.moisture)}%</span>
                       <div className="text-[9px] text-slate-400">moisture</div>
                     </div>
@@ -169,7 +165,7 @@ export default function Dashboard() {
                         <span className="text-[8px] font-bold text-slate-600">{Math.round(p.moisture)}%</span>
                       </div>
                     </div>
-                    <div className="flex-1 space-y-1.5">
+                    <div className="flex-1 space-y-1.5 min-w-0">
                       {[
                         {l:"Soil pH",  v:p.ph,    max:9,   c:"#10B981"},
                         {l:"Health",   v:p.health, max:100, c:hc},
@@ -182,7 +178,7 @@ export default function Dashboard() {
                               animate={{width:`${(s.v/s.max)*100}%`}} transition={{duration:0.9}}
                               style={{background:s.c}}/>
                           </div>
-                          <span className="text-[9px] font-mono text-slate-500 w-6 text-right">{s.v}{s.l==="Temp"?"°":""}</span>
+                          <span className="text-[9px] font-mono text-slate-500 w-6 text-right shrink-0">{s.v}{s.l==="Temp"?"°":""}</span>
                         </div>
                       ))}
                     </div>
@@ -190,21 +186,28 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-50">
                     <span className={`badge text-[9px] ${p.pestRisk==="high"?"badge-red":p.pestRisk==="medium"?"badge-amber":"badge-green"}`}>{p.pestRisk} pest</span>
                     <span className={`badge text-[9px] ${getMoistureLabel(p.moisture)==="Optimal"?"badge-green":getMoistureLabel(p.moisture)==="Good"?"badge-blue":"badge-amber"}`}>{getMoistureLabel(p.moisture)}</span>
-                    <button onClick={e=>{e.stopPropagation();toggleAutoIrr(p.id);}}
-                      className={`ml-auto text-[9px] px-2 py-1 rounded-lg border font-semibold transition-all ${p.autoIrr?"bg-brand-500 text-white border-brand-500":"border-slate-200 text-slate-400 hover:border-brand-300"}`}>
-                      {p.autoIrr?"▶ AUTO":"▐▐ AUTO"}
+                    {/* AUTO button — clearly visible ON/OFF */}
+                    <button
+                      onClick={e=>{e.stopPropagation();toggleAutoIrr(p.id);}}
+                      className="ml-auto text-[10px] px-2.5 py-1 rounded-lg font-bold transition-all border"
+                      style={p.autoIrr
+                        ? {background:"linear-gradient(135deg,#059669,#10B981)",color:"#fff",border:"1.5px solid #059669",boxShadow:"0 2px 8px rgba(16,185,129,0.35)"}
+                        : {background:"#F8FAFC",color:"#94A3B8",border:"1.5px solid #CBD5E1"}
+                      }
+                    >
+                      {p.autoIrr ? "▶ AUTO ON" : "▐▐ AUTO OFF"}
                     </button>
                   </div>
-                  {/* KHARIF completion */}
+                  {/* KHARIF completion — truncated to 2 decimals */}
                   <div className="mt-2 text-[9px] text-slate-400">
-                    Season: <span className="font-mono text-brand-600" title={`${compl}%`}>{compl.toFixed(2)}%</span>
+                    Season: <span className="font-mono text-brand-600">{compl.toFixed(2)}%</span>
                   </div>
                 </motion.div>
               );
             })}
             <Link href="/field-monitor"
               className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 text-xs font-semibold transition-all">
-              <Plus className="w-3 h-3"/> Add New Plot
+              <Plus className="w-3 h-3"/> Manage Plots in Field Monitor
             </Link>
           </div>
 
@@ -235,8 +238,8 @@ export default function Dashboard() {
                         borderColor: isSelected ? mc : `${mc}40`,
                         boxShadow: isSelected ? `0 4px 16px ${mc}30` : "none"
                       }}>
-                      <div className="font-bold text-slate-800 text-xs mb-0.5">{p.name}</div>
-                      <div className="text-[10px] text-slate-400 mb-2">{p.crop} · {p.phase}</div>
+                      <div className="font-bold text-slate-800 text-xs mb-0.5 truncate">{p.name}</div>
+                      <div className="text-[10px] text-slate-400 mb-2 truncate">{p.crop} · {p.phase}</div>
                       <div className="h-1.5 bg-white/60 rounded-full overflow-hidden mb-1">
                         <motion.div className="h-full rounded-full" initial={{width:0}}
                           animate={{width:`${p.moisture}%`}} transition={{duration:1}}
@@ -259,11 +262,11 @@ export default function Dashboard() {
                 <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}>
                   <Card hover={false} style={{background:"linear-gradient(135deg,#0F172A,#1E293B)",border:"none"}}>
                     <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="font-bold text-white text-lg">{selPlot.name}</h3>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-white text-lg truncate">{selPlot.name}</h3>
                         <p className="text-slate-400 text-sm">{selPlot.crop} · {selPlot.size}ac · {selPlot.area} · {selPlot.phase}</p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0 ml-3">
                         <button onClick={()=>irrigate(selPlot.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white"
                           style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
@@ -285,8 +288,8 @@ export default function Dashboard() {
                         {l:"K (kg/ha)", v:selPlot.npk.k,                       c:"#FCD34D"},
                         {l:"Pest",      v:selPlot.pestRisk.toUpperCase(),       c:selPlot.pestRisk==="high"?"#F87171":selPlot.pestRisk==="medium"?"#FCD34D":"#4ADE80"},
                       ].map(s=>(
-                        <div key={s.l} className="text-center">
-                          <div className="text-lg font-bold" style={{color:s.c}}>{s.v}</div>
+                        <div key={s.l} className="text-center overflow-hidden">
+                          <div className="text-lg font-bold truncate" style={{color:s.c}}>{s.v}</div>
                           <div className="text-slate-500 text-[10px]">{s.l}</div>
                         </div>
                       ))}
@@ -295,7 +298,7 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3 text-xs text-slate-400">
                         <span>Last watered: {selPlot.lastWatered}</span>
                         <span>·</span>
-                        <span>Season: {COMPLETIONS[selPlot.id]?.toFixed(2)}%</span>
+                        <span>Season: {(COMPLETIONS[selPlot.id]||75).toFixed(2)}%</span>
                         <Link href="/field-monitor" className="ml-auto flex items-center gap-1 text-green-400 hover:text-green-300 font-semibold">
                           Full Analysis <ChevronRight className="w-3 h-3"/>
                         </Link>

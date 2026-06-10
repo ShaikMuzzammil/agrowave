@@ -198,7 +198,7 @@ export default function FieldMonitor() {
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
                     <button onClick={()=>toggleAutoIrr(selPlot.id)}
-                      className={`btn text-sm px-4 py-2 ${selPlot.autoIrr?"btn-primary":"btn-outline"}`}
+                      className={`btn text-sm px-4 py-2 font-bold ${selPlot.autoIrr ? "btn-primary" : "btn-outline"}`}
                       style={selPlot.autoIrr?{background:"linear-gradient(135deg,#059669,#10B981)"}:{}}>
                       <Droplets className="w-4 h-4"/> Auto-Irrigate: {selPlot.autoIrr?"ON":"OFF"}
                     </button>
