@@ -684,3 +684,25 @@ select option { background: #fff; color: var(--slate-800); }
   0%   { transform: translateX(0); }
   100% { transform: translateX(-33.333%); }
 }
+
+/* label-xs for form labels */
+.label-xs {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+/* Comparison table */
+.compare-row:nth-child(odd) td { background: #F8FAFC; }
+.compare-row:hover td { background: rgba(16,185,129,0.04); }
+.compare-row td {
+  padding: 14px 20px;
+  font-size: 14px;
+  color: #1E293B;
+  border-bottom: 1px solid #F1F5F9;
+  transition: background 0.15s;
+}

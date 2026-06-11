@@ -719,93 +719,35 @@ export default function Home() {
 
       <div className="section-divider"/>
 
-      {/* CONTACT HOME SECTION */}
+      {/* CONTACT HOME SECTION — minimal CTA */}
       <section id="contact-section" className="section section-dark">
         <div className="container">
-          <div className="grid md:grid-cols-2 gap-16 items-center max-w-5xl mx-auto">
-            <motion.div initial={{opacity:0,x:-24}} whileInView={{opacity:1,x:0}} viewport={{once:true}}>
-              <div className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-6">
-                <Mail className="w-4 h-4"/> Get In Touch
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                Questions about<br/><span className="grad-text">AgroWave?</span>
-              </h2>
-              <p className="text-slate-400 text-lg mb-8 leading-relaxed">
-                We're here to help Indian farmers succeed. Reach out for support, partnerships, or feedback.
-              </p>
-              <div className="space-y-4 mb-8">
-                {[
-                  {icon:"📞", label:"Kisan Helpline", val:"1800-180-1551"},
-                  {icon:"📧", label:"Email", val:"hello@agrowave.farm"},
-                  {icon:"📍", label:"Location", val:"Hyderabad, Telangana"},
-                ].map((c,i)=>(
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="text-xl">{c.icon}</span>
-                    <div>
-                      <div className="text-slate-400 text-xs font-semibold uppercase tracking-wide">{c.label}</div>
-                      <div className="text-white font-semibold">{c.val}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Link href="/contact" className="btn btn-primary text-base px-8 py-3.5 rounded-xl" style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
-                Open Contact Page <ArrowRight className="w-5 h-5"/>
+          <motion.div initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}}
+            className="max-w-2xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-6">
+              <Mail className="w-4 h-4"/> Get In Touch
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-5">
+              Have a question for <span className="grad-text">AgroWave?</span>
+            </h2>
+            <p className="text-slate-400 text-lg mb-8 leading-relaxed">
+              We're here to help Indian farmers succeed. Reach out for support, partnerships, or feedback — we respond within 24 hours.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/contact"
+                className="btn btn-primary text-base px-10 py-3.5 rounded-xl flex items-center gap-2"
+                style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 8px 32px rgba(16,185,129,0.4)"}}>
+                <Mail className="w-5 h-5"/> Contact Me
               </Link>
-            </motion.div>
-            <motion.div initial={{opacity:0,x:24}} whileInView={{opacity:1,x:0}} viewport={{once:true}}>
-              <ContactMiniForm/>
-            </motion.div>
-          </div>
+              <a href="tel:18001801551"
+                className="btn btn-outline text-base px-8 py-3.5 rounded-xl flex items-center gap-2"
+                style={{border:"1.5px solid rgba(167,243,208,0.4)",color:"#A7F3D0"}}>
+                📞 1800-180-1551
+              </a>
+            </div>
+          </motion.div>
         </div>
       </section>
     </div>
-  );
-}
-
-function ContactMiniForm() {
-  const [form, setForm] = React.useState({name:"",email:"",msg:""});
-  const [sent, setSent] = React.useState(false);
-  const [busy, setBusy] = React.useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.email || !form.msg) return;
-    setBusy(true);
-    try {
-      await fetch("/api/contact", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name:form.name,email:form.email,message:form.msg,subject:"Home Page Contact"}) });
-      setSent(true);
-    } finally { setBusy(false); }
-  };
-
-  if (sent) return (
-    <div className="rounded-2xl p-8 text-center" style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(16,185,129,0.3)"}}>
-      <div className="text-5xl mb-4">✅</div>
-      <h3 className="text-xl font-bold text-white mb-2">Message Sent!</h3>
-      <p className="text-slate-400">We'll reply to <span className="text-green-400">{form.email}</span> within 24h.</p>
-    </div>
-  );
-
-  return (
-    <form onSubmit={handleSubmit} className="rounded-2xl p-8 space-y-4" style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",backdropFilter:"blur(10px)"}}>
-      <h3 className="font-bold text-xl text-white mb-5 flex items-center gap-2">📩 Quick Message</h3>
-      <div>
-        <label className="text-xs font-semibold text-slate-400 block mb-1.5">YOUR NAME</label>
-        <input required placeholder="Ramesh Kumar" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}
-          style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.15)",color:"#fff"}}/>
-      </div>
-      <div>
-        <label className="text-xs font-semibold text-slate-400 block mb-1.5">EMAIL</label>
-        <input required type="email" placeholder="farmer@example.com" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}
-          style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.15)",color:"#fff"}}/>
-      </div>
-      <div>
-        <label className="text-xs font-semibold text-slate-400 block mb-1.5">MESSAGE</label>
-        <textarea required rows={3} placeholder="How can AgroWave help?" value={form.msg} onChange={e=>setForm(p=>({...p,msg:e.target.value}))}
-          style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.15)",color:"#fff"}}/>
-      </div>
-      <button type="submit" disabled={busy} className="btn btn-primary w-full py-3" style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
-        {busy ? "Sending…" : "Send Message"}
-      </button>
-    </form>
   );
 }
