@@ -126,13 +126,14 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* ── LEFT — Plot list ── */}
-          <div className="lg:col-span-3 space-y-3">
-            <div className="flex items-center justify-between sticky top-[72px] bg-white/80 backdrop-blur z-10 py-2 px-1 rounded-xl">
+          <div className="lg:col-span-3 flex flex-col" style={{maxHeight:"calc(100vh - 140px)"}}>
+            <div className="flex items-center justify-between flex-shrink-0 pb-2 mb-1 border-b border-slate-100">
               <h2 className="font-bold text-slate-700 text-sm uppercase tracking-wider">Field Overview</h2>
               <button onClick={irrigateAll} className="flex items-center gap-1 text-xs text-brand-600 font-semibold hover:text-brand-700 bg-brand-50 px-2 py-1 rounded-lg border border-brand-100">
                 <RefreshCw className="w-3 h-3"/> Irrigate All
               </button>
             </div>
+            <div className="overflow-y-auto flex-1 space-y-3 pr-1" style={{scrollbarWidth:"thin"}}>
             {plots.map((p,i)=>{
               const mc = getMoistureColor(p.moisture);
               const hc = getHealthColor(p.health);
@@ -178,7 +179,7 @@ export default function Dashboard() {
                               animate={{width:`${(s.v/s.max)*100}%`}} transition={{duration:0.9}}
                               style={{background:s.c}}/>
                           </div>
-                          <span className="text-[9px] font-mono text-slate-500 w-6 text-right shrink-0">{s.v}{s.l==="Temp"?"°":""}</span>
+                          <span className="text-[9px] font-mono text-slate-500 w-7 text-right shrink-0">{Math.round(s.v)}{s.l==="Temp"?"°":""}</span>
                         </div>
                       ))}
                     </div>
@@ -206,9 +207,10 @@ export default function Dashboard() {
               );
             })}
             <Link href="/field-monitor"
-              className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 text-xs font-semibold transition-all">
+              className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 text-xs font-semibold transition-all mt-1">
               <Plus className="w-3 h-3"/> Manage Plots in Field Monitor
             </Link>
+            </div>{/* end scroll container */}
           </div>
 
           {/* ── CENTRE — Live Farm Map ── */}
@@ -388,6 +390,9 @@ export default function Dashboard() {
               </div>
             </Card>
 
+            {/* Land Overview expanded card */}
+            <LandOverviewCard plots={plots} />
+
             {/* Quick links */}
             <div className="grid grid-cols-2 gap-2">
               {[
@@ -406,6 +411,44 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Inline Land Overview widget for Dashboard ── */
+function LandOverviewCard({plots}:{plots:any[]}) {
+  const [expanded, setExpanded] = useState(false);
+  const show = expanded ? plots : plots.slice(0,3);
+  const getHealthColor = (h:number) => h>=80?"#10B981":h>=60?"#F59E0B":"#EF4444";
+  return (
+    <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white" style={{boxShadow:"0 4px 20px rgba(0,0,0,0.07)"}}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+        <h3 className="font-bold text-slate-700 text-xs uppercase tracking-wider flex items-center gap-1.5">
+          <Map className="w-3.5 h-3.5 text-brand-500"/> Land Parcels
+        </h3>
+        <Link href="/land" className="text-[10px] text-brand-600 font-bold hover:text-brand-700">Open Map →</Link>
+      </div>
+      <div className="divide-y divide-slate-50">
+        {show.map(p=>(
+          <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background:getHealthColor(p.health)}}/>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-slate-800 truncate">{p.name}</p>
+              <p className="text-[10px] text-slate-400">{p.crop} · {p.size}ac ({(p.size*100).toFixed(0)}¢)</p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <span className="text-xs font-bold" style={{color:getHealthColor(p.health)}}>{Math.round(p.health)}%</span>
+              <p className="text-[9px] text-slate-400">{Math.round(p.moisture)}% H₂O</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      {plots.length>3 && (
+        <button onClick={()=>setExpanded(!expanded)}
+          className="w-full py-2 text-[11px] font-semibold text-brand-600 hover:bg-brand-50 transition-colors flex items-center justify-center gap-1 border-t border-slate-100">
+          {expanded?`▲ Collapse`:`▼ Show all ${plots.length} plots`}
+        </button>
+      )}
     </div>
   );
 }

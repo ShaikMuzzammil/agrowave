@@ -168,15 +168,20 @@ export default function LandView(){
       {/* ── TOP BAR ── */}
       <div className="flex items-center justify-between px-4 py-2.5 flex-shrink-0 z-20"
         style={{background:"rgba(5,15,8,0.95)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(16,185,129,0.2)"}}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:bg-white/10 transition-all"
+            style={{border:"1px solid rgba(255,255,255,0.15)"}}>
+            🏠 Dashboard
+          </Link>
           <Link href="/land"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-green-300 hover:bg-green-500/10 transition-all"
             style={{border:"1px solid rgba(16,185,129,0.3)"}}>
-            <ArrowLeft className="w-3.5 h-3.5"/> Back to Land
+            <ArrowLeft className="w-3.5 h-3.5"/> Land
           </Link>
-          <div>
-            <h1 className="text-sm font-bold text-white leading-none">Land Intelligence View</h1>
-            <p className="text-[10px] text-green-400">{plotData.length} plots · Live data · Kharif 2026</p>
+          <div className="ml-1">
+            <h1 className="text-sm font-bold text-white leading-none">🔭 Land Intelligence View</h1>
+            <p className="text-[10px] text-green-400">{plotData.length} plots · Live sensor data · Kharif 2026</p>
           </div>
         </div>
 
@@ -405,7 +410,7 @@ export default function LandView(){
                       <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 animate-pulse flex-shrink-0">● LIVE UPDATE</span>
                     )}
                   </div>
-                  <p className="text-slate-400 text-xs truncate">{selPlot.crop} · {selPlot.phase} · {selPlot.size}ac · {selPlot.area}</p>
+                  <p className="text-slate-400 text-xs truncate">{selPlot.crop} · {selPlot.phase} · {selPlot.size}ac ({(selPlot.size*100).toFixed(0)} cents) · {selPlot.area}</p>
                 </div>
                 <button onClick={nextPlot} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all flex-shrink-0">
                   <ChevronRight className="w-4 h-4"/>

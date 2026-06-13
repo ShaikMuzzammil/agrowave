@@ -356,11 +356,16 @@ select option { background: #fff; color: var(--slate-800); }
 /* === PRINT STYLES === */
 @media print {
   .no-print { display: none !important; }
-  nav { display: none !important; }
-  body { background: white; color: black; }
-  .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
-  .section { padding: 24px 0; }
-  @page { margin: 2cm; }
+  nav, header, footer { display: none !important; }
+  body { background: white !important; color: black !important; }
+  .card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+  .section { padding: 24px 0 !important; }
+  /* Hide browser URL header/footer in print */
+  @page { margin: 1cm; size: A4; }
+  @page :first { margin-top: 1cm; }
+  /* Suppress URL bar shown by Chrome/Firefox */
+  html::before, html::after { display: none !important; content: none !important; }
+  a[href]::after { content: none !important; }
 }
 
 /* === HERO GRADIENT === */
@@ -860,3 +865,60 @@ input[type="range"]::-moz-range-thumb {
   font-size: 0.8125rem;
   margin-bottom: 1.25rem;
 }
+
+/* ─── Global spacing & border refinements ─── */
+/* Reduce border clutter globally - more breathing room */
+.card { border-width: 1px; }
+nav .flex { gap: 0.25rem; }
+
+/* Value truncation - fix long decimal overflow everywhere */
+.val-truncate {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+/* Section borders refinement - add breathing space */
+.section-divider { margin: 0; height: 1px; background: linear-gradient(to right, transparent, #E2E8F0 20%, #E2E8F0 80%, transparent); }
+
+/* Calendar dot enhancement */
+.cal-dot-irrigation { background: #38BDF8; box-shadow: 0 0 4px rgba(56,189,248,0.7); }
+.cal-dot-fertilizer { background: #F59E0B; box-shadow: 0 0 4px rgba(245,158,11,0.7); }
+.cal-dot-pesticide  { background: #F43F5E; box-shadow: 0 0 4px rgba(244,63,94,0.7); }
+.cal-dot-harvest    { background: #10B981; box-shadow: 0 0 4px rgba(16,185,129,0.7); }
+.cal-dot-planting   { background: #8B5CF6; box-shadow: 0 0 4px rgba(139,92,246,0.7); }
+.cal-dot-other      { background: #94A3B8; }
+.cal-day-today { 
+  background: #065F46 !important; 
+  color: white !important;
+  box-shadow: 0 0 0 2px #10B981, 0 0 0 4px rgba(16,185,129,0.3) !important;
+  font-weight: 800 !important;
+}
+
+/* Pesticide toggle in land page */
+.pesticide-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-radius: 1rem;
+  background: rgba(244,63,94,0.08);
+  border: 1.5px solid rgba(244,63,94,0.25);
+  transition: all 0.2s;
+}
+.pesticide-toggle.active {
+  background: rgba(244,63,94,0.15);
+  border-color: rgba(244,63,94,0.5);
+  box-shadow: 0 0 0 2px rgba(244,63,94,0.2);
+}
+
+/* Remove link decoration from print output */
+@media print {
+  a::after { content: none !important; }
+  a[href]::after { content: none !important; display: none !important; }
+}
+
+/* Navigation gap fix */
+.nav-links-wrap { gap: 0; }

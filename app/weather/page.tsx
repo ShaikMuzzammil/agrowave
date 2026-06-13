@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Wind, Droplets, Eye, Gauge, Sun, Info, Printer } from "lucide-react";
+import { Wind, Droplets, Eye, Gauge, Sun, Info, Printer, Bell } from "lucide-react";
 import Card from "@/components/Card";
 import { FORECAST, HOURLY } from "@/lib/utils";
+import { useStore } from "@/lib/store";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const TT = { contentStyle:{background:"#fff",border:"1px solid #E2E8F0",borderRadius:"10px",fontFamily:"DM Sans",fontSize:"12px"} };
@@ -33,9 +34,31 @@ function UVBar({ uv }: { uv: number }) {
 
 export default function Weather() {
   const [unit, setUnit] = useState<"C"|"F">("C");
+  const [alertDismissed, setAlertDismissed] = useState(false);
+  const { pushNotif } = useStore();
   const conv = (t:number) => unit==="C" ? t : Math.round(t*9/5+32);
   const now = HOURLY[new Date().getHours()];
   const uvIndex = 8;
+
+  /* Auto-push rain alert when heavy rain is forecast */
+  useEffect(() => {
+    const heavy = FORECAST.find(f => f.rain >= 70);
+    if (heavy) {
+      const fired = sessionStorage.getItem("rain-alert-fired");
+      if (!fired) {
+        setTimeout(() => {
+          pushNotif({
+            title: `⛈️ Rain Alert — ${heavy.rain}% chance ${heavy.day}`,
+            body: `${heavy.desc} forecast for ${heavy.day}. Postpone fertilizer/pesticide application. Save water this week.`,
+            type: "warning",
+            time: "just now",
+          });
+          sessionStorage.setItem("rain-alert-fired", "1");
+        }, 1500);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="pt-[88px] min-h-screen" style={{background:"linear-gradient(160deg,#EFF6FF 0%,#F0FDF4 50%,#FFFBEB 100%)"}}>
@@ -64,6 +87,20 @@ export default function Weather() {
       </div>
 
       <div className="container py-8">
+        {/* Rain Alert Banner — shows when heavy rain forecast */}
+        {!alertDismissed && FORECAST.some(f=>f.rain>=60) && (
+          <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}}
+            className="flex items-center gap-3 mb-5 px-4 py-3 rounded-2xl"
+            style={{background:"linear-gradient(135deg,#0C4A6E,#075985)",border:"1.5px solid #0EA5E9",boxShadow:"0 4px 20px rgba(14,165,233,0.25)"}}>
+            <span className="text-2xl flex-shrink-0">⛈️</span>
+            <div className="flex-1">
+              <p className="font-bold text-white text-sm">Heavy Rain Alert — {FORECAST.filter(f=>f.rain>=60).map(f=>`${f.day} (${f.rain}%)`).join(", ")}</p>
+              <p className="text-sky-200 text-xs mt-0.5">Skip fertilizer/pesticide applications on those days. A notification has been sent to your farm alerts.</p>
+            </div>
+            <button onClick={()=>setAlertDismissed(true)} className="text-sky-300 hover:text-white p-1 flex-shrink-0">✕</button>
+          </motion.div>
+        )}
+
         {/* Hint */}
         <div className="hint-banner mb-6">
           <Info className="w-4 h-4 flex-shrink-0"/>

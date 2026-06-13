@@ -132,17 +132,16 @@ export default function Navigation() {
                     );
                   })}
 
-                  {/* ── Contact separator link — left side, direct to /contact ── */}
+                  {/* ── Home button (inside app only) ── */}
                   <div className="flex items-center ml-1">
                     <div className="w-px h-5 bg-slate-200 mx-2"/>
-                    <Link href="/contact"
+                    <Link href="/"
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                        pathname==="/contact"
+                        pathname==="/"
                           ? "text-brand-700 bg-brand-50 font-semibold"
                           : "text-slate-400 hover:text-brand-600 hover:bg-brand-50"
                       }`}>
-                      <Mail className="w-3.5 h-3.5"/>
-                      Contact
+                      🏠 Home
                     </Link>
                   </div>
                 </div>
@@ -266,11 +265,11 @@ export default function Navigation() {
                     </Link>
                   );
                 })}
-                {/* Contact in mobile drawer */}
+                {/* Home link in mobile drawer */}
                 <div className="border-t pt-2 mt-1">
-                  <Link href="/contact" onClick={() => setOpen(false)}
+                  <Link href="/" onClick={() => setOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-500 hover:bg-slate-50">
-                    <Mail className="w-4 h-4"/> Contact
+                    🏠 Home
                   </Link>
                 </div>
                 <div className="pt-2 border-t">

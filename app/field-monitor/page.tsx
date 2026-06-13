@@ -13,6 +13,18 @@ const RISK_BADGE: Record<string,string> = { high:"badge-red", medium:"badge-ambe
 
 export default function FieldMonitor() {
   const { plots, updateMoisture, irrigate, toggleAutoIrr, addPlot, deletePlot, setField, pushNotif } = useStore();
+  const [confirmDelId, setConfirmDelId] = useState<string|null>(null);
+
+  const handleDelete = (id: string) => {
+    if (confirmDelId === id) {
+      deletePlot(id);
+      pushNotif({title:"🗑️ Plot Removed",body:"Plot deleted from farm map.",type:"warning",time:"just now"});
+      setConfirmDelId(null);
+    } else {
+      setConfirmDelId(id);
+      setTimeout(() => setConfirmDelId(null), 3500);
+    }
+  };
   const [sel, setSel]         = useState(plots[0]?.id || "A");
   const [showAdd, setShowAdd] = useState(false);
   const [editNPK, setEditNPK] = useState(false);
@@ -91,14 +103,15 @@ export default function FieldMonitor() {
 
       <div className="container py-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Plot list */}
-          <div className="lg:col-span-4 space-y-3">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="font-bold text-slate-800">All Plots</h2>
+          {/* Plot list — scrollable */}
+          <div className="lg:col-span-4 flex flex-col" style={{maxHeight:"calc(100vh - 160px)"}}>
+            <div className="flex items-center justify-between mb-2 flex-shrink-0">
+              <h2 className="font-bold text-slate-800">All Plots <span className="text-xs text-slate-400 font-normal">({plots.length})</span></h2>
               <Link href="/land" className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700">
                 <Map className="w-3 h-3"/> Land View
               </Link>
             </div>
+            <div className="overflow-y-auto flex-1 space-y-3 pr-1" style={{scrollbarWidth:"thin"}}>
             {plots.map((p,i) => {
               const mc = getMoistureColor(p.moisture);
               const hc = getHealthColor(p.health);
@@ -117,7 +130,7 @@ export default function FieldMonitor() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`badge ${RISK_BADGE[p.pestRisk]}`}>{p.pestRisk} pest</span>
-                      <span className={`badge ${p.health>80?"badge-green":p.health>60?"badge-amber":"badge-red"}`}>{p.health}%</span>
+                      <span className={`badge ${p.health>80?"badge-green":p.health>60?"badge-amber":"badge-red"}`}>{Math.round(p.health)}%</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -141,7 +154,7 @@ export default function FieldMonitor() {
                         <div key={s.l} className="flex items-center gap-2">
                           <span className="text-[9px] text-slate-400 w-12">{s.l}</span>
                           <div className="flex-1 progress"><div className="progress-fill" style={{width:`${(s.v/s.max)*100}%`,background:s.c}}/></div>
-                          <span className="text-[9px] font-mono text-slate-600 w-7 text-right">{s.v}{s.l==="Temp"?"°":""}</span>
+                          <span className="text-[9px] font-mono text-slate-600 w-8 text-right">{Math.round(s.v)}{s.l==="Temp"?"°":"%"}</span>
                         </div>
                       ))}
                     </div>
@@ -160,9 +173,10 @@ export default function FieldMonitor() {
               );
             })}
             <button onClick={()=>setShowAdd(true)}
-              className="flex items-center justify-center gap-2 w-full py-3.5 border-2 border-dashed border-slate-300 text-slate-500 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl text-sm font-semibold transition-all">
+              className="flex items-center justify-center gap-2 w-full py-3.5 border-2 border-dashed border-slate-300 text-slate-500 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl text-sm font-semibold transition-all flex-shrink-0 mt-2">
               <Plus className="w-4 h-4"/> Add New Plot
             </button>
+            </div>{/* end scroll container */}
           </div>
 
           {/* Detail panel */}
@@ -173,32 +187,35 @@ export default function FieldMonitor() {
                   <div className="flex items-start justify-between mb-5">
                     <div>
                       <h2 className="text-2xl font-bold text-slate-800">{selPlot.name}</h2>
-                      <p className="text-slate-500 text-sm">{selPlot.crop} · {selPlot.size} acres · {selPlot.area} · {selPlot.phase}</p>
+                      <p className="text-slate-500 text-sm">
+                        {selPlot.crop} · {selPlot.size} acres ({(selPlot.size * 100).toFixed(0)} cents) · {selPlot.area} · {selPlot.phase}
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={()=>irrigate(selPlot.id)} className="btn btn-primary text-sm px-4 py-2"
                         style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
                         <Droplets className="w-4 h-4"/> Irrigate
                       </button>
-                      <button onClick={()=>deletePlot(selPlot.id)} className="btn btn-ghost text-sm px-3 py-2 text-rose-500 hover:bg-rose-50 border border-rose-100">
-                        <Trash2 className="w-4 h-4"/>
+                      <button onClick={()=>handleDelete(selPlot.id)} title={confirmDelId===selPlot.id?"Click again to confirm delete":"Delete this plot"}
+                        className={`btn btn-ghost text-sm px-3 py-2 border transition-all ${confirmDelId===selPlot.id?"bg-rose-100 text-rose-700 border-rose-300 animate-pulse":"text-rose-400 hover:bg-rose-50 border-rose-100"}`}>
+                        {confirmDelId===selPlot.id ? <><Trash2 className="w-4 h-4"/> Confirm?</> : <Trash2 className="w-4 h-4"/>}
                       </button>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                     {[
-                      {l:"Moisture",    v:`${Math.round(selPlot.moisture)}%`,  c:getMoistureColor(selPlot.moisture)},
-                      {l:"Health",      v:`${selPlot.health}%`,                c:getHealthColor(selPlot.health)},
-                      {l:"Temperature", v:`${selPlot.temp}°C`,                 c:"#F59E0B"},
-                      {l:"Soil pH",     v:selPlot.ph.toFixed(1),               c:"#10B981"},
-                      {l:"Nitrogen (N)",v:`${selPlot.npk.n} kg/ha`,            c:"#3B82F6"},
-                      {l:"Phosphorus",  v:`${selPlot.npk.p} kg/ha`,            c:"#8B5CF6"},
-                      {l:"Potassium",   v:`${selPlot.npk.k} kg/ha`,            c:"#F59E0B"},
-                      {l:"Pest Risk",   v:selPlot.pestRisk.toUpperCase(),       c:selPlot.pestRisk==="high"?"#F43F5E":selPlot.pestRisk==="medium"?"#F59E0B":"#10B981"},
+                      {l:"Moisture",    v:`${Math.round(selPlot.moisture)}%`,        c:getMoistureColor(selPlot.moisture)},
+                      {l:"Health",      v:`${Math.round(selPlot.health)}%`,          c:getHealthColor(selPlot.health)},
+                      {l:"Temperature", v:`${selPlot.temp.toFixed(1)}°C`,            c:"#F59E0B"},
+                      {l:"Soil pH",     v:selPlot.ph.toFixed(1),                      c:"#10B981"},
+                      {l:"Nitrogen (N)",v:`${selPlot.npk.n} kg/ha`,                  c:"#3B82F6"},
+                      {l:"Phosphorus",  v:`${selPlot.npk.p} kg/ha`,                  c:"#8B5CF6"},
+                      {l:"Potassium",   v:`${selPlot.npk.k} kg/ha`,                  c:"#F59E0B"},
+                      {l:"Pest Risk",   v:selPlot.pestRisk.toUpperCase(),              c:selPlot.pestRisk==="high"?"#F43F5E":selPlot.pestRisk==="medium"?"#F59E0B":"#10B981"},
                     ].map(s=>(
                       <div key={s.l} className="bg-slate-50 rounded-xl p-3 border-2 border-slate-100">
                         <div className="text-xs text-slate-400 mb-1">{s.l}</div>
-                        <div className="text-xl font-bold" style={{color:s.c}}>{s.v}</div>
+                        <div className="text-xl font-bold truncate" style={{color:s.c,maxWidth:"100%"}}>{s.v}</div>
                       </div>
                     ))}
                   </div>
@@ -321,10 +338,10 @@ export default function FieldMonitor() {
               transition={{type:"spring",damping:24,stiffness:280}}
               className="modal-card">
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Add New Plot</h2>
-                  <p className="text-sm text-slate-400 mt-1">Fill in the details for your new farm plot</p>
+                  <h2 className="text-xl font-bold text-slate-900">➕ Add New Plot</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Fill in details — plot will auto-appear on Land Map & Dashboard</p>
                 </div>
                 <button onClick={()=>setShowAdd(false)}
                   className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
@@ -335,31 +352,31 @@ export default function FieldMonitor() {
               {/* Form grid */}
               <div className="modal-grid mb-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">PLOT ID</label>
+                  <label className="label-xs">PLOT ID</label>
                   <input placeholder="e.g. G" value={newPlot.id}
                     onChange={e=>setNewPlot(p=>({...p,id:e.target.value}))}
                     style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">PLOT NAME</label>
+                  <label className="label-xs">PLOT NAME</label>
                   <input placeholder="e.g. North Extension" value={newPlot.name}
                     onChange={e=>setNewPlot(p=>({...p,name:e.target.value}))}
                     style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">CROP</label>
+                  <label className="label-xs">CROP</label>
                   <input placeholder="e.g. Wheat" value={newPlot.crop}
                     onChange={e=>setNewPlot(p=>({...p,crop:e.target.value}))}
                     style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">AREA (ACRES)</label>
+                  <label className="label-xs">SIZE (ACRES) — <span className="text-brand-500">{(newPlot.size*100).toFixed(0)} cents</span></label>
                   <input type="number" step="0.5" min="0.5" value={newPlot.size}
                     onChange={e=>setNewPlot(p=>({...p,size:+e.target.value}))}
                     style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">PHASE</label>
+                  <label className="label-xs">PHASE</label>
                   <select value={newPlot.phase} onChange={e=>setNewPlot(p=>({...p,phase:e.target.value}))}
                     style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
                     {["Sowing","Germination","Tillering","Vegetative","Flowering","Fruiting","Pod Fill","Boll Formation","Silking","Panicle Init.","Bulb Dev.","Maturity","Harvesting"].map(ph=>(
@@ -368,22 +385,22 @@ export default function FieldMonitor() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">SOIL PH</label>
+                  <label className="label-xs">SOIL PH</label>
                   <input type="number" step="0.1" min="4" max="9" value={newPlot.ph}
                     onChange={e=>setNewPlot(p=>({...p,ph:+e.target.value}))}
                     style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">PEST RISK</label>
+                  <label className="label-xs">PEST RISK</label>
                   <select value={newPlot.pestRisk} onChange={e=>setNewPlot(p=>({...p,pestRisk:e.target.value as any}))}
                     style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
+                    <option value="low">🟢 Low</option>
+                    <option value="medium">🟡 Medium</option>
+                    <option value="high">🔴 High</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">AREA NAME</label>
+                  <label className="label-xs">AREA NAME</label>
                   <input placeholder="e.g. North Block" value={newPlot.area}
                     onChange={e=>setNewPlot(p=>({...p,area:e.target.value}))}
                     style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>

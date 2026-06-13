@@ -216,12 +216,13 @@ export default function Land() {
         {/* 3-col grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
 
-          {/* LEFT: Plot cards */}
-          <div className="lg:col-span-3 space-y-2">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="font-bold text-white text-sm">Land Sections</h3>
+          {/* LEFT: Plot cards — scrollable */}
+          <div className="lg:col-span-3 flex flex-col" style={{maxHeight:"calc(100vh - 180px)"}}>
+            <div className="flex items-center justify-between mb-2 flex-shrink-0">
+              <h3 className="font-bold text-white text-sm">Land Sections <span className="text-slate-400 font-normal text-xs">({mappedPlots.length})</span></h3>
               <span className="text-green-400 text-xs font-semibold">{openCount} open</span>
             </div>
+            <div className="overflow-y-auto flex-1 space-y-2 pr-1" style={{scrollbarWidth:"thin",scrollbarColor:"rgba(16,185,129,0.3) transparent"}}>
             {mappedPlots.map((p,i)=>(
               <motion.div key={p.id}
                 initial={{opacity:0,x:-12}} animate={{opacity:1,x:0}} transition={{delay:i*0.05}}
@@ -258,6 +259,7 @@ export default function Land() {
                 </div>
               </motion.div>
             ))}
+            </div>{/* end scrollable */}
           </div>
 
           {/* CENTER: Single Polygon Map */}
@@ -432,11 +434,28 @@ export default function Land() {
           </div>
         </div>
 
-        {/* Analysis table */}
-        <div className="rounded-2xl overflow-hidden mb-6"
-          style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)"}}>
+        {/* ── Pesticide & Input Control Panel ── */}
+        <div className="rounded-2xl overflow-hidden mb-5"
+          style={{background:"rgba(244,63,94,0.06)",border:"1.5px solid rgba(244,63,94,0.2)"}}>
           <div className="flex items-center justify-between px-5 py-3 border-b"
-            style={{borderColor:"rgba(255,255,255,0.08)"}}>
+            style={{borderColor:"rgba(244,63,94,0.15)"}}>
+            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              🐛 Pesticide & Input Controls
+            </h3>
+            <span className="text-[10px] text-rose-300 font-semibold">Plot-level settings</span>
+          </div>
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {mappedPlots.map(p=>(
+              <PesticideToggleCard key={p.id} plot={p} />
+            ))}
+          </div>
+        </div>
+
+        {/* Analysis table — bright, full opacity */}
+        <div className="rounded-2xl overflow-hidden mb-6"
+          style={{background:"rgba(255,255,255,0.08)",border:"1.5px solid rgba(255,255,255,0.2)"}}>
+          <div className="flex items-center justify-between px-5 py-3 border-b"
+            style={{borderColor:"rgba(255,255,255,0.12)"}}>
             <h3 className="font-bold text-white text-sm flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-green-400"/> Section Analysis
             </h3>
@@ -447,33 +466,34 @@ export default function Land() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-                  {["Field","Crop","Status","Health","Moisture","Pest","Temp","pH","NPK (N/P/K)"].map(h=>(
-                    <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-400 whitespace-nowrap">{h}</th>
+                <tr style={{borderBottom:"1px solid rgba(255,255,255,0.12)",background:"rgba(255,255,255,0.04)"}}>
+                  {["Field","Crop","Acres/Cents","Status","Health","Moisture","Pest","Temp","pH","NPK"].map(h=>(
+                    <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-300 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {mappedPlots.map(p=>(
-                  <tr key={p.id} className="border-b hover:bg-white/5 cursor-pointer transition-colors"
-                    style={{borderColor:"rgba(255,255,255,0.04)"}}
+                  <tr key={p.id} className="border-b hover:bg-white/8 cursor-pointer transition-colors"
+                    style={{borderColor:"rgba(255,255,255,0.06)"}}
                     onClick={()=>setSelId(p.id)}>
                     <td className="px-4 py-3 font-semibold text-white truncate max-w-[110px]">{p.name}</td>
-                    <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{p.crop}</td>
+                    <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{p.crop}</td>
+                    <td className="px-4 py-3 text-slate-200 whitespace-nowrap font-mono text-xs">{p.size}ac<br/><span className="text-slate-400">{(p.size*100).toFixed(0)}¢</span></td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${p.open?"bg-green-500/20 text-green-300":p.warning?"bg-amber-500/20 text-amber-300":"bg-slate-500/20 text-slate-400"}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${p.open?"bg-green-500/25 text-green-300":p.warning?"bg-amber-500/25 text-amber-300":"bg-slate-500/25 text-slate-300"}`}>
                         {p.open?"OPEN":p.warning?"WARN":"CLOSED"}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-bold" style={{color:getHealthColor(p.health)}}>{Math.round(p.health)}%</td>
-                    <td className="px-4 py-3 text-slate-300">{Math.round(p.moisture)}%</td>
+                    <td className="px-4 py-3 text-slate-200">{Math.round(p.moisture)}%</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold ${p.pestRisk==="high"?"text-red-400":p.pestRisk==="medium"?"text-amber-400":"text-green-400"}`}>
                         {p.pestRisk}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{p.temp.toFixed(1)}°C</td>
-                    <td className="px-4 py-3 text-slate-300">{p.ph.toFixed(1)}</td>
+                    <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{p.temp.toFixed(1)}°C</td>
+                    <td className="px-4 py-3 text-slate-200">{p.ph.toFixed(1)}</td>
                     <td className="px-4 py-3 text-slate-300 font-mono text-xs">{p.npk.n}/{p.npk.p}/{p.npk.k}</td>
                   </tr>
                 ))}
@@ -635,6 +655,53 @@ export default function Land() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/* ── Pesticide Toggle Card — per plot ── */
+function PesticideToggleCard({plot}:{plot:any}) {
+  const [pestOn, setPestOn]   = useState(false);
+  const [schedule, setSchedule] = useState("none");
+  const SCHED = ["none","Weekly","Bi-weekly","Monthly"];
+  return (
+    <div className="rounded-xl p-3 transition-all"
+      style={{
+        background: pestOn ? "rgba(244,63,94,0.12)" : "rgba(255,255,255,0.05)",
+        border: pestOn ? "1.5px solid rgba(244,63,94,0.4)" : "1px solid rgba(255,255,255,0.08)",
+      }}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold text-white truncate">{plot.name}</p>
+          <p className="text-[10px] text-slate-400">{plot.crop} · Risk: <span className={plot.pestRisk==="high"?"text-red-400":plot.pestRisk==="medium"?"text-amber-400":"text-green-400"}>{plot.pestRisk}</span></p>
+        </div>
+        <button onClick={()=>setPestOn(!pestOn)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ml-2 flex-shrink-0"
+          style={pestOn
+            ? {background:"linear-gradient(135deg,#DC2626,#EF4444)",color:"#fff",boxShadow:"0 2px 8px rgba(239,68,68,0.4)"}
+            : {background:"rgba(255,255,255,0.08)",color:"#94A3B8",border:"1px solid rgba(255,255,255,0.1)"}}>
+          🐛 {pestOn?"ON":"OFF"}
+        </button>
+      </div>
+      {pestOn && (
+        <div className="mt-2 pt-2 border-t" style={{borderColor:"rgba(244,63,94,0.2)"}}>
+          <p className="text-[10px] text-rose-300 font-semibold mb-1.5">Spray Schedule</p>
+          <div className="flex gap-1 flex-wrap">
+            {SCHED.map(s=>(
+              <button key={s} onClick={()=>setSchedule(s)}
+                className="px-2 py-0.5 rounded text-[9px] font-bold transition-all"
+                style={schedule===s
+                  ? {background:"rgba(239,68,68,0.3)",color:"#FCA5A5",border:"1px solid rgba(239,68,68,0.5)"}
+                  : {background:"rgba(255,255,255,0.05)",color:"#64748B",border:"1px solid rgba(255,255,255,0.08)"}}>
+                {s}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 text-[10px] text-slate-400">
+            {schedule!=="none" ? `✅ Pest spray ${schedule.toLowerCase()} active` : "Select spray schedule above"}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

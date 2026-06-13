@@ -133,10 +133,18 @@ export default function FarmCalendar() {
                       {isToday && !isSel && <span className="absolute top-0.5 left-1 text-[7px] font-black text-green-300 uppercase tracking-wider">TODAY</span>}
                       {devs.length>0 && (
                         <div className="flex gap-0.5 mt-1.5 flex-wrap">
-                          {devs.slice(0,4).map((_,di)=>(
-                            <span key={di} className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                              style={{background: isSel ? "rgba(255,255,255,0.8)" : "#10B981"}}/>
-                          ))}
+                          {devs.slice(0,4).map((ev,di)=>{
+                            const dotColors: Record<string,string> = {
+                              irrigation:"#38BDF8",fertilizer:"#F59E0B",pesticide:"#F43F5E",
+                              harvest:"#10B981",planting:"#8B5CF6",other:"#94A3B8"
+                            };
+                            const dc = isSel ? "rgba(255,255,255,0.9)" : (dotColors[ev.type]||"#10B981");
+                            return (
+                              <span key={di} className="w-2 h-2 rounded-full flex-shrink-0 transition-all"
+                                style={{background:dc, boxShadow: isSel ? "none" : `0 0 4px ${dc}88`}}/>
+                            );
+                          })}
+                          {devs.length>4 && <span className="text-[9px] text-slate-400">+{devs.length-4}</span>}
                         </div>
                       )}
                       {devs.length>0 && (
@@ -150,16 +158,16 @@ export default function FarmCalendar() {
                 })}
               </div>
 
-              {/* Legend */}
-              <div className="flex gap-4 mt-4 pt-4 border-t border-slate-100 flex-wrap">
+              {/* Enhanced Legend */}
+              <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100 flex-wrap">
                 {[
-                  {c:"bg-amber-400",l:"Pending"},
-                  {c:"bg-brand-400",l:"Completed"},
-                  {c:"border-2 border-brand-400",l:"Selected"},
-                  {c:"border-2 border-brand-200 bg-brand-50",l:"Today"},
+                  {c:"#38BDF8",l:"Irrigation"},{c:"#F59E0B",l:"Fertilizer"},
+                  {c:"#F43F5E",l:"Pesticide"},{c:"#10B981",l:"Harvest"},
+                  {c:"#8B5CF6",l:"Planting"},{c:"#94A3B8",l:"Other"},
                 ].map((x,i)=>(
                   <span key={i} className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <span className={`w-3 h-3 rounded-sm ${x.c}`}/>
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{background:x.c,boxShadow:`0 0 5px ${x.c}99`}}/>
                     {x.l}
                   </span>
                 ))}
