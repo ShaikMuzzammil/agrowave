@@ -15,6 +15,7 @@ interface Store {
 
   // Plots
   updateMoisture: (id:string, v:number) => void;
+  updateSensor: (id:string, moisture:number, health:number, temp:number) => void;
   setField: (id:string, f:string, v:any) => void;
   irrigate: (id:string) => void;
   irrigateAll: () => void;
@@ -55,6 +56,15 @@ export const useStore = create<Store>()(
         p.id===id ? {...p, moisture:Math.max(5,Math.min(95,v)), health: v<30?Math.min(p.health,55):v<50?Math.min(p.health,75):p.health } : p
       )})),
 
+      updateSensor: (id, moisture, health, temp) => set(s=>({ plots: s.plots.map(p=>
+        p.id===id ? {
+          ...p,
+          moisture: Math.max(5, Math.min(95, moisture)),
+          health: Math.max(20, Math.min(98, health)),
+          temp: Math.max(24, Math.min(45, temp)),
+        } : p
+      )})),
+
       setField: (id, f, v) => set(s=>({ plots: s.plots.map(p=>p.id===id?{...p,[f]:v}:p) })),
 
       irrigate: (id) => {
@@ -66,7 +76,7 @@ export const useStore = create<Store>()(
 
       irrigateAll: () => {
         set(s=>({ plots: s.plots.map(p=>({...p, moisture:Math.min(92,p.moisture+14), lastWatered:"just now"})) }));
-        get().pushNotif({ title:"💧 Mass Irrigation Complete", body:"All 6 plots irrigated successfully. Average moisture +14%.", type:"success", time:"just now" });
+        get().pushNotif({ title:"💧 Mass Irrigation Complete", body:"All plots irrigated successfully. Average moisture +14%.", type:"success", time:"just now" });
       },
 
       toggleAutoIrr: (id) => set(s=>({ plots: s.plots.map(p=>p.id===id?{...p,autoIrr:!p.autoIrr}:p) })),
@@ -92,6 +102,6 @@ export const useStore = create<Store>()(
 
       setFarmName: (s) => set({ farmName:s }),
     }),
-    { name:"agrowave-v2" }
+    { name:"agrowave-v3" }
   )
 );

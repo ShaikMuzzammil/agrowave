@@ -280,8 +280,8 @@ export default function Dashboard() {
                     <div className="grid grid-cols-4 gap-3">
                       {[
                         {l:"Moisture",  v:`${Math.round(selPlot.moisture)}%`,  c:getMoistureColor(selPlot.moisture)},
-                        {l:"Health",    v:`${selPlot.health}%`,                c:getHealthColor(selPlot.health)},
-                        {l:"Temp",      v:`${selPlot.temp}°C`,                 c:"#F59E0B"},
+                        {l:"Health",    v:`${Math.round(selPlot.health)}%`,       c:getHealthColor(selPlot.health)},
+                        {l:"Temp",      v:`${selPlot.temp.toFixed(1)}°C`,      c:"#F59E0B"},
                         {l:"pH",        v:selPlot.ph.toFixed(1),               c:"#10B981"},
                         {l:"N (kg/ha)", v:selPlot.npk.n,                       c:"#60A5FA"},
                         {l:"P (kg/ha)", v:selPlot.npk.p,                       c:"#A78BFA"},

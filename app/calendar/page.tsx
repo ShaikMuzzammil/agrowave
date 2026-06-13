@@ -113,21 +113,35 @@ export default function FarmCalendar() {
                   const pending=devs.filter(e=>!e.done).length;
                   return (
                     <button key={i} onClick={()=>setSelDate(ds)}
-                      className={`relative min-h-[58px] p-2 rounded-xl text-left transition-all border-2 ${
-                        isSel    ? "border-brand-400 shadow-green"
-                        : isToday ? "border-brand-200 bg-brand-50"
-                        : "border-transparent hover:border-slate-200 hover:bg-slate-50"
-                      }`}
-                      style={isSel?{background:"linear-gradient(135deg,#059669,#10B981)"}:{}}>
-                      <span className={`text-sm font-bold ${isSel?"text-white":isToday?"text-brand-700":"text-slate-700"}`}>{day}</span>
+                      className="relative min-h-[58px] p-2 rounded-xl text-left transition-all border-2"
+                      style={{
+                        background: isSel
+                          ? "linear-gradient(135deg,#059669,#10B981)"
+                          : isToday
+                          ? "linear-gradient(135deg,#065F46,#047857)"
+                          : "transparent",
+                        borderColor: isSel ? "#10B981" : isToday ? "#10B981" : "transparent",
+                        boxShadow: isSel
+                          ? "0 4px 18px rgba(16,185,129,0.55)"
+                          : isToday
+                          ? "0 0 0 2px rgba(16,185,129,0.6), 0 4px 12px rgba(16,185,129,0.3)"
+                          : "none",
+                      }}
+                      onMouseEnter={e=>{if(!isSel&&!isToday)(e.currentTarget as HTMLElement).style.borderColor="#CBD5E1";}}
+                      onMouseLeave={e=>{if(!isSel&&!isToday)(e.currentTarget as HTMLElement).style.borderColor="transparent";}}>
+                      <span className="text-sm font-extrabold" style={{color: isSel?"#fff":isToday?"#A7F3D0":"#334155"}}>{day}</span>
+                      {isToday && !isSel && <span className="absolute top-0.5 left-1 text-[7px] font-black text-green-300 uppercase tracking-wider">TODAY</span>}
                       {devs.length>0 && (
-                        <div className="flex flex-col gap-0.5 mt-1">
-                          {pending>0&&<span className="w-full h-1 rounded-full bg-amber-400 opacity-80"/>}
-                          {done>0  &&<span className="w-full h-1 rounded-full bg-brand-400 opacity-80"/>}
+                        <div className="flex gap-0.5 mt-1.5 flex-wrap">
+                          {devs.slice(0,4).map((_,di)=>(
+                            <span key={di} className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                              style={{background: isSel ? "rgba(255,255,255,0.8)" : "#10B981"}}/>
+                          ))}
                         </div>
                       )}
                       {devs.length>0 && (
-                        <span className={`absolute top-1 right-1 text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center ${isSel?"bg-white/30 text-white":"bg-brand-100 text-brand-700"}`}>
+                        <span className="absolute top-1 right-1 text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center"
+                          style={{background: isSel ? "rgba(255,255,255,0.25)" : "#D1FAE5", color: isSel ? "#fff" : "#059669"}}>
                           {devs.length}
                         </span>
                       )}
@@ -265,72 +279,6 @@ export default function FarmCalendar() {
       </div>
 
       {/* ADD EVENT MODAL */}
-
-      {/* ═══ AgroWave vs Traditional Farming comparison table ═══ */}
-      <div className="container pb-16 mt-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">AgroWave vs Traditional Farming</h2>
-            <p className="text-slate-400 text-sm">See why thousands of farmers are switching to smart farming</p>
-          </div>
-          <div className="rounded-2xl overflow-hidden" style={{boxShadow:"0 8px 40px rgba(0,0,0,0.08)",border:"1px solid #E2E8F0"}}>
-            <table className="w-full">
-              <thead>
-                <tr style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
-                  <th className="text-left px-6 py-4 font-bold text-white text-sm w-1/2">Feature</th>
-                  <th className="text-center px-6 py-4 font-bold text-white text-sm">AgroWave</th>
-                  <th className="text-center px-6 py-4 font-bold text-white text-sm">Traditional</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  "Live soil monitoring",
-                  "7-day weather forecasts",
-                  "Real-time mandi prices",
-                  "Pest early warning",
-                  "Inventory tracking",
-                  "Profit/loss calculator",
-                  "Printable farm reports",
-                  "Works on mobile & desktop",
-                  "No app installation needed",
-                ].map((feat,i)=>(
-                  <tr key={feat} className={`compare-row ${i%2===0?"":"bg-white"}`}>
-                    <td className="font-medium">{feat}</td>
-                    <td className="text-center">
-                      <div className="flex items-center justify-center">
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{background:"rgba(16,185,129,0.1)"}}>
-                          <span className="text-brand-600 text-base leading-none">✓</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="text-center">
-                      <div className="flex items-center justify-center">
-                        <span className="text-slate-300 text-lg font-light">✕</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {/* Cost row */}
-                <tr className="compare-row">
-                  <td className="font-semibold text-slate-800">Cost</td>
-                  <td className="text-center py-3.5 px-5">
-                    <span className="inline-block px-4 py-1 rounded-full text-xs font-bold"
-                      style={{background:"rgba(16,185,129,0.12)",color:"#059669",border:"1px solid rgba(16,185,129,0.3)"}}>
-                      Free
-                    </span>
-                  </td>
-                  <td className="text-center py-3.5 px-5">
-                    <span className="inline-block px-3 py-1 rounded-full text-xs font-bold"
-                      style={{background:"rgba(244,63,94,0.1)",color:"#BE123C",border:"1px solid rgba(244,63,94,0.2)"}}>
-                      Paid consultant
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
 
       <AnimatePresence>
         {showAdd && (

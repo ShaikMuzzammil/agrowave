@@ -739,11 +739,10 @@ export default function Home() {
                 style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 8px 32px rgba(16,185,129,0.4)"}}>
                 <Mail className="w-5 h-5"/> Contact Me
               </Link>
-              <a href="tel:18001801551"
-                className="btn btn-outline text-base px-8 py-3.5 rounded-xl flex items-center gap-2"
-                style={{border:"1.5px solid rgba(167,243,208,0.4)",color:"#A7F3D0"}}>
+              <span className="flex items-center gap-2 px-8 py-3.5 rounded-xl text-base font-medium select-text cursor-text"
+                style={{border:"1.5px solid rgba(167,243,208,0.35)",color:"#A7F3D0"}}>
                 📞 1800-180-1551
-              </a>
+              </span>
             </div>
           </motion.div>
         </div>

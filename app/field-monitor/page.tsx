@@ -41,9 +41,15 @@ export default function FieldMonitor() {
       pushNotif({title:"⚠️ Plot name required",body:"Please enter a name for your new plot.",type:"warning",time:"just now"});
       return;
     }
-    addPlot({...newPlot});
-    pushNotif({title:"✅ New Plot Added",body:`${newPlot.name} has been added to your farm.`,type:"success",time:"just now"});
+    const IDS = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+    const usedIds = new Set(plots.map((p:any)=>p.id));
+    const autoId = IDS.find((id:string)=>!usedIds.has(id)) || String.fromCharCode(65+plots.length);
+    const plotToAdd = {...newPlot, id: newPlot.id.trim() || autoId};
+    addPlot(plotToAdd);
+    setSel(plotToAdd.id);
+    pushNotif({title:"✅ Plot Added to Farm Map",body:`${newPlot.name} added. Visible on Land Map and Detailed Land View.`,type:"success",time:"just now"});
     setShowAdd(false);
+    setNewPlot({id:"",name:"New Plot",crop:"Wheat",size:2.0,moisture:60,health:80,temp:32,npk:{n:120,p:40,k:160},lastWatered:"Just added",autoIrr:false,phase:"Sowing",ph:6.5,pestRisk:"low" as "low"|"medium"|"high",area:"New Block"});
   };
 
   const saveNPK = () => {
