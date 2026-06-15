@@ -766,8 +766,13 @@ function HomeContactForm() {
 
   if(step===3) return (
     <motion.div initial={{opacity:0,scale:.96}} animate={{opacity:1,scale:1}}
-      className="rounded-2xl p-8 text-center"
+      className="rounded-2xl overflow-hidden text-center"
       style={{background:"rgba(16,185,129,0.12)",border:"1.5px solid rgba(16,185,129,0.35)"}}>
+      <div className="px-5 sm:px-6 pt-5 pb-4 border-b flex items-center justify-between" style={{borderColor:"rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.02)"}}>
+        <span className="text-xs font-bold text-white flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-green-400"/> Your Message</span>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:"rgba(16,185,129,0.2)",color:"#A7F3D0",border:"1px solid rgba(16,185,129,0.4)"}}>Step 3 of 3 · Complete ✓</span>
+      </div>
+      <div className="p-8">
       <div className="text-5xl mb-4">✅</div>
       <h3 className="font-bold text-white text-xl mb-2">Message Received!</h3>
       <p className="text-slate-300 text-sm mb-4">Our team has received your message and will reply to <strong className="text-green-300">{form.email}</strong> within 24 hours.</p>
@@ -778,6 +783,7 @@ function HomeContactForm() {
       </div>
       <button onClick={()=>{setStep(1);setForm({name:"",email:"",phone:"",subject:"",message:""}); }}
         className="text-green-400 text-sm font-semibold hover:text-green-300">Send another message →</button>
+      </div>
     </motion.div>
   );
 
@@ -786,15 +792,25 @@ function HomeContactForm() {
       className="rounded-2xl overflow-hidden"
       style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)"}}>
       {/* Step indicator */}
-      <div className="px-6 pt-5 pb-4 border-b" style={{borderColor:"rgba(255,255,255,0.08)"}}>
-        <div className="flex items-center gap-2">
+      <div className="px-5 sm:px-6 pt-5 pb-4 border-b" style={{borderColor:"rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.02)"}}>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-bold text-white flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-green-400"/> Your Message</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:"rgba(16,185,129,0.15)",color:"#A7F3D0",border:"1px solid rgba(16,185,129,0.3)"}}>Step {step} of 3</span>
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {([1,2,3] as const).map(s=>(
             <React.Fragment key={s}>
-              <div className={`flex items-center gap-1.5 text-xs font-bold transition-all ${step>=s?"text-green-400":"text-slate-500"}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${step>s?"bg-green-500 text-white":step===s?"bg-green-500/30 text-green-400 ring-2 ring-green-500/50":"bg-white/10 text-slate-500"}`}>{step>s?"✓":s}</div>
-                <span className="hidden sm:block">{["Fill in","Review","Delivered!"][s-1]}</span>
+              <div className={`flex items-center gap-1.5 text-[10px] sm:text-xs font-bold transition-all ${step>=s?"text-green-300":"text-slate-500"}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all flex-shrink-0 ${step>s?"bg-green-500 text-white":step===s?"bg-green-500/30 text-green-300 ring-2 ring-green-500/60":"bg-white/10 text-slate-500"}`}
+                  style={step===s?{boxShadow:"0 0 0 4px rgba(16,185,129,0.12)"}:{}}>{step>s?"✓":s}</div>
+                <span className="whitespace-nowrap">{["Fill in","Review","Delivered!"][s-1]}</span>
               </div>
-              {s<3&&<div className={`flex-1 h-0.5 rounded-full transition-all ${step>s?"bg-green-500":"bg-white/10"}`}/>}
+              {s<3&&(
+                <div className="flex-1 h-1 rounded-full overflow-hidden" style={{background:"rgba(255,255,255,0.08)"}}>
+                  <motion.div className="h-full rounded-full" style={{background:"linear-gradient(90deg,#059669,#10B981)"}}
+                    initial={{width:0}} animate={{width:step>s?"100%":"0%"}} transition={{duration:0.4}}/>
+                </div>
+              )}
             </React.Fragment>
           ))}
         </div>

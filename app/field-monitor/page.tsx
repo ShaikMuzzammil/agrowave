@@ -161,7 +161,7 @@ export default function FieldMonitor() {
                   </div>
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
                     <div className="flex gap-2">
-                      <span className="text-[10px] text-slate-400">pH {p.ph}</span>
+                      <span className="text-[10px] text-slate-400">pH {p.ph.toFixed(1)}</span>
                       <span className="text-[10px] text-slate-300">·</span>
                       <span className="text-[10px] text-slate-400">NPK {p.npk.n}/{p.npk.p}/{p.npk.k}</span>
                     </div>
@@ -301,7 +301,7 @@ export default function FieldMonitor() {
                       { title:"Irrigation Status", body: selPlot.moisture>70?"Moisture optimal — skip next irrigation cycle to prevent root rot.":"Moisture low — irrigation recommended within 24 hours.", icon:"💧", bg:"#ECFDF5", border:"#A7F3D0" },
                       { title:"Pest Watch",        body: selPlot.pestRisk==="high"?"HIGH ALERT: Immediate inspection needed. Apply chlorpyrifos 20% EC.":selPlot.pestRisk==="medium"?"Monitor closely — apply neem-based spray as preventive measure.":"Low risk detected. Continue standard monitoring schedule.", icon:"🦗", bg:selPlot.pestRisk==="high"?"#FFF1F2":selPlot.pestRisk==="medium"?"#FFFBEB":"#ECFDF5", border:selPlot.pestRisk==="high"?"#FECDD3":selPlot.pestRisk==="medium"?"#FDE68A":"#A7F3D0" },
                       { title:"Fertilizer Tip",    body:`Current NPK: N${selPlot.npk.n}/P${selPlot.npk.p}/K${selPlot.npk.k} kg/ha. ${selPlot.npk.n<100?"Nitrogen deficient — apply urea 46% at 50kg/acre.":"NPK levels adequate for current growth stage."}`, icon:"🌱", bg:"#EFF6FF", border:"#BFDBFE" },
-                      { title:"Soil Health",       body:`pH ${selPlot.ph} — ${selPlot.ph<6?"Acidic: apply agricultural lime at 100kg/acre.":selPlot.ph>7.5?"Alkaline: add sulfur or gypsum to acidify.":"Optimal pH range. Maintain current soil management."}`, icon:"🧪", bg:"#F5F3FF", border:"#DDD6FE" },
+                      { title:"Soil Health",       body:`pH ${selPlot.ph.toFixed(1)} — ${selPlot.ph<6?"Acidic: apply agricultural lime at 100kg/acre.":selPlot.ph>7.5?"Alkaline: add sulfur or gypsum to acidify.":"Optimal pH range. Maintain current soil management."}`, icon:"🧪", bg:"#F5F3FF", border:"#DDD6FE" },
                     ].map((a,i)=>(
                       <motion.div key={i} initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:i*0.07}}
                         className="rounded-xl p-4" style={{background:a.bg,border:`1.5px solid ${a.border}`}}>

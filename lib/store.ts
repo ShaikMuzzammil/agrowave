@@ -34,7 +34,7 @@ interface Store {
   deleteEvent: (id:string) => void;
 
   // Notifications
-  pushNotif: (n:Omit<Notification,"id"|"read">) => void;
+  pushNotif: (n:Omit<Notification,"id"|"read"|"ts">) => void;
   markRead: (id:string) => void;
   markAllRead: () => void;
   clearNotifs: () => void;
@@ -93,7 +93,7 @@ export const useStore = create<Store>()(
       deleteEvent: (id) => set(s=>({ events:s.events.filter(e=>e.id!==id) })),
 
       pushNotif: (n) => {
-        const notif:Notification = { ...n, id:Date.now().toString(), read:false };
+        const notif:Notification = { ...n, id:Date.now().toString(), ts:Date.now(), read:false };
         set(s=>({ notifications:[notif,...s.notifications].slice(0,30) }));
       },
       markRead: (id) => set(s=>({ notifications:s.notifications.map(n=>n.id===id?{...n,read:true}:n) })),

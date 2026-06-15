@@ -25,6 +25,15 @@ const MANDIS = [
   {name:"Ahmedabad APMC",   loc:"Ahmedabad",   state:"GJ", crops:["cotton","wheat","onion","potato","soybean"]},
   {name:"Hyderabad APMC",   loc:"Hyderabad",   state:"TS", crops:["rice","maize","cotton","onion","tomato"]},
   {name:"Nashik APMC",      loc:"Nashik",      state:"MH", crops:["onion","tomato","wheat","potato","rice"]},
+  {name:"Jaipur APMC",      loc:"Jaipur",      state:"RJ", crops:["wheat","maize","onion","potato"]},
+  {name:"Lucknow Mandi",    loc:"Lucknow",     state:"UP", crops:["wheat","rice","potato","maize"]},
+  {name:"Posta Bazar APMC", loc:"Kolkata",     state:"WB", crops:["rice","potato","onion","tomato"]},
+  {name:"Bhubaneswar APMC", loc:"Bhubaneswar", state:"OD", crops:["rice","tomato","onion","maize"]},
+  {name:"Guwahati APMC",    loc:"Guwahati",    state:"AS", crops:["rice","potato","tomato"]},
+  {name:"Coimbatore APMC",  loc:"Coimbatore",  state:"TN", crops:["cotton","maize","tomato","onion"]},
+  {name:"Amritsar Mandi",   loc:"Amritsar",    state:"PB", crops:["wheat","rice","maize","potato"]},
+  {name:"Bhopal APMC",      loc:"Bhopal",      state:"MP", crops:["soybean","wheat","maize","potato"]},
+  {name:"Jodhpur APMC",     loc:"Jodhpur",     state:"RJ", crops:["cotton","wheat","onion"]},
 ];
 
 export default function Market() {
@@ -39,14 +48,52 @@ export default function Market() {
 
   const [calc, setCalc] = useState({ crop:"wheat", area:5, yield:42, price:2150, seed:1200, fert:3500, labor:4500, irr:2000, pest:1200, other:800 });
 
+  /* Live "feed" timestamps — each mandi ticks independently to feel like a live wire */
+  const [now, setNow] = useState(()=>Date.now());
+  const [lastSync, setLastSync] = useState(()=>Date.now());
+  const [mandiTimes, setMandiTimes] = useState<Record<string,number>>(()=>{
+    const t: Record<string,number> = {};
+    MANDIS.forEach((m,i)=>{ t[m.name] = Date.now() - (i*5000 + 2000); });
+    return t;
+  });
+
   useEffect(() => {
     const p = getLivePrices(); setPrices(p);
     const lines: Record<string,any[]> = {};
     Object.entries(CROPS).forEach(([k,v]) => { lines[k] = sparkline(v.base, 30); });
     setSl(lines);
-    const iv = setInterval(() => setPrices(getLivePrices()), 60000);
+    const iv = setInterval(() => { setPrices(getLivePrices()); setLastSync(Date.now()); }, 60000);
     return () => clearInterval(iv);
   },[]);
+
+  /* Tick the clock every second for "Xs ago" labels */
+  useEffect(() => {
+    const iv = setInterval(()=>setNow(Date.now()), 1000);
+    return () => clearInterval(iv);
+  },[]);
+
+  /* Stagger-refresh a couple of mandi feeds every few seconds for a live-wire feel */
+  useEffect(() => {
+    const iv = setInterval(()=>{
+      setMandiTimes(prev=>{
+        const next = {...prev};
+        const keys = MANDIS.map(m=>m.name);
+        const pick = keys[Math.floor(Math.random()*keys.length)];
+        next[pick] = Date.now();
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(iv);
+  },[]);
+
+  const relTime = (ts:number)=>{
+    const s = Math.max(0, Math.floor((now-ts)/1000));
+    if(s<5) return "just now";
+    if(s<60) return `${s}s ago`;
+    const m = Math.floor(s/60);
+    if(m<60) return `${m}m ago`;
+    return `${Math.floor(m/60)}h ago`;
+  };
 
   useEffect(() => {
     const p = COST_PRESETS[calc.crop]||COST_PRESETS.wheat;
@@ -76,19 +123,29 @@ export default function Market() {
       price: Math.round(base * variance),
       trend: i % 3 === 0 ? "up" : i % 3 === 1 ? "down" : "flat",
       arrival: `${Math.floor(300 + (m.name.length * 41 + i * 97) % 1800)} qtl`,
-      updated: `${i % 3 === 0 ? "2" : i % 3 === 1 ? "5" : "8"}m ago`,
+      updated: relTime(mandiTimes[m.name] ?? now),
     };
   });
 
+  const [alertSending, setAlertSending] = useState(false);
+  const [alertError, setAlertError] = useState("");
   const saveAlert = async () => {
+    setAlertError("");
     if (!alertForm.threshold) {
       pushNotif({title:"⚠️ Enter a price threshold",body:"Please set a target price before saving the alert.",type:"warning",time:"just now"});
+      setAlertError("Please enter a target price.");
       return;
     }
-    // Fire actual email via contact API if email provided
-    if (alertForm.email) {
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(alertForm.email);
+    if (alertForm.email && !emailOk) {
+      setAlertError("That doesn't look like a valid email address.");
+      return;
+    }
+    // Fire actual email via contact API if a valid email was provided
+    if (emailOk) {
+      setAlertSending(true);
       try {
-        await fetch("/api/contact", {
+        const res = await fetch("/api/contact", {
           method: "POST",
           headers: {"Content-Type":"application/json"},
           body: JSON.stringify({
@@ -98,7 +155,14 @@ export default function Market() {
             message: `You requested an alert when ${alertForm.commodity} price goes ${alertForm.type} ₹${alertForm.threshold}/qtl.\n\nCurrent price: ₹${prices[alertForm.commodity]?.current || "—"}/qtl\n\nYou will receive updates when this threshold is crossed. Stay tuned to AgroWave Market.\n\n— AgroWave Smart Farming`,
           }),
         });
-      } catch {}
+        if(!res.ok){
+          const err = await res.json().catch(()=>({}));
+          setAlertError(err.error || "Email could not be sent — alert was still saved on this device.");
+        }
+      } catch {
+        setAlertError("Network error sending email — alert was still saved on this device.");
+      }
+      setAlertSending(false);
     }
     pushNotif({
       title:`🔔 Price Alert Set — ${alertForm.commodity.toUpperCase()}`,
@@ -134,7 +198,10 @@ export default function Market() {
             <motion.h1 initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} className="text-4xl font-bold text-white mb-1">
               Market <span className="grad-text">Intelligence</span>
             </motion.h1>
-            <p className="text-slate-400 text-sm">Live MSP + mandi rates · 600+ markets · Updated every 60 seconds</p>
+            <p className="text-slate-400 text-sm flex items-center gap-2 flex-wrap">
+              <span className="dot-live" style={{display:"inline-block"}}/>
+              Live MSP + mandi rates · {MANDIS.length} markets across India · price feed synced {relTime(lastSync)}
+            </p>
           </div>
           <button onClick={()=>window.print()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold no-print"
             style={{background:"rgba(255,255,255,0.1)",color:"#A7F3D0",border:"1px solid rgba(167,243,208,0.3)"}}>
@@ -321,7 +388,10 @@ export default function Market() {
             </div>
             <Card hover={false}>
               <h3 className="font-bold text-slate-800 mb-1 text-lg">{CROPS[crop as keyof typeof CROPS]?.emoji} {crop.toUpperCase()} Mandi Rates — Live</h3>
-              <p className="text-xs text-slate-400 mb-4">Showing {mandiRows.length} of {MANDIS.length} major Indian mandis · Refreshed every 60s</p>
+              <p className="text-xs text-slate-400 mb-4 flex items-center gap-1.5">
+                <span className="dot-live" style={{display:"inline-block"}}/>
+                Showing {mandiRows.length} of {MANDIS.length} major Indian mandis · live feed, each market ticks independently
+              </p>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -405,12 +475,14 @@ export default function Market() {
                   <label className="label-xs">YOUR EMAIL <span className="text-brand-500 font-bold">(sends real email via Resend)</span></label>
                   <input type="email" placeholder="you@example.com" value={alertForm.email}
                     onChange={e=>setAlertForm(p=>({...p,email:e.target.value}))}
-                    style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
-                  <p className="text-[10px] text-slate-400 mt-1">✉️ A confirmation email is sent immediately. Future alerts fire when price threshold is crossed.</p>
+                    style={{background:"#F8FAFC",border:`2px solid ${alertError?"#FCA5A5":"#E2E8F0"}`}}/>
+                  {alertError
+                    ? <p className="text-[10px] text-rose-500 mt-1 font-semibold">⚠️ {alertError}</p>
+                    : <p className="text-[10px] text-slate-400 mt-1">✉️ A confirmation email is sent immediately. Future alerts fire when price threshold is crossed.</p>}
                 </div>
-                <button onClick={saveAlert} className="btn btn-primary w-full py-3.5 text-base"
+                <button onClick={saveAlert} disabled={alertSending} className="btn btn-primary w-full py-3.5 text-base disabled:opacity-60"
                   style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 4px 16px rgba(16,185,129,0.3)"}}>
-                  {alertSaved ? "✅ Alert Saved — Email Sent!" : "🔔 Set Price Alert & Send Email"}
+                  {alertSending ? "Sending…" : alertSaved ? "✅ Alert Saved — Email Sent!" : "🔔 Set Price Alert & Send Email"}
                 </button>
               </div>
             </Card>
@@ -422,7 +494,7 @@ export default function Market() {
                 {icon:"🔔",t:"In-App Notification",d:"Instantly appears in your notification bell with full alert details."},
                 {icon:"✉️",t:"Email via Resend",d:"A real confirmation email is sent to your address immediately when you save."},
                 {icon:"📈",t:"Threshold Tracking",d:"Alert fires when mandi price crosses your set threshold — above or below."},
-                {icon:"🌐",t:"All 15+ Cities",d:"Monitors Azadpur, Vashi, Guntur, Yeshwantpur, Nashik, Indore and more."},
+                {icon:"🌐",t:`All ${MANDIS.length} Cities`,d:"Monitors Azadpur, Vashi, Koyambedu, Guntur, Lucknow, Kolkata, Guwahati, Indore and more across India."},
               ].map((s,i)=>(
                 <div key={i} className="flex gap-3 p-3.5 rounded-xl" style={{background:"#F8FAFC",border:"1.5px solid #E2E8F0"}}>
                   <span className="text-2xl flex-shrink-0">{s.icon}</span>

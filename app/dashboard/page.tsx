@@ -201,7 +201,7 @@ export default function Dashboard() {
                   </div>
                   {/* KHARIF completion — truncated to 2 decimals */}
                   <div className="mt-2 text-[9px] text-slate-400">
-                    Season: <span className="font-mono text-brand-600">{compl.toFixed(2)}%</span>
+                    Season: <span className="font-mono text-brand-600">{Math.round(compl)}%</span>
                   </div>
                 </motion.div>
               );
@@ -248,7 +248,7 @@ export default function Dashboard() {
                           style={{background:mc}}/>
                       </div>
                       <div className="text-xs font-bold" style={{color:mc}}>{Math.round(p.moisture)}% moisture</div>
-                      <div className="text-[10px] text-slate-400 mt-1">pH {p.ph} · NPK {p.npk.n}/{p.npk.p}/{p.npk.k}</div>
+                      <div className="text-[10px] text-slate-400 mt-1">pH {p.ph.toFixed(1)} · NPK {p.npk.n}/{p.npk.p}/{p.npk.k}</div>
                       <div className="text-[9px] mt-1">
                         <span className={`badge text-[8px] px-1.5 py-0.5 ${p.pestRisk==="high"?"badge-red":p.pestRisk==="medium"?"badge-amber":"badge-green"}`}>✓ {p.pestRisk}</span>
                       </div>
@@ -300,7 +300,7 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3 text-xs text-slate-400">
                         <span>Last watered: {selPlot.lastWatered}</span>
                         <span>·</span>
-                        <span>Season: {(COMPLETIONS[selPlot.id]||75).toFixed(2)}%</span>
+                        <span>Season: {Math.round(COMPLETIONS[selPlot.id]||75)}%</span>
                         <Link href="/field-monitor" className="ml-auto flex items-center gap-1 text-green-400 hover:text-green-300 font-semibold">
                           Full Analysis <ChevronRight className="w-3 h-3"/>
                         </Link>
@@ -399,7 +399,7 @@ export default function Dashboard() {
                 {l:"My Fields",  href:"/field-monitor", icon:Sprout,     c:"bg-brand-50  border-brand-200  text-brand-700"},
                 {l:"Weather",    href:"/weather",       icon:CloudRain,  c:"bg-sky-50    border-sky-200    text-sky-700"},
                 {l:"Market",     href:"/market",        icon:TrendingUp, c:"bg-amber-50  border-amber-200  text-amber-700"},
-                {l:"Land View",  href:"/land",          icon:Map,        c:"bg-violet-50 border-violet-200 text-violet-700"},
+                {l:"Land Map",   href:"/land",          icon:Map,        c:"bg-violet-50 border-violet-200 text-violet-700"},
               ].map(x=>(
                 <Link key={x.l} href={x.href}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center hover:scale-105 transition-transform ${x.c}`}>
@@ -407,6 +407,11 @@ export default function Dashboard() {
                   <span className="text-xs font-semibold">{x.l}</span>
                 </Link>
               ))}
+              <Link href="/land-view"
+                className="col-span-2 flex items-center justify-center gap-2 p-3 rounded-xl text-sm font-bold text-white hover:scale-[1.02] transition-transform"
+                style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 4px 16px rgba(16,185,129,0.3)"}}>
+                🔭 Open Detailed Land View
+              </Link>
             </div>
           </div>
         </div>
@@ -426,7 +431,10 @@ function LandOverviewCard({plots}:{plots:any[]}) {
         <h3 className="font-bold text-slate-700 text-xs uppercase tracking-wider flex items-center gap-1.5">
           <Map className="w-3.5 h-3.5 text-brand-500"/> Land Parcels
         </h3>
-        <Link href="/land" className="text-[10px] text-brand-600 font-bold hover:text-brand-700">Open Map →</Link>
+        <div className="flex items-center gap-2">
+          <Link href="/land-view" className="text-[10px] text-brand-600 font-bold hover:text-brand-700">🔭 Detailed View →</Link>
+          <Link href="/land" className="text-[10px] text-slate-400 font-bold hover:text-brand-700">Map</Link>
+        </div>
       </div>
       <div className="divide-y divide-slate-50">
         {show.map(p=>(

@@ -8,6 +8,7 @@ import {
   Calendar, Menu, X, Bell, ChevronRight, Map, Mail
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { relTime } from "@/lib/utils";
 
 /* Farm app nav — Contact intentionally excluded */
 const NAV = [
@@ -32,11 +33,18 @@ export default function Navigation() {
   const [scrolled, setScrolled]   = useState(false);
   const [activeSection, setActive] = useState("hero");
   const [showNotifs, setShowNotifs]= useState(false);
+  const [clock, setClock]         = useState(0); // ticks to refresh "Xm ago" labels
   const pathname  = usePathname();
   const router    = useRouter();
   const { notifications, markRead, markAllRead } = useStore();
   const unread = notifications.filter(n=>!n.read);
   const isHome = pathname === "/";
+
+  useEffect(() => {
+    if(!showNotifs) return;
+    const iv = setInterval(()=>setClock(c=>c+1), 30000);
+    return () => clearInterval(iv);
+  }, [showNotifs]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -184,7 +192,7 @@ export default function Navigation() {
                             <div className="flex-1 min-w-0">
                               <p className={`text-sm font-medium truncate ${!n.read?"text-slate-800":"text-slate-600"}`}>{n.title}</p>
                               <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{n.body}</p>
-                              <p className="text-[10px] text-slate-300 mt-1">{n.time}</p>
+                              <p className="text-[10px] text-slate-300 mt-1">{relTime(n.ts, n.time)}</p>
                             </div>
                             {!n.read && <span className="w-2 h-2 rounded-full bg-brand-500 mt-1.5 flex-shrink-0"/>}
                           </button>
@@ -209,7 +217,7 @@ export default function Navigation() {
         </div>
 
         {/* Live status strip */}
-        <div className="hidden sm:flex items-center justify-between px-6 py-1.5"
+        <div className="hidden sm:flex items-center justify-between px-6 py-2"
           style={{background:"linear-gradient(90deg,#047857,#059669)"}}>
           <div className="flex items-center gap-3">
             <span className="dot-live" style={{background:"#A7F3D0"}}/>

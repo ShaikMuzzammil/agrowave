@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Droplets, Settings, X, Printer, Leaf, BarChart3, Info,
-  CheckCircle, RefreshCw, Map as MapIcon, ExternalLink, ZapIcon
+  CheckCircle, RefreshCw, Map as MapIcon, ExternalLink, ZapIcon, Trash2
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { getHealthColor, getMoistureColor, FORECAST } from "@/lib/utils";
@@ -25,6 +25,22 @@ const POLY_SLOTS = [
   { slot:"P7", points:"192,288 425,292 422,400 188,398",        lx:307, ly:345 },
   { slot:"P8", points:"430,288 588,284 590,400 428,398",        lx:510, ly:345 },
 ];
+
+/* Dynamic extra slots for plots beyond the first 9 — grows the map downward
+   so newly added plots always appear (the map container scrolls). */
+const EXTRA_ROW_H = 118, EXTRA_GAP = 12, EXTRA_START_Y = 412;
+const EXTRA_X = [20, 216, 412], EXTRA_W = 178;
+function genSlot(extraIdx:number){
+  const row = Math.floor(extraIdx/3);
+  const col = extraIdx%3;
+  const x = EXTRA_X[col], w = EXTRA_W, h = EXTRA_ROW_H;
+  const y = EXTRA_START_Y + row*(EXTRA_ROW_H+EXTRA_GAP);
+  return {
+    slot:`X${extraIdx}`,
+    points:`${x+4},${y+4} ${x+w-4},${y} ${x+w},${y+h-4} ${x},${y+h}`,
+    lx:x+w/2, ly:y+h/2,
+  };
+}
 
 function ndviColor(h:number, m:number){
   const s = h*0.6 + m*0.4;
@@ -51,7 +67,7 @@ function buildRadarData(p:any){
 const DEFAULT_THRESHOLDS = { minHealth:75, minMoisture:45, maxTemp:38 };
 
 export default function Land() {
-  const { plots, updateSensor, irrigate, pushNotif } = useStore();
+  const { plots, updateSensor, irrigate, deletePlot, pushNotif } = useStore();
   const [thresholds, setThresholds]   = useState(DEFAULT_THRESHOLDS);
   const [showSettings, setShowSettings] = useState(false);
   const [selId, setSelId]             = useState<string|null>(null);
@@ -59,6 +75,7 @@ export default function Land() {
   const [pulse, setPulse]             = useState<string|null>(null);
   const [now, setNow]                 = useState(new Date());
   const [showHint, setShowHint]       = useState(true);
+  const [confirmDel, setConfirmDel]   = useState<string|null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   /* Live clock */
@@ -88,14 +105,28 @@ export default function Land() {
     setTimeout(()=>setIrrigating(null), 2000);
   };
 
-  /* Map store plots to polygon slots */
+  const handleDelete = (id:string, name:string)=>{
+    if(confirmDel!==id){
+      setConfirmDel(id);
+      setTimeout(()=>setConfirmDel(c=>c===id?null:c), 3500);
+      return;
+    }
+    deletePlot(id);
+    pushNotif({title:"🗑️ Plot Removed", body:`${name} stopped cultivation and was removed from the farm map.`, type:"warning", time:"just now"});
+    setConfirmDel(null);
+    setSelId(null);
+  };
+
+  /* Map store plots to polygon slots — dynamic slots beyond P0-P8 so new plots always render */
   const mappedPlots = plots.map((p,i)=>({
     ...p,
-    slot: POLY_SLOTS[i] ?? null,
+    slot: POLY_SLOTS[i] ?? genSlot(i-POLY_SLOTS.length),
     open: p.health >= thresholds.minHealth && p.moisture >= thresholds.minMoisture,
     warning: calcWarning(p),
     ndvi: ndviColor(p.health, p.moisture),
-  })).filter(p=>p.slot);
+  }));
+
+  const extraRows = plots.length > POLY_SLOTS.length ? Math.ceil((plots.length-POLY_SLOTS.length)/3) : 0;
 
   const openCount  = mappedPlots.filter(p=>p.open).length;
   const warnCount  = mappedPlots.filter(p=>p.warning).length;
@@ -108,7 +139,7 @@ export default function Land() {
       v:Math.round(Math.max(30,Math.min(99,base+(i-3)*2.5+(Math.random()*3-1.5))))
     }));
 
-  const viewBound = plots.length > 6 ? 310 : 295;
+  const viewBound = plots.length <= 6 ? 295 : (410 + extraRows*(EXTRA_ROW_H+EXTRA_GAP));
 
   return (
     <div ref={printRef} className="pt-[88px] min-h-screen"
@@ -592,6 +623,13 @@ export default function Land() {
                 <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
                   style={{background:"rgba(255,255,255,0.06)",color:"#A7F3D0",border:"1px solid rgba(167,243,208,0.2)"}}>
                   <Leaf className="w-4 h-4"/> Nutrient Plan
+                </button>
+                <button onClick={()=>handleDelete(selPlot.id, selPlot.name)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={confirmDel===selPlot.id
+                    ? {background:"linear-gradient(135deg,#DC2626,#EF4444)",color:"#fff",boxShadow:"0 0 0 3px rgba(239,68,68,0.25)"}
+                    : {background:"rgba(244,63,94,0.1)",color:"#FCA5A5",border:"1px solid rgba(244,63,94,0.3)"}}>
+                  <Trash2 className="w-4 h-4"/> {confirmDel===selPlot.id?"Confirm Stop & Remove?":"Stop / Remove Plot"}
                 </button>
                 <Link href="/land-view"
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold ml-auto"

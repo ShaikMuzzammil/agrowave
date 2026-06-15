@@ -95,15 +95,29 @@ export const DEFAULT_EVENTS: FarmEvent[] = [
   { id:"e6", title:"Soybean Second Sowing",              date:fmt(add(T,10)),type:"planting",   plot:"D",   notes:"Variety JS-335",               done:false },
 ];
 
-export interface Notification { id:string; title:string; body:string; type:"success"|"warning"|"error"|"info"; time:string; read:boolean; }
+export interface Notification { id:string; title:string; body:string; type:"success"|"warning"|"error"|"info"; time:string; ts:number; read:boolean; }
+const __now = Date.now();
 export const DEFAULT_NOTIFS: Notification[] = [
-  { id:"n1", title:"🐛 Pest Alert — South Field",     body:"Fall Armyworm detected. Treat within 48 hours to prevent spread.",          type:"error",   time:"2m ago",  read:false },
-  { id:"n2", title:"💧 Critical Moisture — Plot C",   body:"Soil moisture at 24%. Immediate irrigation required.",                       type:"error",   time:"8m ago",  read:false },
-  { id:"n3", title:"⛈️ Rain Alert",                   body:"Heavy rain forecast Wed–Thu. Postpone fertilizer application by 48 hours.",  type:"warning", time:"1h ago",  read:false },
-  { id:"n4", title:"📈 Soybean Price Up 3.1%",        body:"Current rate ₹4,331/qtl. Above MSP — good time to sell.",                   type:"success", time:"2h ago",  read:false },
-  { id:"n5", title:"✅ Auto-Irrigation Complete",     body:"North Field: 45 min cycle completed. Soil moisture now 72%.",               type:"success", time:"3h ago",  read:true  },
-  { id:"n6", title:"📦 Low Stock: DAP Fertilizer",    body:"Only 45 kg left. Minimum threshold is 100 kg. Reorder soon.",               type:"warning", time:"5h ago",  read:true  },
+  { id:"n1", title:"🐛 Pest Alert — South Field",     body:"Fall Armyworm detected. Treat within 48 hours to prevent spread.",          type:"error",   time:"2m ago",  ts:__now-2*60000,  read:false },
+  { id:"n2", title:"💧 Critical Moisture — Plot C",   body:"Soil moisture at 24%. Immediate irrigation required.",                       type:"error",   time:"8m ago",  ts:__now-8*60000,  read:false },
+  { id:"n3", title:"⛈️ Rain Alert",                   body:"Heavy rain forecast Wed–Thu. Postpone fertilizer application by 48 hours.",  type:"warning", time:"1h ago",  ts:__now-60*60000, read:false },
+  { id:"n4", title:"📈 Soybean Price Up 3.1%",        body:"Current rate ₹4,331/qtl. Above MSP — good time to sell.",                   type:"success", time:"2h ago",  ts:__now-2*3600000, read:false },
+  { id:"n5", title:"✅ Auto-Irrigation Complete",     body:"North Field: 45 min cycle completed. Soil moisture now 72%.",               type:"success", time:"3h ago",  ts:__now-3*3600000, read:true  },
+  { id:"n6", title:"📦 Low Stock: DAP Fertilizer",    body:"Only 45 kg left. Minimum threshold is 100 kg. Reorder soon.",               type:"warning", time:"5h ago",  ts:__now-5*3600000, read:true  },
 ];
+
+/* Live relative-time formatter — used by Navigation's notification bell */
+export function relTime(ts?:number, fallback?:string){
+  if(!ts) return fallback ?? "—";
+  const s = Math.max(0, Math.floor((Date.now()-ts)/1000));
+  if(s<5) return "just now";
+  if(s<60) return `${s}s ago`;
+  const m = Math.floor(s/60);
+  if(m<60) return `${m}m ago`;
+  const h = Math.floor(m/60);
+  if(h<24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
+}
 
 export function getHealthColor(v:number) { return v>=80?"#10B981":v>=60?"#F59E0B":v>=40?"#F97316":"#F43F5E"; }
 export function getMoistureLabel(v:number) { return v>=70?"Optimal":v>=50?"Good":v>=30?"Low":"Critical"; }

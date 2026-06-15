@@ -57,7 +57,7 @@ export default function ToastNotifications() {
     const fake: Notification & { _tipId?: string } = {
       id: tipId, _tipId: tipId,
       title: hints[0].title, body: hints[0].body,
-      type: hints[0].type as any, time: "just now", read: false,
+      type: hints[0].type as any, time: "just now", ts: Date.now(), read: false,
     };
     setShownPages(p => new Set(Array.from(p).concat([pathname])));
     const delay = setTimeout(() => {

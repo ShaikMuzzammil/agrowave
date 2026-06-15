@@ -354,19 +354,7 @@ select option { background: #fff; color: var(--slate-800); }
 .hint-banner strong { color: #065f46; }
 
 /* === PRINT STYLES === */
-@media print {
-  .no-print { display: none !important; }
-  nav, header, footer { display: none !important; }
-  body { background: white !important; color: black !important; }
-  .card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
-  .section { padding: 24px 0 !important; }
-  /* Hide browser URL header/footer in print */
-  @page { margin: 1cm; size: A4; }
-  @page :first { margin-top: 1cm; }
-  /* Suppress URL bar shown by Chrome/Firefox */
-  html::before, html::after { display: none !important; content: none !important; }
-  a[href]::after { content: none !important; }
-}
+/* (print rules consolidated near bottom of this file) */
 
 /* === HERO GRADIENT === */
 .grad-text {
@@ -674,15 +662,7 @@ select option { background: #fff; color: var(--slate-800); }
 }
 
 /* Print page cleanup */
-@media print {
-  .no-print { display: none !important; }
-  nav, header { display: none !important; }
-  body { background: white !important; color: #000 !important; }
-  .card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
-  .section { padding: 24px 0 !important; }
-  @page { margin: 1.5cm; size: A4; }
-  .print-section { break-inside: avoid; }
-}
+/* (print rules consolidated near bottom of this file) */
 
 /* ── TICKER ANIMATION (used by PriceTicker.tsx) ── */
 @keyframes tickerScroll {
@@ -915,10 +895,45 @@ nav .flex { gap: 0.25rem; }
 }
 
 /* Remove link decoration from print output */
+/* === PRINT STYLES (consolidated) ===
+   Note: the date/URL header & footer seen on printed pages are added by
+   the browser's print dialog ("Headers and footers" option) and cannot
+   be removed via CSS — users can untick that option in the print dialog.
+   The rules below clean up everything within our control: hiding nav/
+   chrome, flattening dark UI to a print-friendly light theme, and
+   avoiding awkward page breaks. */
 @media print {
-  a::after { content: none !important; }
-  a[href]::after { content: none !important; display: none !important; }
+  .no-print { display: none !important; }
+  nav, header, footer { display: none !important; }
+  html, body { background: #fff !important; color: #000 !important; }
+  .card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+  .section { padding: 24px 0 !important; }
+  .print-section { break-inside: avoid; }
+  a::after, a[href]::after { content: none !important; display: none !important; }
+  @page { margin: 1.5cm; size: A4; }
 }
 
 /* Navigation gap fix */
-.nav-links-wrap { gap: 0; }
+.nav-links-wrap { gap: 6px; }
+
+/* ===================================================================
+   GLOBAL BREATHING ROOM — reduce "boxed-in" / congested feel
+   Adds visible spacing between cards, grids and bordered blocks,
+   especially on smaller / mobile viewports where tight gaps make
+   bordered panels look like they're touching each other.
+=================================================================== */
+.gap-1  { gap: 0.4rem !important; }
+.gap-1\.5 { gap: 0.5rem !important; }
+.gap-2  { gap: 0.625rem !important; }
+.gap-3  { gap: 0.875rem !important; }
+
+@media (max-width: 768px) {
+  .gap-2  { gap: 0.75rem !important; }
+  .gap-3  { gap: 1rem !important; }
+  .gap-4  { gap: 1.125rem !important; }
+  .container { padding: 0 18px; }
+  .section { padding: 64px 0; }
+}
+
+/* Give bordered blocks a touch more separation from their neighbours */
+.rounded-xl, .rounded-2xl { background-clip: padding-box; }
