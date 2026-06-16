@@ -132,6 +132,7 @@ export default function LandView(){
   const [showRadar, setShowRadar] = useState(false);
   const [showHint, setShowHint]   = useState(true);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [justSaved, setJustSaved]   = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
 
   const rainDay = FORECAST[0].rain > 30;
@@ -199,6 +200,17 @@ export default function LandView(){
     setSelId(remaining.length ? remaining[Math.min(idx, remaining.length-1)].id : null);
   };
 
+  const saveAllChanges = ()=>{
+    if(!selPlot) return;
+    setJustSaved(true);
+    pushNotif({
+      title:`💾 ${selPlot.name} Saved`,
+      body:`All edits — size ${selPlot.size}ac (${(selPlot.size*100).toFixed(0)}¢), moisture ${Math.round(selPlot.moisture)}%, health ${Math.round(selPlot.health)}%, NPK ${selPlot.npk.n}/${selPlot.npk.p}/${selPlot.npk.k} — synced to Land, Dashboard and Field Monitor.`,
+      type:"success", time:"just now",
+    });
+    setTimeout(()=>setJustSaved(false), 2200);
+  };
+
   const exportCSV = (p:typeof plotData[0])=>{
     const rows = [
       ["Metric","Value"],
@@ -215,15 +227,15 @@ export default function LandView(){
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden"
+    <div className="relative min-h-screen pt-[88px] flex flex-col"
       style={{background:"linear-gradient(180deg,#0a1a0e,#081208)"}}>
 
       {/* Rain overlay */}
       {rainDay && <RainCanvas/>}
 
-      {/* ── TOP BAR ── */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2.5 flex-shrink-0 z-20 flex-wrap"
-        style={{background:"rgba(5,15,8,0.95)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(16,185,129,0.2)"}}>
+      {/* ── TOP BAR (sticky just below the global nav) ── */}
+      <div className="sticky top-[88px] flex items-center justify-between gap-2 px-4 py-2.5 flex-shrink-0 z-30 flex-wrap"
+        style={{background:"rgba(5,15,8,0.97)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(16,185,129,0.2)"}}>
         <div className="flex items-center gap-2">
           <Link href="/dashboard"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:bg-white/10 transition-all"
@@ -292,9 +304,9 @@ export default function LandView(){
       </AnimatePresence>
 
       {/* ── MAIN AREA ── */}
-      <div className="flex flex-1 overflow-hidden relative flex-col lg:flex-row">
+      <div className="flex flex-col lg:flex-row relative">
 
-        <div className="flex flex-1 overflow-hidden relative">
+        <div className="flex flex-col sm:flex-row lg:flex-1 relative">
           {/* Left sidebar — radar */}
           <AnimatePresence>
             {showRadar && (
@@ -335,7 +347,7 @@ export default function LandView(){
           </AnimatePresence>
 
           {/* SVG Map */}
-          <div className="flex-1 overflow-auto relative">
+          <div className="flex-1 relative">
             <svg
               viewBox={`0 0 910 ${svgH}`}
               width="100%" height={svgH}
@@ -386,8 +398,12 @@ export default function LandView(){
                 const isExtra = !POLYS[p.id];
                 const nc = ndvi(p.health, p.moisture);
                 const st = statusOf(p.health, p.moisture);
+                /* Visual size scaling — editing "Size (acres)" visibly grows/shrinks the plot */
+                const scale = Math.max(0.6, Math.min(1.32, p.size/4));
+                const gTransform = `translate(${p.poly.cx} ${p.poly.cy}) scale(${scale}) translate(${-p.poly.cx} ${-p.poly.cy})`;
                 return (
                   <g key={p.id} onClick={()=>openPanel(p.id)} style={{cursor:"pointer"}}>
+                  <g transform={gTransform} style={{transition:"transform 0.5s ease"}}>
                     <clipPath id={`lv-c-${p.id}`}><polygon points={p.poly.pts}/></clipPath>
                     <g clipPath={`url(#lv-c-${p.id})`}>
                       {viewMode==="satellite" && Array.from({length:30},(_,r)=>(
@@ -442,6 +458,7 @@ export default function LandView(){
                       <animate attributeName="opacity" values="0.55;0;0.55" dur="1.6s" repeatCount="indefinite"/>
                     </circle>}
                   </g>
+                  </g>
                 );
               })}
 
@@ -464,7 +481,7 @@ export default function LandView(){
             <AnimatePresence>
               {!selPlot && (
                 <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-                  className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold pointer-events-none"
+                  className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold pointer-events-none z-30"
                   style={{background:"rgba(0,0,0,0.72)",backdropFilter:"blur(10px)",border:"1px solid rgba(16,185,129,0.3)",color:"#A7F3D0"}}>
                   👆 Tap any plot to open the live edit panel
                 </motion.div>
@@ -480,7 +497,7 @@ export default function LandView(){
               key={selPlot.id}
               initial={{opacity:0,x:40}} animate={{opacity:1,x:0}} exit={{opacity:0,x:40}}
               transition={{type:"spring",damping:30,stiffness:260}}
-              className="flex flex-col w-full lg:w-[420px] flex-shrink-0 z-30 max-h-[64vh] lg:max-h-none lg:h-full border-t lg:border-t-0 lg:border-l"
+              className="flex flex-col w-full lg:w-[420px] flex-shrink-0 z-20 max-h-[70vh] lg:max-h-[calc(100vh-164px)] lg:sticky lg:top-[164px] lg:self-start border-t lg:border-t-0 lg:border-l rounded-b-2xl lg:rounded-none"
               style={{
                 background:"rgba(5,12,8,0.97)",
                 backdropFilter:"blur(24px)",
@@ -692,6 +709,17 @@ export default function LandView(){
                     <div className="text-[10px] text-slate-500 pt-1">
                       Moisture label: <span className="font-semibold" style={{color:getMoistureColor(selPlot.moisture)}}>{getMoistureLabel(selPlot.moisture)}</span> · Last watered: {selPlot.lastWatered}
                     </div>
+
+                    <button onClick={saveAllChanges}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all"
+                      style={justSaved
+                        ? {background:"linear-gradient(135deg,#16A34A,#22C55E)",color:"#fff"}
+                        : {background:"linear-gradient(135deg,#059669,#10B981)",color:"#fff",boxShadow:"0 4px 16px rgba(16,185,129,0.3)"}}>
+                      {justSaved ? <><Save className="w-4 h-4"/> Saved & Synced Everywhere ✓</> : <><Save className="w-4 h-4"/> Save & Sync All Views</>}
+                    </button>
+                    <p className="text-[10px] text-slate-500 text-center -mt-1">
+                      Edits already apply live as you type — this confirms the sync and updates Land, Dashboard &amp; Field Monitor instantly.
+                    </p>
                   </>
                 )}
 

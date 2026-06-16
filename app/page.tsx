@@ -6,7 +6,7 @@ import {
   ArrowRight, CheckCircle2, TrendingUp, Droplets, CloudRain,
   Sprout, BarChart3, Shield, Zap, Star, Play, Bug, Package,
   Calendar, Bell, ChevronDown, Mail, Map, BookOpen,
-  LayoutDashboard, Leaf, ThumbsUp, Lightbulb, Target, Info, ArrowLeft
+  LayoutDashboard, Leaf, ThumbsUp, Lightbulb, Target, Info, ArrowLeft, Phone
 } from "lucide-react";
 import PriceTicker from "@/components/PriceTicker";
 import StatCounter from "@/components/StatCounter";
@@ -184,7 +184,7 @@ export default function Home() {
     <div className="pt-[72px]">
 
       {/* ── HERO ─────────────────────────────────────── */}
-      <section id="hero" className="hero-pattern grid-bg min-h-[92vh] flex items-center relative overflow-hidden">
+      <section id="hero" className="hero-pattern grid-bg min-h-[92vh] pt-[88px] flex items-center relative overflow-hidden">
         <div className="absolute top-20 right-10 w-96 h-96 bg-brand-400/10 rounded-full blur-3xl pointer-events-none"/>
         <div className="absolute bottom-10 left-5 w-72 h-72 bg-sky-400/8 rounded-full blur-3xl pointer-events-none"/>
         <div className="container py-20">
@@ -676,20 +676,40 @@ export default function Home() {
       <div className="section-divider"/>
 
       {/* CONTACT HOME SECTION — full enhanced section: info LEFT, form RIGHT */}
-      <section id="contact-section" className="section section-dark">
-        <div className="container">
-          <motion.div initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 bg-white/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-4">
+      <section id="contact-section" className="section relative overflow-hidden"
+        style={{background:"linear-gradient(160deg,#03130A 0%,#0A2818 55%,#062014 100%)"}}>
+        {/* decorative brand-green glows — not flat navy */}
+        <div className="absolute -top-32 -right-24 w-[26rem] h-[26rem] rounded-full opacity-25 blur-3xl pointer-events-none" style={{background:"#10B981"}}/>
+        <div className="absolute -bottom-40 -left-32 w-[30rem] h-[30rem] rounded-full opacity-15 blur-3xl pointer-events-none" style={{background:"#34D399"}}/>
+        <div className="absolute inset-0 grid-bg opacity-10 pointer-events-none"/>
+
+        <div className="container relative">
+          <motion.div initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-emerald-400/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-5 border border-emerald-400/25">
               <Mail className="w-4 h-4"/> Get In Touch
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-3">
-              Contact <span className="grad-text">AgroWave</span>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Have a question for <span className="grad-text">AgroWave?</span>
             </h2>
-            <p className="text-slate-400 text-base max-w-xl mx-auto">Questions, partnerships, or feedback — our team responds within 24 hours.</p>
+            <p className="text-slate-300 text-base max-w-xl mx-auto mb-7">
+              We're here to help Indian farmers succeed. Reach out for support, partnerships, or feedback — our team responds within 24 hours.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button onClick={()=>document.getElementById("home-contact-form")?.scrollIntoView({behavior:"smooth",block:"center"})}
+                className="btn px-6 py-3 rounded-xl font-bold text-white transition-transform hover:scale-105"
+                style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 6px 20px rgba(16,185,129,0.35)"}}>
+                <Mail className="w-4 h-4"/> Contact Me
+              </button>
+              <a href="tel:18001801551"
+                className="btn px-6 py-3 rounded-xl font-semibold text-white border-2 transition-all hover:bg-white/10"
+                style={{borderColor:"rgba(16,185,129,0.35)"}}>
+                <Phone className="w-4 h-4"/> 1800-180-1551
+              </a>
+            </div>
           </motion.div>
 
           {/* Info cards row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 max-w-4xl mx-auto">
             {[
               {icon:"📞",label:"KISAN HELPLINE",v:"1800-180-1551",sub:"Mon–Sat, 6am–10pm",c:"rgba(16,185,129,0.15)",bc:"rgba(16,185,129,0.35)"},
               {icon:"✉️",label:"EMAIL",v:"hello@agrowave.farm",sub:"Reply within 24h",c:"rgba(59,130,246,0.15)",bc:"rgba(59,130,246,0.35)"},
@@ -706,7 +726,7 @@ export default function Home() {
           </div>
 
           {/* Two-column: LEFT = FAQs, RIGHT = Contact Form */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <div id="home-contact-form" className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mt-2 scroll-mt-24">
 
             {/* LEFT — FAQs */}
             <motion.div initial={{opacity:0,x:-24}} whileInView={{opacity:1,x:0}} viewport={{once:true}}>
@@ -718,7 +738,7 @@ export default function Home() {
                   {q:"Is AgroWave free to use?",a:"Yes — AgroWave is completely free for Indian farmers. No hidden fees, no credit card required."},
                   {q:"Does it need any hardware?",a:"No hardware needed at all. Just open AgroWave in any browser on your mobile or desktop."},
                   {q:"How accurate are forecasts?",a:"Our hyper-local weather model achieves 99.2% accuracy vs. national averages, calibrated for Indian conditions."},
-                  {q:"Are the market prices real?",a:"Prices are updated from 600+ mandis across India every 60 seconds with MSP reference data."},
+                  {q:"Are the market prices real?",a:"Prices are simulated from 24 major mandis across India with a live-ticking feed and MSP reference data."},
                   {q:"Where is my farm data stored?",a:"All your farm data is stored securely and never shared with third parties or advertisers."},
                   {q:"Can I use this for a hackathon?",a:"Yes — this is an open portfolio project built with Next.js, TypeScript, Tailwind, and Recharts."},
                 ].map((faq,i)=>(

@@ -1,331 +1,287 @@
-# 🌾 AgroWave v3 — Smart Farm Intelligence Platform
+# 🌾 AgroWave — Smart Farming Dashboard for Indian Agriculture
 
-> **A comprehensive, real-time smart farming platform built for Indian agriculture.** Track soil health, market prices, weather forecasts, pest risks, and farm inventory — all in one beautifully designed dashboard.
+> A real-time-feeling, simulation-driven smart farming dashboard built with **Next.js, TypeScript, Tailwind CSS, Zustand and Recharts** — a personal/portfolio project exploring what a modern agri-tech UI could look like for Indian farmers.
 
----
-
-## 🚀 Live Demo
-
-Deploy this to Vercel in 60 seconds. No backend required — the platform runs fully client-side with API routes for email.
+🔗 **Live demo:** _deploy your own with one click below — add the link here once deployed_
+👤 **Author:** [Shaik Muzzammil](https://github.com/ShaikMuzzammil)
 
 ---
 
 ## 📋 Table of Contents
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Pages & Modules](#pages--modules)
-- [Environment Variables](#environment-variables)
-- [Deploy to Vercel](#deploy-to-vercel)
-- [Local Development](#local-development)
-- [Platform Guide](#platform-guide)
-- [KHARIF 2026 Data](#kharif-2026-data)
+- [Why this project exists](#-why-this-project-exists)
+- [Feature Tour](#-feature-tour)
+- [What "Real-Time" Means Here](#-what-real-time-means-here)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Environment Variables](#-environment-variables)
+- [Deploy to Vercel](#%EF%B8%8F-deploy-to-vercel)
+- [Roadmap / Ideas for Contributors](#-roadmap--ideas-for-contributors)
+- [Disclaimer](#-disclaimer)
+- [License](#-license)
 
 ---
 
-## ✨ Features
+## 🙋 Why this project exists
 
-| Module | Features |
-|--------|----------|
-| **Dashboard** | Live 6-plot farm map, moisture rings, Farm Health Radar, 7-day forecast, dismissable hints |
-| **Field Monitor** | Detailed plot analytics, NPK editing, auto-irrigation toggle, centered Add-Plot modal, trend charts |
-| **Weather** | 7-day forecast, farm advisories, hourly temperature, rainfall charts, print report |
-| **Market** | Live MSP + mandi prices, P&L calculator, mandi-wise rates, price alerts with notifications |
-| **Inventory** | Stock tracking, low-stock alerts, category filter pills, centered Add-Item modal, print report |
-| **Calendar** | Monthly calendar, task scheduling, priority levels, upcoming tasks sidebar, print schedule |
-| **Land View** | Satellite-style plot grid, terrain toggle, threshold-based Open/Warning status, per-plot sensor overlay |
-| **Contact** | Real-time email via Resend API, auto-reply, form validation, FAQ quick-answers |
-| **Home Page** | Hero, Features, Platform Guide (7-tab walkthrough), Why AgroWave, Comparison table, Benefits, Testimonials, Crop Calendar, Market Preview, Contact strip |
+This isn't a production agri-tech platform, and it's **not trying to compete with or replace real farm-management software, IoT sensor networks, or agronomy expertise**. It started as a learning project — a way to practice building a large, multi-page Next.js app with a consistent design system, global state, charts, and "live" interactions — themed around something that felt meaningful: helping Indian farmers get a clearer picture of their land.
 
-### 🎨 Design System
-- Green gradient brand palette (`#059669` → `#10B981`)
-- 8 differentiated section backgrounds (no repetitive plain white)
-- Visible filter pill active states — green gradient with white text
-- Centered modals with backdrop blur overlay
-- Toast notifications with page-specific hints on every navigation
-- Framer Motion animations throughout
-- Full print support on every page (`no-print` class hides UI chrome)
+Think of it as **a small contribution, not a solution**. If you're a student, a self-taught developer, or someone exploring agri-tech UI ideas, feel free to:
+
+- Use it as a **reference** for structuring a Next.js + Zustand + Tailwind dashboard
+- **Fork it** and swap in real sensor/IoT/market-data APIs
+- Pull out individual pieces (the calendar, the land-map SVG renderer, the live notification system, the price-alert flow) for your own projects
+- Use it as a **portfolio piece** — it's intentionally feature-dense to show breadth
+
+All farm data (plots, sensor readings, mandi prices, weather) is **simulated in the browser** so the app works instantly with zero backend setup. Nothing here should be used to make real agronomic, financial, or pest-management decisions.
+
+---
+
+## ✨ Feature Tour
+
+<details>
+<summary><strong>🏠 Home Page</strong> — marketing site + live contact section</summary>
+
+- Animated hero with live clock and "KHARIF 2026 · Live Farm Intelligence Active" badge
+- Feature grid, 7-tab interactive **Platform Guide**, "How It Works" walkthrough, benefits, testimonials
+- Live crop-price ticker (CSS-animated marquee) and a market preview with sparkline charts
+- **Contact section** (`/#contact-section`) — green-branded hero ("Have a question for AgroWave?"), quick "Contact Me" / helpline buttons, info cards, FAQ accordion (left) and a 3-step animated contact form (right) that sends real email via Resend
+- The old standalone `/contact` route now redirects here — there is **one** contact destination, reached from the in-app "Home" button or the marketing nav
+</details>
+
+<details>
+<summary><strong>📊 Dashboard</strong> — farm overview</summary>
+
+- Live 6-plot farm summary: total acreage, average health, low-moisture count, unread alerts
+- Per-plot moisture rings, health/temp/pH mini bars, season-completion %
+- **Land Parcels** card — expandable list of every plot with acres/cents, health and moisture, plus a direct link into the Land Intelligence View
+- Farm Health Radar (moisture / health / growth / nutrition / sunlight)
+- Scrollable left panel so the page doesn't grow unbounded as you add plots
+</details>
+
+<details>
+<summary><strong>🌱 My Fields (Field Monitor)</strong> — per-plot sensor detail</summary>
+
+- Scrollable plot list with live moisture rings and rounded health/pest badges
+- Detailed view per plot: moisture, health, temperature, soil pH, NPK (N/P/K), pest risk, auto-irrigation toggle
+- **Add Plot** modal with acres → cents live conversion, custom crop/phase/area
+- Two-step delete ("tap again to confirm") so you never lose a plot by accident
+- Guide-tip recommendation cards (irrigation status, pest watch, fertilizer tip, soil health) generated from the plot's current numbers
+- 7-day health trend chart + farm comparison radar
+</details>
+
+<details>
+<summary><strong>🗺️ Land</strong> — satellite-style farm map</summary>
+
+- Hand-drawn SVG polygon "fields" coloured by an NDVI-style health/moisture score
+- **Any number of extra plots** you add are automatically laid out in a generated grid below the main map (with a divider + "newly added plot" legend) — nothing gets clipped or hidden
+- Threshold sliders for Open / Warning status, live pulse animation when a plot's sensors update
+- **Pesticide & Input Control panel** — per-plot spray on/off + weekly/bi-weekly/monthly schedule
+- Full Section Analysis table (crop, acres/cents, status, moisture, health, temp, pH, NPK)
+- Plot detail modal includes **Stop / Remove Plot** (two-step confirm) and a link into the full Land Intelligence View
+- Print-friendly report view
+</details>
+
+<details>
+<summary><strong>🔭 Land Intelligence View</strong> — the GODMODE detailed map</summary>
+
+This is the most elaborate screen in the app:
+
+- Satellite / Terrain / NDVI map-style toggles, animated rain overlay on rainy forecast days
+- Click any plot to open a **live side panel** with three tabs:
+  - **Overview** — live stats, NPK, pest risk, auto-irrigation status, and auto-generated guide tips
+  - **Edit All** — every field is editable in real time: name, crop, phase, area/block, size in acres (with live cents conversion), moisture/health/temperature/pH sliders, NPK, pest risk, auto-irrigation — changes sync instantly to Land, Dashboard and Field Monitor, with a "✓ Synced" flash and an explicit **Save & Sync All Views** button for a clear confirmation
+  - **Trends** — 7-day health trend line chart + a per-plot radar profile
+- Editing the **size (acres)** visibly grows or shrinks the plot's polygon on the map
+- A horizontal plot-switcher always shows every plot — including ones you've just added — so nothing is ever stranded off-screen
+- "Remove Plot" (stop cultivation) with confirm, CSV export per plot, and quick-irrigate
+- Sticky top bar + dismissible guide banner that stays out of the way once you've read it
+</details>
+
+<details>
+<summary><strong>☁️ Weather</strong> — 7-day forecast & advisories</summary>
+
+- Hyper-local-feeling 7-day forecast with hourly temperature and rainfall charts
+- Rain-alert banner that appears automatically on rainy forecast days and pushes a notification (once per session)
+- Farm advisories generated from the forecast (e.g. "postpone fertilizer application")
+- Printable weather report
+</details>
+
+<details>
+<summary><strong>📈 Market</strong> — mandi prices & alerts</summary>
+
+- Live-feeling MSP + crop price cards with 30-day sparklines, for 8 major crops
+- **24 mandis** across India (Delhi, Mumbai, Chennai, Kolkata, Lucknow, Guwahati, Jaipur, and more), each with an independently-ticking "Xs/Xm ago" live feed and state/trend/arrival columns
+- Profit & Loss calculator (yield, costs, revenue breakdown)
+- **Price alerts** — set a target price and get a real confirmation email via Resend (with inline validation and error states)
+</details>
+
+<details>
+<summary><strong>📅 Calendar</strong> — farm task scheduling</summary>
+
+- Monthly calendar with colour-coded, glowing dots per task type (irrigation, fertilizer, pesticide, harvest, planting, other)
+- "TODAY" highlight, upcoming-tasks sidebar, add/complete/delete tasks, printable schedule
+</details>
+
+<details>
+<summary><strong>📦 Inventory</strong> — stock tracking</summary>
+
+- Category-filterable inventory list with low-stock highlighting
+- Add-item modal, printable stock report
+</details>
+
+---
+
+## ⚡ What "Real-Time" Means Here
+
+Everything in this app runs **client-side** — there's no IoT hardware, no government data feed, and no database. "Real-time" means the UI behaves like a live system using timers, intervals and shared state, so it *feels* like a live farm dashboard. Specifically:
+
+<details>
+<summary>Click to expand the full list of live/real-time mechanics</summary>
+
+- **Shared global state (Zustand + localStorage)** — plots, inventory, calendar events and notifications live in one store (`lib/store.ts`) and persist across page reloads, so an edit on the Land Intelligence View instantly shows up on the Dashboard, Land map and Field Monitor.
+- **Sensor simulation intervals** — every few seconds, a random plot's moisture/health/temperature drifts slightly (clamped to realistic ranges), with a "● LIVE" pulse animation on the map.
+- **Live notification feed** — notifications carry a real timestamp (`ts`) and render as "just now / Xs ago / Xm ago / Xh ago", updating while the bell dropdown is open (`lib/utils.ts → relTime`).
+- **Rain-alert pipeline** — the Weather page checks the forecast for a high rain-probability day and, once per browser session, pushes a notification and shows a dismissible banner.
+- **Live mandi feed** — each of the 24 mandi rows on the Market page has its own staggered "last updated" timestamp that ticks independently, plus a global "price feed synced Xs ago" indicator, refreshed every 60 seconds.
+- **Real email sending** — the contact form, the home-page "Contact Me" flow, and Market price alerts all POST to `/api/contact`, which sends through [Resend](https://resend.com) using the `RESEND_API_KEY` / `HOST_EMAIL` environment variables.
+- **Editable, synced plot data** — the Land Intelligence View's "Edit All" tab writes directly into the shared store via `setField` / `updateSensor`, so every number you type (size, NPK, pH, moisture, etc.) is reflected everywhere immediately, with an explicit "Save & Sync All Views" confirmation.
+- **Dynamic layouts** — both the Land map and the Land Intelligence View generate extra polygon "cells" on the fly for any plot beyond the original six, so adding fields never breaks or hides them.
+
+None of this talks to real sensors, real mandi APIs, or a real weather service — it's all deterministic-feeling randomness and shared state designed to demonstrate the *interaction patterns* a real system would need.
+</details>
 
 ---
 
 ## 🛠 Tech Stack
 
-| Layer | Tech |
-|-------|------|
-| Framework | Next.js 14 (App Router) |
+| Layer | Technology |
+|---|---|
+| Framework | [Next.js 14](https://nextjs.org/) (App Router) |
 | Language | TypeScript |
-| Styling | Tailwind CSS + CSS custom properties |
-| Animations | Framer Motion |
-| Charts | Recharts (Area, Bar, Line, Radar) |
-| State | Zustand with localStorage persist |
-| Email | Resend API (`/api/contact` route) |
-| Icons | Lucide React |
-| Fonts | DM Sans + JetBrains Mono (Google Fonts) |
-| Deploy | Vercel (zero-config) |
+| Styling | Tailwind CSS + custom CSS variables (`app/globals.css`) |
+| State | [Zustand](https://github.com/pmndrs/zustand) with `persist` (localStorage) |
+| Animation | [Framer Motion](https://www.framer.com/motion/) |
+| Charts | [Recharts](https://recharts.org/) (Line, Bar, Radar, Area) |
+| Icons | [lucide-react](https://lucide.dev/) |
+| Email | [Resend](https://resend.com/) via a Next.js API route |
+| Dates | [date-fns](https://date-fns.org/) |
 
 ---
 
 ## 📁 Project Structure
 
+<details>
+<summary>Click to expand the full folder tree</summary>
+
 ```
 agrowave/
 ├── app/
-│   ├── page.tsx              ← Home page (all sections + guide)
-│   ├── dashboard/page.tsx    ← Farm Dashboard
-│   ├── field-monitor/page.tsx ← Field Monitor + Add Plot modal
-│   ├── weather/page.tsx      ← Weather Intelligence
-│   ├── market/page.tsx       ← Market Intelligence
-│   ├── inventory/page.tsx    ← Inventory Hub
-│   ├── calendar/page.tsx     ← Farm Calendar
-│   ├── land/page.tsx         ← Land View
-│   ├── contact/page.tsx      ← Contact Page
-│   ├── api/contact/route.ts  ← Email API (Resend)
-│   ├── globals.css           ← Design system + filter pills + modals
-│   └── layout.tsx            ← Root layout
+│   ├── page.tsx                # Home — hero, guide, benefits, contact
+│   ├── dashboard/page.tsx      # Farm overview
+│   ├── field-monitor/page.tsx  # "My Fields" — per-plot detail
+│   ├── land/page.tsx           # Land map + pesticide controls
+│   ├── land-view/page.tsx      # GODMODE Land Intelligence View
+│   ├── weather/page.tsx        # 7-day forecast & advisories
+│   ├── market/page.tsx         # Mandi prices, P&L calc, alerts
+│   ├── calendar/page.tsx       # Task calendar
+│   ├── inventory/page.tsx      # Stock tracking
+│   ├── about/page.tsx          # About page
+│   ├── contact/page.tsx        # Redirects to /#contact-section
+│   ├── api/
+│   │   ├── contact/route.ts    # Resend email sending
+│   │   ├── prices/route.ts     # Mock live price endpoint
+│   │   ├── weather/route.ts    # Mock weather endpoint
+│   │   ├── report/route.ts     # Report generation
+│   │   └── alerts/...          # Price/weather alert endpoints
+│   └── globals.css             # Design tokens, sections, print styles
 ├── components/
-│   ├── Navigation.tsx        ← Responsive nav + notification panel
-│   ├── ToastNotifications.tsx ← Page-specific hints + store toasts
-│   ├── Card.tsx              ← Reusable card component
-│   ├── PriceTicker.tsx       ← Live scrolling price ticker
-│   └── StatCounter.tsx       ← Animated number counter
+│   ├── Navigation.tsx           # Global nav + live status strip + notifications
+│   ├── Footer.tsx
+│   ├── PriceTicker.tsx          # CSS-animated marquee
+│   ├── StatCounter.tsx          # Animated number counters
+│   ├── ToastNotifications.tsx   # Page-entry tip toasts
+│   └── Card.tsx
 ├── lib/
-│   ├── store.ts              ← Zustand state store
-│   └── utils.ts              ← Data constants (CROPS, FORECAST, plots)
-└── public/
+│   ├── store.ts                # Zustand store — plots, inventory, events, notifications
+│   └── utils.ts                # Shared types, defaults, formatters, FORECAST/CROPS data
+├── vercel.json
+└── package.json
 ```
+</details>
 
 ---
 
-## 📄 Pages & Modules
-
-### Home Page (`/`)
-All sections in order with smooth-scroll navigation:
-1. **Hero** — Live clock, stats grid, CTA buttons
-2. **Price Ticker** — Auto-scrolling live prices
-3. **Stats Banner** — Animated counters (dark background)
-4. **Features** — 8-card feature grid
-5. **Platform Guide** — 7-tab interactive walkthrough (Dashboard, Fields, Weather, Market, Inventory, Calendar, Land)
-6. **Why AgroWave** — 6 benefit cards + comparison table vs traditional farming
-7. **How It Works** — 3-step process
-8. **Benefits** — Stats cards + season impact
-9. **Market Preview** — Live crop price grid
-10. **Crop Calendar** — Kharif/Rabi/Zaid season chart
-11. **Testimonials** — 3 farmer stories
-12. **CTA Strip** — Green gradient with action buttons
-13. **Contact Section** — Dark section with inline contact form
-
-### Dashboard (`/dashboard`)
-- KHARIF 2026 completion percentages (exact 15-decimal values)
-- Auto-updating moisture every 20 seconds
-- Dismissable hint banner
-- Clickable plot cards with expandable detail panel
-- Farm Health Radar chart
-- Quick navigation tiles
-
-### Field Monitor (`/field-monitor`)
-- **Centered Add New Plot modal** with full-screen backdrop blur
-- NPK update panel with collapse animation
-- 7-day trend chart + farm comparison radar
-- Pest & soil advisory cards (4 types)
-- Irrigate/Auto-irrigate controls
-
-### Market (`/market`)
-- **4 clearly visible tabs**: Live Prices / P&L Calculator / Mandi Rates / Price Alerts
-- All tabs use green gradient active state
-- Crop filter pills also visible when selected
-- P&L calculator with auto-fill from crop presets
-
-### Inventory (`/inventory`)
-- Category filter pills with green active state
-- **Centered Add Item modal**
-- Low-stock banner with item names
-- +/– stock adjustment controls
-
-### Calendar (`/calendar`)
-- Monthly calendar grid with event dots
-- **Centered Add Event modal** with priority selector
-- Upcoming tasks sidebar with days-until countdown
-- Event type breakdown
-
----
-
-## 🔐 Environment Variables
-
-Set these in Vercel Dashboard → Settings → Environment Variables:
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `RESEND_API_KEY` | ✅ Yes | Your Resend API key from resend.com/api-keys |
-| `HOST_EMAIL` | ✅ Yes | The email address to receive contact form messages |
-
-### How to get them:
-1. **RESEND_API_KEY**: Sign up at [resend.com](https://resend.com) → API Keys → Create Key → copy
-2. **HOST_EMAIL**: Any email you own (e.g. `you@gmail.com` or `farm@yourdomain.com`)
-
-### `.env.local` (for local dev):
-```bash
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
-HOST_EMAIL=your@email.com
-```
-
-> ⚠️ **Never commit `.env.local` to Git.** The `.gitignore` already excludes it.
-
----
-
-## 🚀 Deploy to Vercel
-
-### Option A — Vercel CLI (fastest)
-```bash
-npm i -g vercel
-vercel
-```
-Follow the prompts, then add env vars in the Vercel dashboard.
-
-### Option B — GitHub Import
-1. Push this project to a GitHub repo
-2. Go to [vercel.com/new](https://vercel.com/new)
-3. Import the repo
-4. Add environment variables:
-   - `RESEND_API_KEY` = your Resend key
-   - `HOST_EMAIL` = your email
-5. Click Deploy
-
-### After Deployment
-1. Open your Vercel URL
-2. Go to Contact page and send a test message
-3. Check your `HOST_EMAIL` inbox for the notification
-
----
-
-## 💻 Local Development
+## 🚀 Getting Started
 
 ```bash
 # 1. Install dependencies
 npm install
 
-# 2. Create env file
+# 2. (optional) configure email — see Environment Variables below
 cp .env.example .env.local
-# Edit .env.local — add your RESEND_API_KEY and HOST_EMAIL
 
-# 3. Run dev server
+# 3. Run the dev server
 npm run dev
 
-# 4. Open browser
-open http://localhost:3000
+# 4. Open http://localhost:3000
 ```
 
-**Build for production:**
 ```bash
+# Production build
 npm run build
-npm start
+npm run start
 ```
 
----
-
-## 📖 Platform Guide
-
-### How to use each section:
-
-#### 🏠 Home Page
-- Scroll down to explore all sections
-- Click section names in the navigation to jump directly
-- The **Platform Guide section** has step-by-step instructions for every module
-
-#### 📊 Dashboard
-1. Click any plot card (left panel) to expand its sensor data
-2. Use "Irrigate All" to water all 6 plots simultaneously
-3. Click any tile in the Farm Map to see quick stats
-4. Dismiss the hint banner with the ✕ button
-
-#### 🌾 Field Monitor
-1. Click a plot name from the list to view full analytics
-2. Click "Update NPK" to log a fertilizer application
-3. Toggle "Auto-Irrigate" per plot
-4. Click "+ Add New Plot" — the modal appears centered with full overlay
-
-#### 📈 Market
-1. Four tabs: **Live Prices**, **P&L Calculator**, **Mandi Rates**, **Price Alerts**
-2. Active tab highlighted with green gradient
-3. Filter by crop using the pill buttons
-4. In P&L Calculator, select crop to auto-fill input costs
-
-#### 📦 Inventory
-1. Filter pills above the table — **active pill is green**
-2. + button adds 50 units, − deducts 10
-3. Trash icon removes item
-4. "Add Item" button (top right) opens a centered modal
-
-#### 📅 Calendar
-1. Click any date to see events for that day
-2. "Add Event" modal includes type, plot, priority, and notes
-3. Click the ✓ circle to mark a task complete
-4. Upcoming panel shows tasks sorted by due date
-
-#### 🗺️ Land View
-1. Click any plot tile for sensor overlay (right panel)
-2. Toggle "Terrain" switch to view elevation profile
-3. Green = Open (meets thresholds), Yellow = Warning
+The app works fully **without** any environment variables — only the email-sending features (contact form, price alerts) need them.
 
 ---
 
-## 🌾 KHARIF 2026 Data
+## 🔐 Environment Variables
 
-The platform uses authentic KHARIF 2026 season data. All 6 plots are pre-seeded:
+Create a `.env.local` file (see `.env.example`):
 
-| Plot | Crop | Completion | Moisture | Temp |
-|------|------|-----------|---------|------|
-| North Field | Wheat · Tillering | 93.95571812921074% | 72% | 32.14°C |
-| East Block | Rice · Panicle Init. | 74.71632610612846% | 48% | 34.03°C |
-| South Field | Cotton · Boll Formation | 62.98277071487386% | 24% | 32.18°C |
-| West Block | Soybean · Pod Fill | 82.18390979790693% | 68% | 30.70°C |
-| Central Plot | Maize · Silking | 88.52486644323442% | 56% | 31.78°C |
-| Border Strip | Onion · Bulb Dev. | 77.83659463739020% | 62% | 29.57°C |
+| Variable | Description |
+|---|---|
+| `RESEND_API_KEY` | API key from [resend.com](https://resend.com/api-keys), used to send contact-form and price-alert emails |
+| `HOST_EMAIL` | The email address that receives contact-form submissions |
 
-Completion % is preserved exactly (15 decimal places) and visible on hover in Field Monitor cards.
+If these are not set, the contact form and price alerts will still update the UI/notifications but won't send real emails — `/api/contact` will return an error that's surfaced gracefully in the form.
 
 ---
 
-## 🖨️ Print Support
+## ☁️ Deploy to Vercel
 
-Every page has a **Print Report** button. CSS `@media print` rules:
-- Hides navigation, buttons, and non-essential UI
-- Formats cards cleanly for A4 paper
-- Preserves tables and charts in print layout
-
----
-
-## 📧 Contact / Email Flow
-
-When a contact form is submitted:
-1. `POST /api/contact` receives `{name, email, subject, message}`
-2. Resend sends a **notification email** to `HOST_EMAIL`
-3. Resend sends an **auto-reply** to the user's email
-4. Success state shown in the UI
+1. Push this repo to GitHub
+2. Import it on [vercel.com/new](https://vercel.com/new) — framework is auto-detected as Next.js
+3. Add the two environment variables above in **Project Settings → Environment Variables**
+4. Deploy — that's it, no database or extra services required
 
 ---
 
-## 🎨 Color System
+## 🗺 Roadmap / Ideas for Contributors
 
-```css
---brand-500: #10B981   /* Primary green */
---brand-600: #059669   /* Darker green */
---brand-400: #34D399   /* Light green */
---gold:      #F59E0B   /* Amber/warning */
---sky:       #3B82F6   /* Blue/info */
---rose:      #F43F5E   /* Red/danger */
-```
+<details>
+<summary>Click to expand — ideas if you want to extend this project</summary>
 
----
-
-## 🔧 Customization
-
-**Change farm name:** Edit `farmName` in `lib/store.ts`  
-**Change plot data:** Edit `DEFAULT_PLOTS` in `lib/utils.ts`  
-**Change crop prices:** Edit `CROPS` base prices in `lib/utils.ts`  
-**Change forecast:** Edit `FORECAST` array in `lib/utils.ts`  
-**Add inventory items:** Edit `DEFAULT_INV` in `lib/utils.ts`  
+- Swap the simulated mandi prices for a real data source (e.g. [data.gov.in's Agmarknet API](https://data.gov.in)) — the Market page is already structured to make this a drop-in change in `getLivePrices()`
+- Replace the sensor-simulation interval with real IoT/MQTT data
+- Add user accounts so plot data isn't just local to one browser
+- Add multi-language support (Hindi, Telugu, etc.) for accessibility
+- Add a proper test suite (the project currently has none)
+- Improve mobile gesture support on the Land Intelligence View's map
+- Wire the Weather page to a real forecast API (e.g. Open-Meteo)
+</details>
 
 ---
 
-*Built with ❤️ for Indian farmers · AgroWave v3 · KHARIF 2026*
+## ⚠️ Disclaimer
+
+This is a **demo / educational / portfolio project**. Crop prices, weather forecasts, soil sensor readings, and pest-risk levels are **simulated** and must not be used for real farming, financial, or pest-management decisions. Always consult local agricultural extension services, certified agronomists, and official government sources (e.g. Agmarknet, IMD) for real decisions.
+
+---
+
+## 📜 License
+
+This project will be released under the **MIT License** — a `LICENSE` file will be added by the author.
