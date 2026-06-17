@@ -111,7 +111,7 @@ export default function FieldMonitor() {
                 <Map className="w-3 h-3"/> Land View
               </Link>
             </div>
-            <div className="overflow-y-auto flex-1 space-y-3 pr-1" style={{scrollbarWidth:"thin"}}>
+            <div className="overflow-y-auto flex-1 space-y-3 pr-2 panel-scroll">
             {plots.map((p,i) => {
               const mc = getMoistureColor(p.moisture);
               const hc = getHealthColor(p.health);

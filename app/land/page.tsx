@@ -143,7 +143,7 @@ export default function Land() {
 
   return (
     <div ref={printRef} className="pt-[88px] min-h-screen"
-      style={{background:"linear-gradient(160deg,#0F2027,#203A43 50%,#2C5364)"}}>
+      style={{background:"linear-gradient(160deg,#061309 0%,#0C2317 45%,#0A1F15 100%)"}}>
 
       {/* Live status strip */}
       <div className="flex items-center justify-between px-6 py-2 text-sm"
@@ -161,7 +161,7 @@ export default function Land() {
         </div>
       </div>
 
-      <div className="container py-6 max-w-[1400px]">
+      <div className="container py-6 pb-16 max-w-[1400px]">
 
         {/* Header */}
         <div className="flex items-start justify-between mb-5 flex-wrap gap-4">
@@ -174,7 +174,7 @@ export default function Land() {
             </p>
           </div>
           <div className="flex items-center gap-2 no-print flex-wrap">
-            <Link href="/land-view"
+            <Link href="/land-view" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
               style={{
                 background:"linear-gradient(135deg,#059669,#10B981)",
@@ -253,7 +253,7 @@ export default function Land() {
               <h3 className="font-bold text-white text-sm">Land Sections <span className="text-slate-400 font-normal text-xs">({mappedPlots.length})</span></h3>
               <span className="text-green-400 text-xs font-semibold">{openCount} open</span>
             </div>
-            <div className="overflow-y-auto flex-1 space-y-2 pr-1" style={{scrollbarWidth:"thin",scrollbarColor:"rgba(16,185,129,0.3) transparent"}}>
+            <div className="overflow-y-auto flex-1 space-y-2 pr-2 panel-scroll-dark">
             {mappedPlots.map((p,i)=>(
               <motion.div key={p.id}
                 initial={{opacity:0,x:-12}} animate={{opacity:1,x:0}} transition={{delay:i*0.05}}
@@ -304,7 +304,7 @@ export default function Land() {
                 </h3>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-400 hidden sm:block">Click any plot for details</span>
-                  <Link href="/land-view"
+                  <Link href="/land-view" target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
                     style={{background:"linear-gradient(135deg,#059669,#10B981)",color:"#fff",boxShadow:"0 2px 8px rgba(16,185,129,0.4)"}}>
                     <ExternalLink className="w-3 h-3"/> Detailed View
@@ -397,7 +397,7 @@ export default function Land() {
 
               {/* Detailed View CTA */}
               <div className="px-4 pb-4">
-                <Link href="/land-view"
+                <Link href="/land-view" target="_blank" rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold transition-all"
                   style={{
                     background:"linear-gradient(135deg,rgba(5,150,105,0.15),rgba(16,185,129,0.25))",
@@ -631,7 +631,7 @@ export default function Land() {
                     : {background:"rgba(244,63,94,0.1)",color:"#FCA5A5",border:"1px solid rgba(244,63,94,0.3)"}}>
                   <Trash2 className="w-4 h-4"/> {confirmDel===selPlot.id?"Confirm Stop & Remove?":"Stop / Remove Plot"}
                 </button>
-                <Link href="/land-view"
+                <Link href="/land-view" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold ml-auto"
                   style={{background:"rgba(16,185,129,0.15)",color:"#A7F3D0",border:"1px solid rgba(16,185,129,0.3)"}}>
                   <ExternalLink className="w-4 h-4"/> Detailed View

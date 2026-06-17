@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Bell, Calculator, X, Search, Printer, Info, ChevronDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Award, Bell, Calculator, X, Search, Printer, Info, ChevronDown } from "lucide-react";
 import { CROPS, getLivePrices, fmtINR, sparkline, COST_PRESETS, YIELD_DEFAULTS } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import Card from "@/components/Card";
@@ -181,6 +181,19 @@ export default function Market() {
     {id:"alerts",     l:"Price Alerts",   icon:Bell},
   ] as const;
 
+  /* Market Pulse — quick at-a-glance summary computed from live prices */
+  const pulse = useMemo(() => {
+    const entries = Object.entries(prices) as [string,{current:number;change:number;pct:number;base:number}][];
+    if (entries.length === 0) return null;
+    const best  = entries.reduce((a,b)=> b[1].pct > a[1].pct ? b : a);
+    const worst = entries.reduce((a,b)=> b[1].pct < a[1].pct ? b : a);
+    const aboveMsp = entries.filter(([k,v]) => {
+      const msp = CROPS[k as keyof typeof CROPS]?.msp || 0;
+      return msp > 0 && v.current >= msp;
+    }).length;
+    return { best, worst, aboveMsp, total: entries.length };
+  }, [prices]);
+
   const HINT: Record<string,string> = {
     prices:     "Click any crop card to view its 30-day price history chart below.",
     calculator: "Select your crop to auto-fill costs. Adjust area and yield to simulate profit scenarios.",
@@ -226,6 +239,41 @@ export default function Market() {
           <Info className="w-4 h-4 flex-shrink-0"/>
           <span>{HINT[tab]}</span>
         </div>
+
+        {/* Market Pulse — quick summary */}
+        {pulse && tab==="prices" && (
+          <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}}
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="card p-4 flex items-center gap-3 border-2 border-emerald-100" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0"><TrendingUp className="w-4 h-4 text-emerald-600"/></div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Gainer</div>
+                <div className="text-sm font-bold text-slate-800 capitalize truncate">{CROPS[pulse.best[0] as keyof typeof CROPS]?.emoji} {pulse.best[0]} <span className="text-emerald-600">+{pulse.best[1].pct}%</span></div>
+              </div>
+            </div>
+            <div className="card p-4 flex items-center gap-3 border-2 border-rose-100" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
+              <div className="w-9 h-9 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0"><TrendingDown className="w-4 h-4 text-rose-600"/></div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top Faller</div>
+                <div className="text-sm font-bold text-slate-800 capitalize truncate">{CROPS[pulse.worst[0] as keyof typeof CROPS]?.emoji} {pulse.worst[0]} <span className="text-rose-600">{pulse.worst[1].pct}%</span></div>
+              </div>
+            </div>
+            <div className="card p-4 flex items-center gap-3 border-2 border-amber-100" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
+              <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0"><Award className="w-4 h-4 text-amber-600"/></div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Above MSP</div>
+                <div className="text-sm font-bold text-slate-800">{pulse.aboveMsp} of {pulse.total} crops</div>
+              </div>
+            </div>
+            <div className="card p-4 flex items-center gap-3 border-2 border-sky-100" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.05)"}}>
+              <div className="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center flex-shrink-0"><Search className="w-4 h-4 text-sky-600"/></div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mandis Tracked</div>
+                <div className="text-sm font-bold text-slate-800">{MANDIS.length} markets</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* PRICES */}
         {tab==="prices" && (

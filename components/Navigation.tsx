@@ -25,7 +25,7 @@ const HOME_SECTIONS = [
   {id:"hero",s:"Home"},{id:"features",s:"Features"},{id:"guide",s:"Guide"},
   {id:"why",s:"Why AgroWave"},{id:"how-it-works",s:"How It Works"},
   {id:"benefits",s:"Benefits"},{id:"market-preview",s:"Market"},
-  {id:"testimonials",s:"Stories"},{id:"contact-section",s:"Contact"},
+  {id:"testimonials",s:"Stories"},
 ];
 
 export default function Navigation() {
@@ -103,6 +103,11 @@ export default function Navigation() {
                       )}
                     </button>
                   ))}
+                  <div className="w-px h-5 bg-slate-200 mx-1"/>
+                  <Link href="/contact"
+                    className="px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 hover:bg-slate-100">
+                    Contact
+                  </Link>
                 </div>
               ) : (
                 /* Farm app — main pages + Contact separator */
@@ -273,11 +278,15 @@ export default function Navigation() {
                     </Link>
                   );
                 })}
-                {/* Home link in mobile drawer */}
-                <div className="border-t pt-2 mt-1">
+                {/* Home + Contact links in mobile drawer */}
+                <div className="border-t pt-2 mt-1 space-y-1">
                   <Link href="/" onClick={() => setOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-500 hover:bg-slate-50">
                     🏠 Home
+                  </Link>
+                  <Link href="/contact" onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-slate-500 hover:bg-slate-50">
+                    <Mail className="w-4 h-4"/> Contact
                   </Link>
                 </div>
                 <div className="pt-2 border-t">

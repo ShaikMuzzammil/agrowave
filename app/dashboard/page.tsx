@@ -133,7 +133,7 @@ export default function Dashboard() {
                 <RefreshCw className="w-3 h-3"/> Irrigate All
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 space-y-3 pr-1" style={{scrollbarWidth:"thin"}}>
+            <div className="overflow-y-auto flex-1 space-y-3 pr-2 panel-scroll">
             {plots.map((p,i)=>{
               const mc = getMoistureColor(p.moisture);
               const hc = getHealthColor(p.health);
@@ -348,7 +348,8 @@ export default function Dashboard() {
           </div>
 
           {/* ── RIGHT — Radar + Forecast ── */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="lg:col-span-3 flex flex-col" style={{maxHeight:"calc(100vh - 140px)"}}>
+            <div className="overflow-y-auto flex-1 space-y-4 pr-2 panel-scroll">
             <Card hover={false} style={{boxShadow:"0 4px 20px rgba(0,0,0,0.07)"}}>
               <h3 className="font-bold text-slate-700 text-xs uppercase tracking-wider mb-3">Farm Health Radar</h3>
               <ResponsiveContainer width="100%" height={200}>
@@ -407,11 +408,12 @@ export default function Dashboard() {
                   <span className="text-xs font-semibold">{x.l}</span>
                 </Link>
               ))}
-              <Link href="/land-view"
+              <Link href="/land-view" target="_blank" rel="noopener noreferrer"
                 className="col-span-2 flex items-center justify-center gap-2 p-3 rounded-xl text-sm font-bold text-white hover:scale-[1.02] transition-transform"
                 style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 4px 16px rgba(16,185,129,0.3)"}}>
                 🔭 Open Detailed Land View
               </Link>
+            </div>
             </div>
           </div>
         </div>
@@ -432,7 +434,7 @@ function LandOverviewCard({plots}:{plots:any[]}) {
           <Map className="w-3.5 h-3.5 text-brand-500"/> Land Parcels
         </h3>
         <div className="flex items-center gap-2">
-          <Link href="/land-view" className="text-[10px] text-brand-600 font-bold hover:text-brand-700">🔭 Detailed View →</Link>
+          <Link href="/land-view" target="_blank" rel="noopener noreferrer" className="text-[10px] text-brand-600 font-bold hover:text-brand-700">🔭 Detailed View →</Link>
           <Link href="/land" className="text-[10px] text-slate-400 font-bold hover:text-brand-700">Map</Link>
         </div>
       </div>

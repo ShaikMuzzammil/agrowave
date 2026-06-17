@@ -22,6 +22,7 @@ export default function FarmCalendar() {
   const [view, setView]     = useState(new Date());
   const [selDate, setSelDate] = useState(new Date().toISOString().split("T")[0]);
   const [showAdd, setShowAdd] = useState(false);
+  const [showJump, setShowJump] = useState(false);
   const [form, setForm]     = useState({ title:"", type:"irrigation" as keyof typeof TYPE_CFG, plot:"", notes:"", priority:"normal" as "low"|"normal"|"high" });
 
   const year=view.getFullYear(), month=view.getMonth();
@@ -69,7 +70,7 @@ export default function FarmCalendar() {
         {/* Hint */}
         <div className="hint-banner mb-6">
           <Info className="w-4 h-4 flex-shrink-0"/>
-          <span><strong>Tip:</strong> Click any <strong>date on the calendar</strong> to see or add events for that day. Use <strong>+ Add Event</strong> to schedule irrigation, sprays, or harvests. Green dates have completed tasks, red dates have pending ones.</span>
+          <span><strong>Tip:</strong> Click any <strong>date on the calendar</strong> to see or add events for that day. Click the <strong>month/year header</strong> to jump to any month instantly. Use <strong>+ Add Event</strong> to schedule irrigation, sprays, or harvests. Green dates have completed tasks, red dates have pending ones.</span>
         </div>
 
         {/* Today summary */}
@@ -89,16 +90,44 @@ export default function FarmCalendar() {
           <div className="lg:col-span-2">
             <Card hover={false} style={{boxShadow:"0 4px 24px rgba(0,0,0,0.07)"}}>
               {/* Month nav */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-6 relative">
                 <button onClick={()=>setView(new Date(year,month-1,1))}
                   className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 border border-slate-200 transition-all">
                   <ChevronLeft className="w-4 h-4"/>
                 </button>
-                <h2 className="font-bold text-xl text-slate-800">{MONTHS[month]} {year}</h2>
+                <button onClick={()=>setShowJump(v=>!v)}
+                  className="flex items-center gap-2 font-bold text-xl text-slate-800 px-3 py-1.5 rounded-xl hover:bg-slate-50 transition-all"
+                  title="Click to jump to any month/year">
+                  {MONTHS[month]} {year}
+                  <Calendar className={`w-4 h-4 text-brand-500 transition-transform ${showJump?"rotate-12":""}`}/>
+                </button>
                 <button onClick={()=>setView(new Date(year,month+1,1))}
                   className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 border border-slate-200 transition-all">
                   <ChevronRight className="w-4 h-4"/>
                 </button>
+
+                {/* Jump-to-date popover — expands on calendar icon click */}
+                <AnimatePresence>
+                  {showJump && (
+                    <motion.div initial={{opacity:0,y:-8,scale:0.96}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:-8,scale:0.96}}
+                      className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-20 p-4 rounded-2xl bg-white border-2 border-slate-200 flex flex-col gap-3"
+                      style={{boxShadow:"0 12px 32px rgba(0,0,0,0.12)",minWidth:"240px"}}>
+                      <label className="label-xs">JUMP TO MONTH</label>
+                      <input type="month"
+                        value={`${year}-${String(month+1).padStart(2,"0")}`}
+                        onChange={e=>{
+                          const [y,m] = e.target.value.split("-").map(Number);
+                          if(y && m){ setView(new Date(y,m-1,1)); }
+                        }}
+                        style={{background:"#F8FAFC",border:"2px solid #E2E8F0"}}/>
+                      <button onClick={()=>{ setView(new Date()); setSelDate(today); setShowJump(false); }}
+                        className="w-full py-2 rounded-xl text-xs font-bold text-white"
+                        style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+                        📍 Jump to Today
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <div className="grid grid-cols-7 mb-2">
                 {DAYS.map(d=><div key={d} className="text-center text-xs font-bold text-slate-400 py-2">{d}</div>)}

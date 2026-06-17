@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Minus, Trash2, AlertTriangle, Search, X, Package, Printer, Info } from "lucide-react";
+import { Plus, Minus, Trash2, AlertTriangle, Search, X, Package, Printer, Info, ChevronDown, TrendingUp, PieChart as PieIcon } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
 import { useStore } from "@/lib/store";
 import Card from "@/components/Card";
 import { fmtINR } from "@/lib/utils";
@@ -18,12 +19,24 @@ export default function Inventory() {
   const [q, setQ]         = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm]   = useState({ name:"", cat:"Seeds", qty:0, unit:"kg", minQty:0, cost:0 });
+  const [expandedId, setExpandedId] = useState<string|null>(null);
 
   const filtered = inventory.filter(i =>
     (cat==="All" || i.cat===cat) && i.name.toLowerCase().includes(q.toLowerCase())
   );
   const low   = inventory.filter(i=>i.qty<=i.minQty);
   const total = inventory.reduce((s,i)=>s+i.qty*i.cost,0);
+
+  /* Category value breakdown — for the bar chart */
+  const catColors: Record<string,string> = {
+    Seeds:"#10B981", Fertilizer:"#3B82F6", Pesticides:"#F43F5E",
+    Fuel:"#F59E0B", Tools:"#64748B", Other:"#A78BFA",
+  };
+  const catBreakdown = CATS.filter(c=>c!=="All").map(c=>({
+    cat: c,
+    value: inventory.filter(i=>i.cat===c).reduce((s,i)=>s+i.qty*i.cost,0),
+    count: inventory.filter(i=>i.cat===c).length,
+  })).filter(c=>c.count>0);
 
   const handleAdd = () => {
     if (!form.name) {
@@ -67,7 +80,7 @@ export default function Inventory() {
         {/* Hint */}
         <div className="hint-banner mb-6">
           <Info className="w-4 h-4 flex-shrink-0"/>
-          <span><strong>Tip:</strong> Use the <strong>category pills</strong> below to filter items. Click <strong>+</strong> to restock or <strong>–</strong> to deduct stock. Items below minimum threshold appear highlighted in red.</span>
+          <span><strong>Tip:</strong> Use the <strong>category pills</strong> below to filter items. Click any <strong>row</strong> to expand stock-health details and quick restock options. Use <strong>+</strong> / <strong>–</strong> for fast adjustments. Items below minimum threshold appear highlighted in red.</span>
         </div>
 
         {/* Stats */}
@@ -98,6 +111,34 @@ export default function Inventory() {
               <p className="text-xs mt-0.5 opacity-80">{low.map(i=>i.name).join(" · ")}</p>
             </div>
           </motion.div>
+        )}
+
+        {/* Category breakdown — value by category */}
+        {catBreakdown.length > 0 && (
+          <div className="card p-5 mb-6" style={{boxShadow:"0 4px 24px rgba(0,0,0,0.06)"}}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <PieIcon className="w-4 h-4 text-brand-500"/> Stock Value by Category
+              </h3>
+              <span className="text-xs text-slate-400">Total: <strong className="text-slate-700">{fmtINR(total)}</strong></span>
+            </div>
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={catBreakdown} margin={{top:4,right:8,left:-16,bottom:0}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false}/>
+                <XAxis dataKey="cat" tick={{fill:"#94A3B8",fontSize:11}} axisLine={false} tickLine={false}/>
+                <YAxis tick={{fill:"#94A3B8",fontSize:10}} axisLine={false} tickLine={false}
+                  tickFormatter={(v)=>v>=1000?`₹${(v/1000).toFixed(0)}k`:`₹${v}`}/>
+                <Tooltip
+                  contentStyle={{borderRadius:"10px",border:"1px solid #E2E8F0",fontSize:"12px"}}
+                  formatter={(v:any,_n:any,p:any)=>[fmtINR(v), `${p.payload.count} item${p.payload.count>1?"s":""}`]}/>
+                <Bar dataKey="value" radius={[8,8,0,0]} maxBarSize={56}>
+                  {catBreakdown.map((entry,i)=>(
+                    <Cell key={i} fill={catColors[entry.cat]||"#10B981"}/>
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         )}
 
         {/* Filters — visible active state */}
@@ -132,11 +173,17 @@ export default function Inventory() {
                 <tr><td colSpan={8} className="text-center py-12 text-slate-400 text-sm">No items found for this category.</td></tr>
               ) : filtered.map((item,i)=>{
                 const isLow = item.qty <= item.minQty;
+                const isExpanded = expandedId === item.id;
+                const healthPct = Math.min(100, Math.round((item.qty / ((item.minQty||1)*3)) * 100));
+                const reorderQty = Math.max(0, item.minQty*2 - item.qty);
                 return (
-                  <motion.tr key={item.id} initial={{opacity:0,x:-12}} animate={{opacity:1,x:0}} transition={{delay:i*0.04}}
-                    className="hover:bg-brand-50/30 transition-colors">
+                  <Fragment key={item.id}>
+                  <motion.tr initial={{opacity:0,x:-12}} animate={{opacity:1,x:0}} transition={{delay:i*0.04}}
+                    className="hover:bg-brand-50/30 transition-colors cursor-pointer"
+                    onClick={()=>setExpandedId(isExpanded?null:item.id)}>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 flex-shrink-0 transition-transform ${isExpanded?"rotate-180":""}`}/>
                         <Package className="w-4 h-4 text-slate-300"/>
                         <span className="font-semibold text-slate-800 text-sm">{item.name}</span>
                         {isLow && <span className="badge badge-red text-[9px]">LOW</span>}
@@ -151,7 +198,7 @@ export default function Inventory() {
                     <td className="px-5 py-4 text-sm text-slate-500">₹{item.cost}</td>
                     <td className="px-5 py-4 font-semibold text-amber-600 text-sm">₹{(item.qty*item.cost).toLocaleString("en-IN")}</td>
                     <td className="px-5 py-4 text-xs text-slate-400">{item.lastUsed}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4" onClick={e=>e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         <button onClick={()=>handleAdjust(item.id,-10,item.name)} className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-colors border border-slate-100 hover:border-rose-200"><Minus className="w-3.5 h-3.5"/></button>
                         <button onClick={()=>handleAdjust(item.id,50,item.name)}  className="p-1.5 rounded-lg hover:bg-brand-50 text-slate-400 hover:text-brand-600 transition-colors border border-slate-100 hover:border-brand-200"><Plus className="w-3.5 h-3.5"/></button>
@@ -159,6 +206,44 @@ export default function Inventory() {
                       </div>
                     </td>
                   </motion.tr>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.tr initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+                        <td colSpan={8} className="px-5 pb-5 pt-0 bg-slate-50/70">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                            <div>
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Stock Health</div>
+                              <div className="h-2 rounded-full bg-slate-200 overflow-hidden mb-1">
+                                <div className="h-full rounded-full" style={{width:`${healthPct}%`,background:healthPct<40?"#F43F5E":healthPct<70?"#F59E0B":"#10B981"}}/>
+                              </div>
+                              <div className="text-xs text-slate-500">{healthPct}% of healthy buffer (3× min threshold)</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reorder Suggestion</div>
+                              {reorderQty > 0 ? (
+                                <div className="text-sm font-semibold text-rose-600">Order {reorderQty} {item.unit} to restore buffer</div>
+                              ) : (
+                                <div className="text-sm font-semibold text-emerald-600">Stock level is healthy — no reorder needed</div>
+                              )}
+                              <div className="text-xs text-slate-400 mt-0.5">Estimated cost: {fmtINR(reorderQty*item.cost)}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Quick Restock</div>
+                              <div className="flex gap-2">
+                                {[50,100,250].map(amt=>(
+                                  <button key={amt} onClick={()=>handleAdjust(item.id,amt,item.name)}
+                                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 hover:border-brand-300 hover:text-brand-700 text-slate-600 transition-colors">
+                                    +{amt}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    )}
+                  </AnimatePresence>
+                  </Fragment>
                 );
               })}
             </tbody>

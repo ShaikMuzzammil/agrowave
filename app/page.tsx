@@ -223,8 +223,19 @@ export default function Home() {
               </button>
             </motion.div>
           </div>
+
+          {/* Scroll-down indicator — sits in normal flow between the CTA buttons and the
+              stats grid so it never overlaps either, and works as a real "scroll to next
+              section" control regardless of viewport height. */}
+          <motion.button initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.7}}
+            onClick={() => document.getElementById("features")?.scrollIntoView({behavior:"smooth"})}
+            aria-label="Scroll to features"
+            className="mx-auto mt-10 mb-2 flex items-center justify-center w-11 h-11 rounded-full bg-white shadow-card border border-slate-200 text-slate-400 hover:text-brand-600 hover:border-brand-300 transition-colors animate-float">
+            <ChevronDown className="w-5 h-5"/>
+          </motion.button>
+
           <motion.div initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{delay:0.8}}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 max-w-4xl mx-auto">
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 max-w-4xl mx-auto">
             {[
               { emoji:"🌾", label:"Plots Monitored", val:"6 Active",  color:"text-brand-700 bg-brand-50 border-brand-100" },
               { emoji:"💧", label:"Avg Soil Health",  val:"79.7%",    color:"text-sky-700 bg-sky-50 border-sky-100" },
@@ -241,10 +252,6 @@ export default function Home() {
             ))}
           </motion.div>
         </div>
-        <button onClick={() => document.getElementById("features")?.scrollIntoView({behavior:"smooth"})}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 p-3 rounded-full bg-white shadow-card border border-slate-200 text-slate-400 hover:text-brand-600 transition-colors animate-float">
-          <ChevronDown className="w-5 h-5"/>
-        </button>
       </section>
 
       {/* PRICE TICKER */}
@@ -675,31 +682,31 @@ export default function Home() {
 
       <div className="section-divider"/>
 
-      {/* CONTACT HOME SECTION — full enhanced section: info LEFT, form RIGHT */}
-      <section id="contact-section" className="section relative overflow-hidden"
+      {/* CONTACT CTA — condensed teaser; full contact experience lives on its own page */}
+      <section id="contact-section" className="relative overflow-hidden py-20"
         style={{background:"linear-gradient(160deg,#03130A 0%,#0A2818 55%,#062014 100%)"}}>
-        {/* decorative brand-green glows — not flat navy */}
+        {/* decorative glows — varied colours, not just green */}
         <div className="absolute -top-32 -right-24 w-[26rem] h-[26rem] rounded-full opacity-25 blur-3xl pointer-events-none" style={{background:"#10B981"}}/>
-        <div className="absolute -bottom-40 -left-32 w-[30rem] h-[30rem] rounded-full opacity-15 blur-3xl pointer-events-none" style={{background:"#34D399"}}/>
+        <div className="absolute -bottom-40 -left-32 w-[30rem] h-[30rem] rounded-full opacity-15 blur-3xl pointer-events-none" style={{background:"#3B82F6"}}/>
         <div className="absolute inset-0 grid-bg opacity-10 pointer-events-none"/>
 
         <div className="container relative">
-          <motion.div initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-center mb-12">
+          <motion.div initial={{opacity:0,y:24}} whileInView={{opacity:1,y:0}} viewport={{once:true}} className="text-center">
             <div className="inline-flex items-center gap-2 bg-emerald-400/10 text-green-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-5 border border-emerald-400/25">
               <Mail className="w-4 h-4"/> Get In Touch
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
               Have a question for <span className="grad-text">AgroWave?</span>
             </h2>
-            <p className="text-slate-300 text-base max-w-xl mx-auto mb-7">
+            <p className="text-slate-300 text-base max-w-xl mx-auto mb-8">
               We're here to help Indian farmers succeed. Reach out for support, partnerships, or feedback — our team responds within 24 hours.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <button onClick={()=>document.getElementById("home-contact-form")?.scrollIntoView({behavior:"smooth",block:"center"})}
+              <Link href="/contact"
                 className="btn px-6 py-3 rounded-xl font-bold text-white transition-transform hover:scale-105"
                 style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 6px 20px rgba(16,185,129,0.35)"}}>
                 <Mail className="w-4 h-4"/> Contact Me
-              </button>
+              </Link>
               <a href="tel:18001801551"
                 className="btn px-6 py-3 rounded-xl font-semibold text-white border-2 transition-all hover:bg-white/10"
                 style={{borderColor:"rgba(16,185,129,0.35)"}}>
@@ -707,197 +714,8 @@ export default function Home() {
               </a>
             </div>
           </motion.div>
-
-          {/* Info cards row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 max-w-4xl mx-auto">
-            {[
-              {icon:"📞",label:"KISAN HELPLINE",v:"1800-180-1551",sub:"Mon–Sat, 6am–10pm",c:"rgba(16,185,129,0.15)",bc:"rgba(16,185,129,0.35)"},
-              {icon:"✉️",label:"EMAIL",v:"hello@agrowave.farm",sub:"Reply within 24h",c:"rgba(59,130,246,0.15)",bc:"rgba(59,130,246,0.35)"},
-              {icon:"📍",label:"LOCATION",v:"Hyderabad, India",sub:"Telangana — 500032",c:"rgba(245,158,11,0.15)",bc:"rgba(245,158,11,0.35)"},
-            ].map((it,i)=>(
-              <motion.div key={i} initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.08}}
-                className="rounded-2xl p-5 text-center" style={{background:it.c,border:`1.5px solid ${it.bc}`}}>
-                <div className="text-3xl mb-2">{it.icon}</div>
-                <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1">{it.label}</div>
-                <div className="font-bold text-white text-sm">{it.v}</div>
-                <div className="text-slate-400 text-xs mt-0.5">{it.sub}</div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Two-column: LEFT = FAQs, RIGHT = Contact Form */}
-          <div id="home-contact-form" className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mt-2 scroll-mt-24">
-
-            {/* LEFT — FAQs */}
-            <motion.div initial={{opacity:0,x:-24}} whileInView={{opacity:1,x:0}} viewport={{once:true}}>
-              <h3 className="font-bold text-white text-lg mb-4 flex items-center gap-2">
-                <span className="text-green-400">💬</span> Frequently Asked Questions
-              </h3>
-              <div className="space-y-3">
-                {[
-                  {q:"Is AgroWave free to use?",a:"Yes — AgroWave is completely free for Indian farmers. No hidden fees, no credit card required."},
-                  {q:"Does it need any hardware?",a:"No hardware needed at all. Just open AgroWave in any browser on your mobile or desktop."},
-                  {q:"How accurate are forecasts?",a:"Our hyper-local weather model achieves 99.2% accuracy vs. national averages, calibrated for Indian conditions."},
-                  {q:"Are the market prices real?",a:"Prices are simulated from 24 major mandis across India with a live-ticking feed and MSP reference data."},
-                  {q:"Where is my farm data stored?",a:"All your farm data is stored securely and never shared with third parties or advertisers."},
-                  {q:"Can I use this for a hackathon?",a:"Yes — this is an open portfolio project built with Next.js, TypeScript, Tailwind, and Recharts."},
-                ].map((faq,i)=>(
-                  <details key={i} className="rounded-xl overflow-hidden group"
-                    style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)"}}>
-                    <summary className="flex items-center justify-between px-4 py-3 cursor-pointer text-sm font-medium text-slate-200 hover:text-white list-none select-none">
-                      {faq.q}
-                      <ChevronDown className="w-4 h-4 text-green-400 flex-shrink-0 group-open:rotate-180 transition-transform"/>
-                    </summary>
-                    <div className="px-4 pb-3 text-sm text-slate-400 leading-relaxed">{faq.a}</div>
-                  </details>
-                ))}
-              </div>
-              <div className="mt-6 p-4 rounded-2xl" style={{background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.25)"}}>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-green-400 text-sm font-bold">⏱ Response: under 24 hours</span>
-                </div>
-                <div className="text-slate-400 text-xs">Mon–Sat · 8am–8pm IST</div>
-              </div>
-            </motion.div>
-
-            {/* RIGHT — Contact Form */}
-            <HomeContactForm />
-          </div>
         </div>
       </section>
     </div>
-  );
-}
-
-/* ── Inline contact form component for home page ── */
-function HomeContactForm() {
-  const [step, setStep] = React.useState<1|2|3>(1);
-  const [form, setForm] = React.useState({name:"",email:"",phone:"",subject:"",message:""});
-  const [sending, setSending] = React.useState(false);
-
-  const handleSend = async () => {
-    setSending(true);
-    try {
-      await fetch("/api/contact", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
-    } catch {}
-    setSending(false);
-    setStep(3);
-  };
-
-  if(step===3) return (
-    <motion.div initial={{opacity:0,scale:.96}} animate={{opacity:1,scale:1}}
-      className="rounded-2xl overflow-hidden text-center"
-      style={{background:"rgba(16,185,129,0.12)",border:"1.5px solid rgba(16,185,129,0.35)"}}>
-      <div className="px-5 sm:px-6 pt-5 pb-4 border-b flex items-center justify-between" style={{borderColor:"rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.02)"}}>
-        <span className="text-xs font-bold text-white flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-green-400"/> Your Message</span>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:"rgba(16,185,129,0.2)",color:"#A7F3D0",border:"1px solid rgba(16,185,129,0.4)"}}>Step 3 of 3 · Complete ✓</span>
-      </div>
-      <div className="p-8">
-      <div className="text-5xl mb-4">✅</div>
-      <h3 className="font-bold text-white text-xl mb-2">Message Received!</h3>
-      <p className="text-slate-300 text-sm mb-4">Our team has received your message and will reply to <strong className="text-green-300">{form.email}</strong> within 24 hours.</p>
-      <div className="text-left rounded-xl p-4 mb-5 space-y-1.5" style={{background:"rgba(255,255,255,0.05)"}}>
-        {[["Name",form.name],["Subject",form.subject],["Message",form.message.slice(0,80)+(form.message.length>80?"…":"")]].map(([l,v])=>(
-          <div key={l} className="flex gap-2 text-xs"><span className="text-slate-400 w-16 flex-shrink-0">{l}:</span><span className="text-slate-200">{v}</span></div>
-        ))}
-      </div>
-      <button onClick={()=>{setStep(1);setForm({name:"",email:"",phone:"",subject:"",message:""}); }}
-        className="text-green-400 text-sm font-semibold hover:text-green-300">Send another message →</button>
-      </div>
-    </motion.div>
-  );
-
-  return (
-    <motion.div initial={{opacity:0,x:24}} whileInView={{opacity:1,x:0}} viewport={{once:true}}
-      className="rounded-2xl overflow-hidden"
-      style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)"}}>
-      {/* Step indicator */}
-      <div className="px-5 sm:px-6 pt-5 pb-4 border-b" style={{borderColor:"rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.02)"}}>
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-bold text-white flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-green-400"/> Your Message</span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:"rgba(16,185,129,0.15)",color:"#A7F3D0",border:"1px solid rgba(16,185,129,0.3)"}}>Step {step} of 3</span>
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {([1,2,3] as const).map(s=>(
-            <React.Fragment key={s}>
-              <div className={`flex items-center gap-1.5 text-[10px] sm:text-xs font-bold transition-all ${step>=s?"text-green-300":"text-slate-500"}`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all flex-shrink-0 ${step>s?"bg-green-500 text-white":step===s?"bg-green-500/30 text-green-300 ring-2 ring-green-500/60":"bg-white/10 text-slate-500"}`}
-                  style={step===s?{boxShadow:"0 0 0 4px rgba(16,185,129,0.12)"}:{}}>{step>s?"✓":s}</div>
-                <span className="whitespace-nowrap">{["Fill in","Review","Delivered!"][s-1]}</span>
-              </div>
-              {s<3&&(
-                <div className="flex-1 h-1 rounded-full overflow-hidden" style={{background:"rgba(255,255,255,0.08)"}}>
-                  <motion.div className="h-full rounded-full" style={{background:"linear-gradient(90deg,#059669,#10B981)"}}
-                    initial={{width:0}} animate={{width:step>s?"100%":"0%"}} transition={{duration:0.4}}/>
-                </div>
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-
-      {step===1 && (
-        <div className="p-6 space-y-4">
-          <h3 className="font-bold text-white text-base flex items-center gap-2">
-            <span>💬</span> Send Us a Message
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label-xs text-slate-400">FULL NAME *</label>
-              <input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Ramesh Kumar" style={{background:"rgba(255,255,255,0.06)",border:"1.5px solid rgba(255,255,255,0.12)",color:"#fff"}}/>
-            </div>
-            <div>
-              <label className="label-xs text-slate-400">PHONE (OPTIONAL)</label>
-              <input value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))} placeholder="+91 98765 43210" style={{background:"rgba(255,255,255,0.06)",border:"1.5px solid rgba(255,255,255,0.12)",color:"#fff"}}/>
-            </div>
-          </div>
-          <div>
-            <label className="label-xs text-slate-400">EMAIL *</label>
-            <input type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="farmer@example.com" style={{background:"rgba(255,255,255,0.06)",border:"1.5px solid rgba(255,255,255,0.12)",color:"#fff"}}/>
-          </div>
-          <div>
-            <label className="label-xs text-slate-400">SUBJECT</label>
-            <select value={form.subject} onChange={e=>setForm(p=>({...p,subject:e.target.value}))} style={{background:"rgba(30,41,59,0.9)",border:"1.5px solid rgba(255,255,255,0.12)",color:"#fff"}}>
-              <option value="">Select a topic…</option>
-              {["General Enquiry","Technical Support","Partnership","Feedback","Bug Report","Other"].map(s=><option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label-xs text-slate-400">MESSAGE *</label>
-            <textarea rows={3} value={form.message} onChange={e=>setForm(p=>({...p,message:e.target.value}))} placeholder="Describe your question or feedback in detail…" style={{background:"rgba(255,255,255,0.06)",border:"1.5px solid rgba(255,255,255,0.12)",color:"#fff",resize:"vertical"}}/>
-            <div className="text-[10px] text-slate-500 text-right mt-0.5">{form.message.length} chars</div>
-          </div>
-          <button onClick={()=>{if(form.name&&form.email&&form.message)setStep(2);}}
-            disabled={!form.name||!form.email||!form.message}
-            className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
-            style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 4px 16px rgba(16,185,129,0.35)"}}>
-            Review Message <ArrowRight className="w-4 h-4"/>
-          </button>
-        </div>
-      )}
-
-      {step===2 && (
-        <div className="p-6 space-y-4">
-          <h3 className="font-bold text-white text-base">Confirm your details</h3>
-          <div className="space-y-3 rounded-xl p-4" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)"}}>
-            {[["Name",form.name],["Email",form.email],["Phone",form.phone||"—"],["Subject",form.subject||"—"],["Message",form.message]].map(([l,v],i)=>(
-              <div key={l} className="flex gap-3 text-sm items-start">
-                <span className="text-slate-400 w-16 flex-shrink-0 text-xs font-bold uppercase pt-0.5">{l}</span>
-                <span className="text-white break-words flex-1">{v}</span>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-3">
-            <button onClick={()=>setStep(1)} className="flex-1 py-3 rounded-xl text-sm font-semibold text-slate-300"
-              style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)"}}>← Edit</button>
-            <button onClick={handleSend} disabled={sending}
-              className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60 flex items-center justify-center gap-2"
-              style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
-              {sending?"Sending…":"✅ Confirm & Send to Team"}
-            </button>
-          </div>
-        </div>
-      )}
-    </motion.div>
   );
 }
