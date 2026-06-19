@@ -2,16 +2,16 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Mail, Phone, MapPin, ArrowRight, ChevronDown, MessageCircle, Clock, Trophy
+  Mail, Phone, ArrowRight, ChevronDown, MessageCircle, Clock, Trophy
 } from "lucide-react";
 
 export default function ContactPage() {
   return (
-    <div className="pt-[88px] min-h-screen">
+    <div className="pt-[64px] min-h-screen">
 
       {/* ── HERO ── */}
-      <section className="relative overflow-hidden py-16 sm:py-20"
-        style={{background:"linear-gradient(160deg,#03130A 0%,#0A2818 50%,#062014 100%)"}}>
+      <section className="relative overflow-hidden pt-16 pb-28 sm:pt-20 sm:pb-32"
+        style={{background:"linear-gradient(160deg,#03130A 0%,#0A2818 55%,#062014 100%)"}}>
         {/* decorative glows — varied colours, not just green */}
         <div className="absolute -top-32 -right-20 w-[24rem] h-[24rem] rounded-full opacity-20 blur-3xl pointer-events-none" style={{background:"#10B981"}}/>
         <div className="absolute -bottom-32 -left-24 w-[26rem] h-[26rem] rounded-full opacity-15 blur-3xl pointer-events-none" style={{background:"#3B82F6"}}/>
@@ -37,23 +37,46 @@ export default function ContactPage() {
       <section className="section-subtle py-14">
         <div className="container">
 
-          {/* Info cards row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12 max-w-4xl mx-auto -mt-24 relative z-10">
-            {[
-              {Icon:Phone,   label:"KISAN HELPLINE", v:"1800-180-1551",      sub:"Mon–Sat, 6am–10pm", bg:"bg-emerald-50", ic:"text-emerald-600", bc:"border-emerald-100"},
-              {Icon:Mail,    label:"EMAIL",           v:"hello@agrowave.farm", sub:"Reply within 24h",  bg:"bg-sky-50",     ic:"text-sky-600",     bc:"border-sky-100"},
-              {Icon:MapPin,  label:"LOCATION",        v:"Hyderabad, India",  sub:"Telangana — 500032", bg:"bg-amber-50",  ic:"text-amber-600",  bc:"border-amber-100"},
-            ].map((it,i)=>(
-              <motion.div key={i} initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*0.08}}
-                className={`rounded-2xl p-5 text-center shadow-card border ${it.bg} ${it.bc}`}>
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-3 bg-white shadow-sm`}>
-                  <it.Icon className={`w-5 h-5 ${it.ic}`}/>
-                </div>
-                <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1">{it.label}</div>
-                <div className="font-bold text-slate-800 text-sm">{it.v}</div>
-                <div className="text-slate-400 text-xs mt-0.5">{it.sub}</div>
-              </motion.div>
-            ))}
+          {/* Info cards row — completely self-contained, no overflow/mixed backgrounds */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12 max-w-4xl mx-auto -mt-16 relative z-10">
+            {/* Card 1 — Kisan Helpline */}
+            <motion.div initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0}}
+              className="rounded-2xl p-6 text-center shadow-card"
+              style={{background:"#ECFDF5",border:"1.5px solid #A7F3D0"}}>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white shadow-sm"
+                style={{border:"1px solid #D1FAE5"}}>
+                <Phone className="w-5 h-5 text-emerald-600"/>
+              </div>
+              <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1.5">KISAN HELPLINE</div>
+              <div className="font-bold text-slate-800 text-base mb-0.5">1800-180-1551</div>
+              <div className="text-slate-500 text-xs">Mon–Sat, 6am–10pm</div>
+            </motion.div>
+
+            {/* Card 2 — Message Us (replaces email to avoid exposing real address) */}
+            <motion.div initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.08}}
+              className="rounded-2xl p-6 text-center shadow-card"
+              style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE"}}>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white shadow-sm"
+                style={{border:"1px solid #DBEAFE"}}>
+                <Mail className="w-5 h-5 text-blue-600"/>
+              </div>
+              <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1.5">SEND A MESSAGE</div>
+              <div className="font-bold text-slate-800 text-base mb-0.5">Fill the form below</div>
+              <div className="text-slate-500 text-xs">We reply to your email within 24h</div>
+            </motion.div>
+
+            {/* Card 3 — Built for India (replaces exact location to avoid exposing personal address) */}
+            <motion.div initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:0.16}}
+              className="rounded-2xl p-6 text-center shadow-card"
+              style={{background:"#FFFBEB",border:"1.5px solid #FDE68A"}}>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white shadow-sm text-2xl leading-none"
+                style={{border:"1px solid #FEF3C7"}}>
+                🇮🇳
+              </div>
+              <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1.5">BUILT FOR</div>
+              <div className="font-bold text-slate-800 text-base mb-0.5">Indian Farmers</div>
+              <div className="text-slate-500 text-xs">Designed for Indian agriculture</div>
+            </motion.div>
           </div>
 
           {/* Two-column: LEFT = FAQs + project card, RIGHT = Contact Form */}

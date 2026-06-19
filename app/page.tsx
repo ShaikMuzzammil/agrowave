@@ -701,15 +701,15 @@ export default function Home() {
             <p className="text-slate-300 text-base max-w-xl mx-auto mb-8">
               We're here to help Indian farmers succeed. Reach out for support, partnerships, or feedback — our team responds within 24 hours.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/contact"
-                className="btn px-6 py-3 rounded-xl font-bold text-white transition-transform hover:scale-105"
-                style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 6px 20px rgba(16,185,129,0.35)"}}>
+                className="flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-white transition-all hover:scale-105 hover:shadow-xl text-base"
+                style={{background:"linear-gradient(135deg,#059669,#10B981)",boxShadow:"0 6px 20px rgba(16,185,129,0.4)"}}>
                 <Mail className="w-4 h-4"/> Contact Me
               </Link>
               <a href="tel:18001801551"
-                className="btn px-6 py-3 rounded-xl font-semibold text-white border-2 transition-all hover:bg-white/10"
-                style={{borderColor:"rgba(16,185,129,0.35)"}}>
+                className="flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-white transition-all hover:scale-105 text-base"
+                style={{background:"rgba(255,255,255,0.12)",border:"2px solid rgba(255,255,255,0.28)",backdropFilter:"blur(8px)"}}>
                 <Phone className="w-4 h-4"/> 1800-180-1551
               </a>
             </div>

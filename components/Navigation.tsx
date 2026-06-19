@@ -38,7 +38,7 @@ export default function Navigation() {
   const router    = useRouter();
   const { notifications, markRead, markAllRead } = useStore();
   const unread = notifications.filter(n=>!n.read);
-  const isHome = pathname === "/";
+  const isHome = pathname === "/" || pathname === "/contact";
 
   useEffect(() => {
     if(!showNotifs) return;
@@ -87,9 +87,9 @@ export default function Navigation() {
             {/* ── Desktop nav links ── */}
             <div className="hidden lg:flex items-center nav-links-wrap overflow-x-auto">
               {isHome ? (
-                /* Home page — scroll sections */
+                /* Home page / Contact page — scroll sections OR contact link */
                 <div className="flex items-center gap-0.5">
-                  {HOME_SECTIONS.map(s => (
+                  {pathname === "/" && HOME_SECTIONS.map(s => (
                     <button key={s.id} onClick={() => scroll(s.id)}
                       className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                         activeSection===s.id
@@ -103,9 +103,18 @@ export default function Navigation() {
                       )}
                     </button>
                   ))}
+                  {pathname !== "/" && (
+                    <Link href="/" className="px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100">
+                      Home
+                    </Link>
+                  )}
                   <div className="w-px h-5 bg-slate-200 mx-1"/>
                   <Link href="/contact"
-                    className="px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 hover:bg-slate-100">
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                      pathname==="/contact"
+                        ? "text-brand-600 bg-brand-50 shadow-sm font-semibold"
+                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                    }`}>
                     Contact
                   </Link>
                 </div>
@@ -221,7 +230,8 @@ export default function Navigation() {
           </div>
         </div>
 
-        {/* Live status strip */}
+        {/* Live status strip — only shown on app pages and home; hidden on /contact */}
+        {pathname !== "/contact" && (
         <div className="hidden sm:flex items-center justify-between px-6 py-2"
           style={{background:"linear-gradient(90deg,#047857,#059669)"}}>
           <div className="flex items-center gap-3">
@@ -237,6 +247,7 @@ export default function Navigation() {
             </span>
           </div>
         </div>
+        )}
       </nav>
 
       {/* Mobile drawer */}
