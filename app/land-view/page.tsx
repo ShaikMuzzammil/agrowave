@@ -227,29 +227,40 @@ export default function LandView(){
   };
 
   return (
-    <div className="relative min-h-screen pt-[88px] flex flex-col"
+    <div className="relative min-h-screen flex flex-col"
       style={{background:"linear-gradient(180deg,#0a1a0e,#081208)"}}>
 
       {/* Rain overlay */}
       {rainDay && <RainCanvas/>}
 
-      {/* ── TOP BAR (sticky just below the global nav) ── */}
-      <div className="sticky top-[88px] flex items-center justify-between gap-2 px-4 py-2.5 flex-shrink-0 z-30 flex-wrap"
+      {/* ── TOP BAR (sticky at very top — no global nav on this page) ── */}
+      <div className="sticky top-0 flex items-center justify-between gap-2 px-4 py-2.5 flex-shrink-0 z-30 flex-wrap"
         style={{background:"rgba(5,15,8,0.97)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(16,185,129,0.2)"}}>
+        {/* LEFT — brand + back links */}
         <div className="flex items-center gap-2">
-          <Link href="/dashboard"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:bg-white/10 transition-all"
-            style={{border:"1px solid rgba(255,255,255,0.15)"}}>
-            🏠 Dashboard
-          </Link>
-          <Link href="/land"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-green-300 hover:bg-green-500/10 transition-all"
-            style={{border:"1px solid rgba(16,185,129,0.3)"}}>
-            <ArrowLeft className="w-3.5 h-3.5"/> Land
-          </Link>
-          <div className="ml-1">
-            <h1 className="text-sm font-bold text-white leading-none">🔭 Land Intelligence View</h1>
-            <p className="text-[10px] text-green-400">{plotData.length} plots · Live sensor data · Kharif 2026{extraIds.length>0?` · +${extraIds.length} custom`:""}</p>
+          {/* Mini AgroWave logo */}
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{background:"linear-gradient(135deg,#059669,#10B981)"}}>
+            <span className="text-white text-sm font-black">🌾</span>
+          </div>
+          <div className="mr-1">
+            <h1 className="text-sm font-extrabold text-white leading-none tracking-tight flex items-center gap-1.5">
+              Land Intelligence View
+              <span className="dot-live flex-shrink-0" style={{display:"inline-block"}}/>
+            </h1>
+            <p className="text-[10px] text-green-400 mt-0.5">{plotData.length} plots · Kharif 2026{extraIds.length>0?` · +${extraIds.length} custom`:""}</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 ml-1">
+            <Link href="/dashboard"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+              style={{border:"1px solid rgba(255,255,255,0.1)"}}>
+              🏠 Dashboard
+            </Link>
+            <Link href="/land"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-green-300 hover:bg-green-500/10 transition-all"
+              style={{border:"1px solid rgba(16,185,129,0.25)"}}>
+              <ArrowLeft className="w-3 h-3"/> Land Map
+            </Link>
           </div>
         </div>
 
@@ -497,7 +508,7 @@ export default function LandView(){
               key={selPlot.id}
               initial={{opacity:0,x:40}} animate={{opacity:1,x:0}} exit={{opacity:0,x:40}}
               transition={{type:"spring",damping:30,stiffness:260}}
-              className="flex flex-col w-full lg:w-[420px] flex-shrink-0 z-20 max-h-[70vh] lg:max-h-[calc(100vh-164px)] lg:sticky lg:top-[164px] lg:self-start border-t lg:border-t-0 lg:border-l rounded-b-2xl lg:rounded-none"
+              className="flex flex-col w-full lg:w-[420px] flex-shrink-0 z-20 max-h-[70vh] lg:max-h-[calc(100vh-96px)] lg:sticky lg:top-[52px] lg:self-start border-t lg:border-t-0 lg:border-l rounded-b-2xl lg:rounded-none"
               style={{
                 background:"rgba(5,12,8,0.97)",
                 backdropFilter:"blur(24px)",

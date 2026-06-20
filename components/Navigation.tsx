@@ -64,6 +64,10 @@ export default function Navigation() {
 
   const scroll = (id:string) => { document.getElementById(id)?.scrollIntoView({behavior:"smooth"}); setOpen(false); };
 
+  /* Land Intelligence View is a standalone full-screen app — it has its own
+     top bar with back-links; the global nav would add unwanted congestion */
+  if (pathname === "/land-view") return null;
+
   return (
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
