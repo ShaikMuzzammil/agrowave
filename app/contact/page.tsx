@@ -29,7 +29,7 @@ export default function ContactPage() {
       </section>
 
       {/* ── INFO CARDS — overlapping the dark hero ── */}
-      <div className="container relative z-10 -mt-52">
+      <div className="container relative z-10" style={{marginTop:"-13rem"}}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
           <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0}}
             className="rounded-2xl p-6 text-center" style={{background:"#ECFDF5",border:"1.5px solid #A7F3D0",boxShadow:"0 12px 40px rgba(0,0,0,0.18)"}}>

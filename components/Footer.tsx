@@ -28,7 +28,7 @@ const COLS = [
 const CONTACTS = [
   {Icon:Phone,  v:"1800-180-1551 (Kisan Helpline)"},
   {Icon:Mail,   v:"Contact via website form"},
-  {Icon:MapPin, v:"Open Web Platform — accessible worldwide"},
+  {Icon:MapPin, v:"Open Web Platform — any device, anywhere"},
 ];
 
 export default function Footer() {
@@ -89,7 +89,7 @@ export default function Footer() {
 
         {/* Copyright bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-500 text-xs">
-          <span>© 2026 AgroWave — Built for Indian Farmers 🌾</span>
+          <span>© 2026 AgroWave — Smart Farming Dashboard 🌾</span>
           <div className="flex items-center gap-5">
             <Link href="/about"   className="hover:text-green-400 transition-colors">About</Link>
             <Link href="/contact" className="hover:text-green-400 transition-colors">Contact</Link>
