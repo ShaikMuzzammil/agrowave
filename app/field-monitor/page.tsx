@@ -59,7 +59,14 @@ export default function FieldMonitor() {
     const plotToAdd = {...newPlot, id: newPlot.id.trim() || autoId};
     addPlot(plotToAdd);
     setSel(plotToAdd.id);
-    pushNotif({title:"✅ Plot Added to Farm Map",body:`${newPlot.name} added. Visible on Land Map and Detailed Land View.`,type:"success",time:"just now"});
+    pushNotif({title:"✅ Plot Added to Farm Map",body:`${newPlot.name} added. Visible on Land Map and Detailed Land View — press Sync in that tab to see it immediately.`,type:"success",time:"just now"});
+    /* Force a storage event so /land-view in another tab rehydrates its store */
+    setTimeout(()=>{
+      try {
+        const raw = localStorage.getItem("agrowave-v3");
+        if(raw){ localStorage.setItem("agrowave-v3", raw); }
+      } catch {}
+    }, 400);
     setShowAdd(false);
     setNewPlot({id:"",name:"New Plot",crop:"Wheat",size:2.0,moisture:60,health:80,temp:32,npk:{n:120,p:40,k:160},lastWatered:"Just added",autoIrr:false,phase:"Sowing",ph:6.5,pestRisk:"low" as "low"|"medium"|"high",area:"New Block"});
   };

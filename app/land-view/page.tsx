@@ -134,6 +134,23 @@ export default function LandView(){
   const [savedFlash, setSavedFlash] = useState(false);
   const [justSaved, setJustSaved]   = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [syncFlash, setSyncFlash]   = useState(false);
+
+  /* ── Cross-tab sync ──
+     When a plot is added / edited in the Land page (another tab), the browser
+     fires a "storage" event. We call useStore.persist.rehydrate() to pull the
+     latest state from localStorage into this tab instantly. */
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "agrowave-v3") {
+        (useStore as any).persist?.rehydrate?.();
+        setSyncFlash(true);
+        setTimeout(() => setSyncFlash(false), 2000);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   const rainDay = FORECAST[0].rain > 30;
 
@@ -282,6 +299,25 @@ export default function LandView(){
 
         <div className="flex items-center gap-2">
           {rainDay && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-500/20 text-blue-300">🌧️ Rain</span>}
+
+          {/* Cross-tab sync indicator */}
+          <AnimatePresence>
+            {syncFlash && (
+              <motion.span initial={{opacity:0,scale:.85}} animate={{opacity:1,scale:1}} exit={{opacity:0}}
+                className="text-[10px] font-bold px-2 py-1 rounded-full bg-green-500/20 text-green-300 flex items-center gap-1">
+                <RefreshCw className="w-3 h-3 animate-spin"/> Synced
+              </motion.span>
+            )}
+          </AnimatePresence>
+
+          {/* Manual sync — pulls latest state from localStorage (useful if auto didn't fire) */}
+          <button onClick={()=>{ (useStore as any).persist?.rehydrate?.(); setSyncFlash(true); setTimeout(()=>setSyncFlash(false),2000); }}
+            title="Sync latest plots from other tabs"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-green-300 hover:bg-white/10"
+            style={{border:"1px solid rgba(255,255,255,0.1)"}}>
+            <RefreshCw className="w-3.5 h-3.5"/> Sync
+          </button>
+
           <button onClick={()=>setShowHint(!showHint)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
             style={showHint?{background:"rgba(16,185,129,0.2)",color:"#A7F3D0",border:"1px solid rgba(16,185,129,0.3)"}:{color:"#64748B",border:"1px solid rgba(255,255,255,0.1)"}}>
@@ -305,8 +341,8 @@ export default function LandView(){
               <Sparkles className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5"/>
               <span>
                 <strong className="text-green-300">Tap any plot</strong> to open its live panel on the right.{" "}
-                Use the <strong className="text-green-300">Edit All</strong> tab to type or drag-edit every value — moisture, health, temp, pH, NPK, crop, phase, size (acres/cents) and more — changes sync instantly across Land, Dashboard and Field Monitor.{" "}
-                New plots you add from <strong className="text-green-300">My Fields</strong> appear automatically below the main map — scroll down on the map to find them, or use the plot switcher in the side panel.
+                Use the <strong className="text-green-300">Edit All</strong> tab to type or drag-edit every value — changes sync instantly across Land, Dashboard and Field Monitor.{" "}
+                Plots added in <strong className="text-green-300">My Fields</strong> appear automatically below — press <strong className="text-green-300">Sync</strong> in the top bar (or it auto-syncs) to see newly added plots here immediately.
               </span>
               <button onClick={()=>setShowHint(false)} className="ml-auto text-green-400 hover:text-green-200 flex-shrink-0"><X className="w-3.5 h-3.5"/></button>
             </div>
