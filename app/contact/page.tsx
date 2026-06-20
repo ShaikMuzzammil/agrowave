@@ -5,10 +5,10 @@ import { Mail, Phone, ChevronDown, MessageCircle, Clock, Trophy, AlertCircle, Ch
 
 export default function ContactPage() {
   return (
-    <div className="pt-[64px] min-h-screen" style={{background:"linear-gradient(180deg,#F0FDF4 0%,#F8FAFC 60%,#EFF6FF 100%)"}}>
+    <div className="pt-[64px] min-h-screen" style={{background:"linear-gradient(180deg,#ECFDF5 0%,#F8FAFC 40%,#EFF6FF 100%)"}}>
 
-      {/* ── HERO — dark green, pb-48 gives cards a deep overlap ── */}
-      <section className="relative overflow-hidden pt-14 pb-48 sm:pt-18 sm:pb-52"
+      {/* ── HERO — pb-32 so cards pull up deeply into the dark section ── */}
+      <section className="relative overflow-hidden pt-14 pb-32 sm:pt-18 sm:pb-36"
         style={{background:"linear-gradient(160deg,#03130A 0%,#0A2818 55%,#062014 100%)"}}>
         <div className="absolute -top-24 -right-20 w-96 h-96 rounded-full opacity-20 blur-3xl pointer-events-none" style={{background:"#10B981"}}/>
         <div className="absolute -bottom-24 -left-24 w-[28rem] h-[28rem] rounded-full opacity-12 blur-3xl pointer-events-none" style={{background:"#3B82F6"}}/>
@@ -29,11 +29,11 @@ export default function ContactPage() {
       </section>
 
       {/* ── INFO CARDS — overlapping the dark hero ── */}
-      <div className="container relative z-10 -mt-36">
+      <div className="container relative z-10 -mt-52">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
           <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0}}
-            className="rounded-2xl p-6 text-center" style={{background:"#ECFDF5",border:"1.5px solid #A7F3D0",boxShadow:"0 8px 32px rgba(16,185,129,0.1)"}}>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            className="rounded-2xl p-6 text-center" style={{background:"#ECFDF5",border:"1.5px solid #A7F3D0",boxShadow:"0 12px 40px rgba(0,0,0,0.18)"}}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}>
               <Phone className="w-5 h-5 text-emerald-600"/>
             </div>
             <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1.5">KISAN HELPLINE</div>
@@ -42,8 +42,8 @@ export default function ContactPage() {
           </motion.div>
 
           <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.08}}
-            className="rounded-2xl p-6 text-center" style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",boxShadow:"0 8px 32px rgba(59,130,246,0.08)"}}>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            className="rounded-2xl p-6 text-center" style={{background:"#EFF6FF",border:"1.5px solid #BFDBFE",boxShadow:"0 12px 40px rgba(0,0,0,0.18)"}}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}>
               <Mail className="w-5 h-5 text-blue-600"/>
             </div>
             <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1.5">SEND A MESSAGE</div>
@@ -52,8 +52,8 @@ export default function ContactPage() {
           </motion.div>
 
           <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.16}}
-            className="rounded-2xl p-6 text-center" style={{background:"#FFFBEB",border:"1.5px solid #FDE68A",boxShadow:"0 8px 32px rgba(245,158,11,0.08)"}}>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white text-2xl leading-none" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+            className="rounded-2xl p-6 text-center" style={{background:"#FFFBEB",border:"1.5px solid #FDE68A",boxShadow:"0 12px 40px rgba(0,0,0,0.18)"}}>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white text-2xl leading-none" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}>
               🌐
             </div>
             <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1.5">AVAILABLE ON</div>
@@ -64,7 +64,7 @@ export default function ContactPage() {
       </div>
 
       {/* ── FAQ + FORM ── */}
-      <section className="py-14">
+      <section className="py-10 pt-14">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
 
@@ -220,11 +220,9 @@ function ContactForm() {
       className="rounded-2xl overflow-hidden bg-white border border-slate-200" style={{boxShadow:"0 8px 32px rgba(0,0,0,0.06)"}}>
 
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between">
-        <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
-          <Mail className="w-4 h-4 text-brand-500"/> Send Us a Message
-        </span>
-        <span className="text-[10px] text-slate-400 font-medium">Powered by Resend API · replies go to your email</span>
+      <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/80 flex items-center gap-2">
+        <Mail className="w-4 h-4 text-brand-500"/>
+        <span className="text-sm font-bold text-slate-700">Send Us a Message</span>
       </div>
 
       <div className="p-6 space-y-4">

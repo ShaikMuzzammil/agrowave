@@ -12,7 +12,7 @@
 [![Framer Motion](https://img.shields.io/badge/Framer_Motion-EF008F?style=flat-square&logo=framer&logoColor=white)](https://framer.com/motion)
 [![Vercel](https://img.shields.io/badge/Deployed_on_Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://agrowave.vercel.app)
 
-**[🚀 Live Demo — agrowave.vercel.app](https://agrowave.vercel.app)** &nbsp;·&nbsp; **[GitHub](https://github.com/ShaikMuzzammil/terra-project)** &nbsp;·&nbsp; Built by [Shaik Muzzammil](https://github.com/ShaikMuzzammil)
+**[🚀 Live Demo — agrowave.vercel.app](https://agrowave.vercel.app)** &nbsp;·&nbsp; **[GitHub](https://github.com/ShaikMuzzammil/terra-project)**
 
 </div>
 
@@ -279,7 +279,13 @@ For real data: [Agmarknet](https://agmarknet.gov.in) · [IMD](https://imd.gov.in
 
 ## 📜 License
 
-MIT License — to be added by the author.
+This project is licensed under the **MIT License** — see the [`LICENSE`](./LICENSE) file for details.
+
+```
+MIT License — Copyright (c) 2026 Shaik Muzzammil
+```
+
+Free to use, modify, and distribute with attribution.
 
 ---
 
