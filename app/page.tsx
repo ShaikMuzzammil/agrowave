@@ -672,7 +672,8 @@ export default function Home() {
                 Open Farm Dashboard <ArrowRight className="w-5 h-5"/>
               </Link>
               <button onClick={()=>document.getElementById("guide")?.scrollIntoView({behavior:"smooth"})}
-                className="btn text-base px-10 py-4 rounded-xl border-2 border-white/50 text-white hover:bg-white/10 font-semibold transition-all">
+                className="btn text-base px-10 py-4 rounded-xl font-bold transition-all"
+                style={{background:"rgba(255,255,255,0.15)",border:"2px solid rgba(255,255,255,0.5)",color:"#fff",backdropFilter:"blur(8px)"}}>
                 <BookOpen className="w-4 h-4"/> View Platform Guide
               </button>
             </div>

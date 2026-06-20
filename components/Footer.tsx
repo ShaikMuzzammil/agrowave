@@ -27,8 +27,8 @@ const COLS = [
 
 const CONTACTS = [
   {Icon:Phone,  v:"1800-180-1551 (Kisan Helpline)"},
-  {Icon:Mail,   v:"hello@agrowave.farm"},
-  {Icon:MapPin, v:"Hyderabad, Telangana"},
+  {Icon:Mail,   v:"Contact via website form"},
+  {Icon:MapPin, v:"Built for India 🇮🇳"},
 ];
 
 export default function Footer() {
