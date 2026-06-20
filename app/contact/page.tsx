@@ -7,8 +7,8 @@ export default function ContactPage() {
   return (
     <div className="pt-[64px] min-h-screen" style={{background:"linear-gradient(180deg,#ECFDF5 0%,#F8FAFC 40%,#EFF6FF 100%)"}}>
 
-      {/* ── HERO — pb-32 so cards pull up deeply into the dark section ── */}
-      <section className="relative overflow-hidden pt-14 pb-32 sm:pt-18 sm:pb-36"
+      {/* ── HERO — cards overlap boundary by ~20px only ── */}
+      <section className="relative overflow-hidden pt-14 pb-8 sm:pt-18"
         style={{background:"linear-gradient(160deg,#03130A 0%,#0A2818 55%,#062014 100%)"}}>
         <div className="absolute -top-24 -right-20 w-96 h-96 rounded-full opacity-20 blur-3xl pointer-events-none" style={{background:"#10B981"}}/>
         <div className="absolute -bottom-24 -left-24 w-[28rem] h-[28rem] rounded-full opacity-12 blur-3xl pointer-events-none" style={{background:"#3B82F6"}}/>
@@ -29,7 +29,7 @@ export default function ContactPage() {
       </section>
 
       {/* ── INFO CARDS — overlapping the dark hero ── */}
-      <div className="container relative z-10" style={{marginTop:"-13rem"}}>
+      <div className="container relative z-10" style={{marginTop:"-2rem"}}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
           <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0}}
             className="rounded-2xl p-6 text-center" style={{background:"#ECFDF5",border:"1.5px solid #A7F3D0",boxShadow:"0 12px 40px rgba(0,0,0,0.18)"}}>
@@ -64,7 +64,7 @@ export default function ContactPage() {
       </div>
 
       {/* ── FAQ + FORM ── */}
-      <section className="py-10 pt-14">
+      <section className="section py-12">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
 
