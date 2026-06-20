@@ -40,22 +40,61 @@ export default function Weather() {
   const now = HOURLY[new Date().getHours()];
   const uvIndex = 8;
 
-  /* Auto-push rain alert when heavy rain is forecast */
+  /* ── Comprehensive weather alert system ── fires once per session per alert type */
   useEffect(() => {
-    const heavy = FORECAST.find(f => f.rain >= 70);
-    if (heavy) {
-      const fired = sessionStorage.getItem("rain-alert-fired");
-      if (!fired) {
-        setTimeout(() => {
-          pushNotif({
-            title: `⛈️ Rain Alert — ${heavy.rain}% chance ${heavy.day}`,
-            body: `${heavy.desc} forecast for ${heavy.day}. Postpone fertilizer/pesticide application. Save water this week.`,
-            type: "warning",
-            time: "just now",
-          });
-          sessionStorage.setItem("rain-alert-fired", "1");
-        }, 1500);
-      }
+    const today = FORECAST[0];
+    const fired = (key:string) => !!sessionStorage.getItem(`weather-alert-${key}`);
+    const fire  = (key:string, n:Parameters<typeof pushNotif>[0]) => {
+      if (fired(key)) return;
+      setTimeout(() => {
+        pushNotif(n);
+        sessionStorage.setItem(`weather-alert-${key}`, "1");
+      }, 800 + Math.random()*1200);
+    };
+
+    /* Rain — ≥60% probability */
+    if (today.rain >= 60) {
+      fire("rain", {
+        title: `⛈️ Heavy Rain Alert — ${today.rain}% chance today`,
+        body: `${today.desc} expected. Postpone fertilizer/pesticide application. Delay irrigation for North Field and West Block. Cover harvested crops.`,
+        type: "warning", time: "just now",
+      });
+    }
+
+    /* High temperature — hi > 38°C */
+    if (today.hi >= 38) {
+      fire("heat", {
+        title: `🌡️ Heat Alert — ${today.hi}°C high today`,
+        body: `Extreme heat forecasted. Avoid fieldwork 11am–4pm. Ensure livestock have water. Increase irrigation frequency for cotton and soybean plots.`,
+        type: "error", time: "just now",
+      });
+    }
+
+    /* High humidity — ≥80% */
+    if (today.hum >= 80) {
+      fire("humidity", {
+        title: `💧 High Humidity Alert — ${today.hum}% relative humidity`,
+        body: `High moisture conditions increase fungal disease risk. Inspect rice and tomato crops for blight. Consider preventive copper fungicide spray.`,
+        type: "warning", time: "just now",
+      });
+    }
+
+    /* Strong wind — ≥25 km/h */
+    if (today.wind >= 25) {
+      fire("wind", {
+        title: `💨 Wind Advisory — ${today.wind} km/h gusts`,
+        body: `Strong winds expected. Avoid pesticide spraying — drift risk. Secure polytunnel covers and shade nets. Check irrigation drip lines for damage.`,
+        type: "info", time: "just now",
+      });
+    }
+
+    /* Good conditions — low rain, moderate temp */
+    if (today.rain < 20 && today.hi <= 34 && today.hum < 65) {
+      fire("ideal", {
+        title: `✅ Ideal Farm Conditions Today`,
+        body: `Clear skies, ${today.hi}°C high, ${today.hum}% humidity. Great day for field inspection, pesticide application, or harvesting. Low disease risk.`,
+        type: "success", time: "just now",
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -87,18 +126,58 @@ export default function Weather() {
       </div>
 
       <div className="container py-8">
-        {/* Rain Alert Banner — shows when heavy rain forecast */}
-        {!alertDismissed && FORECAST.some(f=>f.rain>=60) && (
-          <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}}
-            className="flex items-center gap-3 mb-5 px-4 py-3 rounded-2xl"
-            style={{background:"linear-gradient(135deg,#0C4A6E,#075985)",border:"1.5px solid #0EA5E9",boxShadow:"0 4px 20px rgba(14,165,233,0.25)"}}>
-            <span className="text-2xl flex-shrink-0">⛈️</span>
-            <div className="flex-1">
-              <p className="font-bold text-white text-sm">Heavy Rain Alert — {FORECAST.filter(f=>f.rain>=60).map(f=>`${f.day} (${f.rain}%)`).join(", ")}</p>
-              <p className="text-sky-200 text-xs mt-0.5">Skip fertilizer/pesticide applications on those days. A notification has been sent to your farm alerts.</p>
-            </div>
-            <button onClick={()=>setAlertDismissed(true)} className="text-sky-300 hover:text-white p-1 flex-shrink-0">✕</button>
-          </motion.div>
+        {/* Multi-condition Weather Alert Banners */}
+        {!alertDismissed && (
+          <div className="space-y-3 mb-5">
+            {FORECAST.some(f=>f.rain>=60) && (
+              <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                style={{background:"linear-gradient(135deg,#0C4A6E,#075985)",border:"1.5px solid #0EA5E9",boxShadow:"0 4px 16px rgba(14,165,233,0.2)"}}>
+                <span className="text-xl flex-shrink-0">⛈️</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-white text-sm">Rain Alert — {FORECAST.filter(f=>f.rain>=60).map(f=>`${f.day} ${f.rain}%`).join(", ")}</p>
+                  <p className="text-sky-200 text-xs mt-0.5">Skip fertiliser/pesticide on those days. Cover harvested crops. Check field drainage.</p>
+                </div>
+                <button onClick={()=>setAlertDismissed(true)} className="text-sky-300 hover:text-white p-1 flex-shrink-0 text-lg leading-none">✕</button>
+              </motion.div>
+            )}
+            {FORECAST[0].hi >= 38 && (
+              <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} transition={{delay:0.08}}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                style={{background:"linear-gradient(135deg,#7C1D1D,#B91C1C)",border:"1.5px solid #FCA5A5",boxShadow:"0 4px 16px rgba(239,68,68,0.2)"}}>
+                <span className="text-xl flex-shrink-0">🌡️</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-white text-sm">Heat Advisory — {FORECAST[0].hi}°C high today</p>
+                  <p className="text-red-200 text-xs mt-0.5">Avoid fieldwork 11am–4pm. Increase irrigation frequency. Ensure livestock water supply.</p>
+                </div>
+                <button onClick={()=>setAlertDismissed(true)} className="text-red-300 hover:text-white p-1 flex-shrink-0 text-lg leading-none">✕</button>
+              </motion.div>
+            )}
+            {FORECAST[0].hum >= 80 && (
+              <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} transition={{delay:0.16}}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                style={{background:"linear-gradient(135deg,#064E3B,#059669)",border:"1.5px solid #6EE7B7",boxShadow:"0 4px 16px rgba(16,185,129,0.2)"}}>
+                <span className="text-xl flex-shrink-0">💧</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-white text-sm">High Humidity — {FORECAST[0].hum}% RH today</p>
+                  <p className="text-emerald-200 text-xs mt-0.5">Fungal disease risk elevated. Inspect rice/tomato crops. Consider preventive copper fungicide spray.</p>
+                </div>
+                <button onClick={()=>setAlertDismissed(true)} className="text-emerald-300 hover:text-white p-1 flex-shrink-0 text-lg leading-none">✕</button>
+              </motion.div>
+            )}
+            {FORECAST[0].wind >= 25 && (
+              <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} transition={{delay:0.24}}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                style={{background:"linear-gradient(135deg,#312E81,#4338CA)",border:"1.5px solid #A5B4FC",boxShadow:"0 4px 16px rgba(99,102,241,0.2)"}}>
+                <span className="text-xl flex-shrink-0">💨</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-white text-sm">Wind Advisory — {FORECAST[0].wind} km/h gusts</p>
+                  <p className="text-indigo-200 text-xs mt-0.5">Avoid aerial spraying. Secure polytunnel covers and shade nets. Check drip irrigation lines.</p>
+                </div>
+                <button onClick={()=>setAlertDismissed(true)} className="text-indigo-300 hover:text-white p-1 flex-shrink-0 text-lg leading-none">✕</button>
+              </motion.div>
+            )}
+          </div>
         )}
 
         {/* Hint */}

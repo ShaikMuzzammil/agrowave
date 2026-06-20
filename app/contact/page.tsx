@@ -7,8 +7,8 @@ export default function ContactPage() {
   return (
     <div className="pt-[64px] min-h-screen" style={{background:"linear-gradient(180deg,#F0FDF4 0%,#F8FAFC 60%,#EFF6FF 100%)"}}>
 
-      {/* ── HERO — dark green, tall enough so cards overlap nicely ── */}
-      <section className="relative overflow-hidden pt-14 pb-36 sm:pt-18 sm:pb-40"
+      {/* ── HERO — dark green, pb-48 gives cards a deep overlap ── */}
+      <section className="relative overflow-hidden pt-14 pb-48 sm:pt-18 sm:pb-52"
         style={{background:"linear-gradient(160deg,#03130A 0%,#0A2818 55%,#062014 100%)"}}>
         <div className="absolute -top-24 -right-20 w-96 h-96 rounded-full opacity-20 blur-3xl pointer-events-none" style={{background:"#10B981"}}/>
         <div className="absolute -bottom-24 -left-24 w-[28rem] h-[28rem] rounded-full opacity-12 blur-3xl pointer-events-none" style={{background:"#3B82F6"}}/>
@@ -29,7 +29,7 @@ export default function ContactPage() {
       </section>
 
       {/* ── INFO CARDS — overlapping the dark hero ── */}
-      <div className="container relative z-10 -mt-20">
+      <div className="container relative z-10 -mt-36">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
           <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0}}
             className="rounded-2xl p-6 text-center" style={{background:"#ECFDF5",border:"1.5px solid #A7F3D0",boxShadow:"0 8px 32px rgba(16,185,129,0.1)"}}>
@@ -54,11 +54,11 @@ export default function ContactPage() {
           <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.16}}
             className="rounded-2xl p-6 text-center" style={{background:"#FFFBEB",border:"1.5px solid #FDE68A",boxShadow:"0 8px 32px rgba(245,158,11,0.08)"}}>
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-white text-2xl leading-none" style={{boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-              🇮🇳
+              🌐
             </div>
-            <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1.5">BUILT FOR</div>
-            <div className="font-bold text-slate-800 text-base mb-0.5">Indian Farmers</div>
-            <div className="text-slate-500 text-xs">Made for Indian agriculture</div>
+            <div className="text-[10px] font-bold tracking-widest text-slate-400 mb-1.5">AVAILABLE ON</div>
+            <div className="font-bold text-slate-800 text-base mb-0.5">The Open Web</div>
+            <div className="text-slate-500 text-xs">No install · Works in any browser</div>
           </motion.div>
         </div>
       </div>

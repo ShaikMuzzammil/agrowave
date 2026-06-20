@@ -28,7 +28,7 @@ const COLS = [
 const CONTACTS = [
   {Icon:Phone,  v:"1800-180-1551 (Kisan Helpline)"},
   {Icon:Mail,   v:"Contact via website form"},
-  {Icon:MapPin, v:"Built for India 🇮🇳"},
+  {Icon:MapPin, v:"Open Web Platform — accessible worldwide"},
 ];
 
 export default function Footer() {
