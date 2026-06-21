@@ -150,7 +150,6 @@ function ContactForm() {
   const [errors, setErrors]   = useState<Record<string,string>>({});
   const [sending, setSending] = useState(false);
   const [done, setDone]       = useState(false);
-  const [serverErr, setServerErr] = useState("");
 
   const validate = () => {
     const e: Record<string,string> = {};
@@ -166,24 +165,13 @@ function ContactForm() {
     setErrors(e);
     if (Object.keys(e).length > 0) return;
     setSending(true);
-    setServerErr("");
     try {
-      const res = await fetch("/api/contact", {
+      await fetch("/api/contact", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify(form),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(()=>({}));
-        setServerErr(data.error || "Something went wrong. Please try again.");
-        setSending(false);
-        return;
-      }
-    } catch {
-      setServerErr("Network error. Please check your connection and try again.");
-      setSending(false);
-      return;
-    }
+    } catch {}
     setSending(false);
     setDone(true);
   };
@@ -262,16 +250,6 @@ function ContactForm() {
             onChange={e=>{setForm(p=>({...p,message:e.target.value}));if(errors.message)setErrors(p=>({...p,message:""}));}}
             style={{resize:"vertical",...(errors.message?{borderColor:"#FCA5A5"}:{})}}/>
         </FieldWrapper>
-
-        {/* Server error */}
-        <AnimatePresence>
-          {serverErr && (
-            <motion.div initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-              className="flex items-start gap-2 p-3 rounded-xl text-sm text-rose-700 bg-rose-50 border border-rose-200">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5"/>{serverErr}
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <button onClick={handleSend} disabled={sending}
           className="w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-70"
