@@ -238,9 +238,11 @@ npm run start
 
 | Variable | Required for | Where to get it |
 |---|---|---|
-| `RESEND_API_KEY` | Email sending | [resend.com/api-keys](https://resend.com/api-keys) |
-| `TEAM_EMAIL` | Your inbox for form submissions | Your email address |
-| `RESEND_FROM` | Sender address shown to recipients | A verified domain on Resend (use `onboarding@resend.dev` for testing) |
+| `RESEND_API_KEY` | ✅ Yes | From [resend.com/api-keys](https://resend.com/api-keys) — free tier works |
+| `TEAM_EMAIL` | ✅ Yes | **Your inbox** — receives all contact form submissions |
+| `RESEND_FROM` | ❌ Not needed | Emails always send from `onboarding@resend.dev` (Resend's pre-verified sender). No domain setup required. Variable is ignored. |
+
+> Emails use `reply_to: senderEmail` so you can reply directly to the person who contacted you.
 
 **Without these**, the app works fully — only the contact form and price alert emails won't actually send (the UI still confirms success).
 

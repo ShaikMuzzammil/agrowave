@@ -150,6 +150,7 @@ function ContactForm() {
   const [errors, setErrors]   = useState<Record<string,string>>({});
   const [sending, setSending] = useState(false);
   const [done, setDone]       = useState(false);
+  const [serverErr, setServerErr] = useState("");
 
   const validate = () => {
     const e: Record<string,string> = {};
@@ -165,13 +166,25 @@ function ContactForm() {
     setErrors(e);
     if (Object.keys(e).length > 0) return;
     setSending(true);
+    setServerErr("");
     try {
-      await fetch("/api/contact", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-    } catch {}
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        /* Show the actual Resend error so it's diagnosable */
+        setServerErr(data?.error || "Something went wrong. Check Vercel logs or try again.");
+        setSending(false);
+        return;
+      }
+    } catch {
+      setServerErr("Network error — please check your connection and try again.");
+      setSending(false);
+      return;
+    }
     setSending(false);
     setDone(true);
   };
@@ -250,6 +263,23 @@ function ContactForm() {
             onChange={e=>{setForm(p=>({...p,message:e.target.value}));if(errors.message)setErrors(p=>({...p,message:""}));}}
             style={{resize:"vertical",...(errors.message?{borderColor:"#FCA5A5"}:{})}}/>
         </FieldWrapper>
+
+        {/* Server / Resend error — shown when email delivery fails */}
+        <AnimatePresence>
+          {serverErr && (
+            <motion.div initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}}
+              className="flex items-start gap-2.5 p-3.5 rounded-xl text-sm bg-rose-50 border border-rose-200">
+              <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5"/>
+              <div>
+                <p className="font-semibold text-rose-700 text-sm">Message not delivered</p>
+                <p className="text-rose-600 text-xs mt-0.5">{serverErr}</p>
+                <p className="text-slate-400 text-[10px] mt-1">
+                  Tip: make sure <code className="bg-slate-100 px-1 rounded">RESEND_API_KEY</code> and <code className="bg-slate-100 px-1 rounded">TEAM_EMAIL</code> are set in your Vercel project settings.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <button onClick={handleSend} disabled={sending}
           className="w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-70"
