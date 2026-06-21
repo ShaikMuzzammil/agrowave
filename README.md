@@ -293,6 +293,6 @@ Free to use, modify, and distribute with attribution.
 
 **[🚀 agrowave.vercel.app](https://agrowave.vercel.app)** &nbsp;·&nbsp; **[GitHub](https://github.com/ShaikMuzzammil/terra-project)** &nbsp;·&nbsp; **[Contact](https://agrowave.vercel.app/contact)**
 
-Built with ❤️ by [Shaik Muzzammil](https://github.com/ShaikMuzzammil) · CSE, Amrita Vishwa Vidyapeetham
+Built with ❤️ by [Shaik Muzzammil](https://github.com/ShaikMuzzammil)
 
 </div>

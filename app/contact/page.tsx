@@ -126,6 +126,25 @@ export default function ContactPage() {
   );
 }
 
+/* ─── FieldWrapper — MUST be outside ContactForm so React doesn't
+   remount inputs on every keystroke (loses focus bug). ──────────── */
+function FieldWrapper({label,req,children,err}:{label:string;req?:boolean;children:React.ReactNode;err?:string}) {
+  return (
+    <div>
+      <label className="label-xs">{label}{req&&<span className="text-rose-500 ml-0.5">*</span>}</label>
+      {children}
+      <AnimatePresence>
+        {err && (
+          <motion.p initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}}
+            className="text-[11px] text-rose-500 mt-1 flex items-center gap-1 font-medium">
+            <AlertCircle className="w-3 h-3 flex-shrink-0"/>{err}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function ContactForm() {
   const [form, setForm]       = useState({name:"",email:"",phone:"",subject:"",message:""});
   const [errors, setErrors]   = useState<Record<string,string>>({});
@@ -182,10 +201,9 @@ function ContactForm() {
         <p className="text-slate-500 text-sm mb-2 max-w-xs mx-auto">
           Your message has been sent. We'll reply to <strong className="text-emerald-700">{form.email}</strong> within 24 hours.
         </p>
-        <p className="text-slate-400 text-xs mb-6">Powered by Resend — delivered instantly to our inbox.</p>
         <div className="text-left rounded-xl p-4 mb-6 space-y-2 bg-slate-50 border border-slate-100">
-          {[["Name",form.name],["Subject",form.subject||"General Inquiry"],
-            ["Message",form.message.length>90?form.message.slice(0,90)+"…":form.message]].map(([l,v])=>(
+          {([["Name",form.name],["Subject",form.subject||"General Inquiry"],
+            ["Message",form.message.length>90?form.message.slice(0,90)+"…":form.message]] as [string,string][]).map(([l,v])=>(
             <div key={l} className="flex gap-2 text-xs">
               <span className="text-slate-400 w-16 flex-shrink-0 font-semibold">{l}:</span>
               <span className="text-slate-700">{v}</span>
@@ -200,21 +218,6 @@ function ContactForm() {
     </motion.div>
   );
 
-  const Field = ({id,label,req,children,err}:{id:string;label:string;req?:boolean;children:React.ReactNode;err?:string}) => (
-    <div>
-      <label className="label-xs">{label}{req&&<span className="text-rose-500 ml-0.5">*</span>}</label>
-      {children}
-      <AnimatePresence>
-        {err && (
-          <motion.p initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-            className="text-[11px] text-rose-500 mt-1 flex items-center gap-1 font-medium">
-            <AlertCircle className="w-3 h-3 flex-shrink-0"/>{err}
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
   return (
     <motion.div initial={{opacity:0,x:20}} whileInView={{opacity:1,x:0}} viewport={{once:true}}
       className="rounded-2xl overflow-hidden bg-white border border-slate-200" style={{boxShadow:"0 8px 32px rgba(0,0,0,0.06)"}}>
@@ -227,39 +230,38 @@ function ContactForm() {
 
       <div className="p-6 space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Field id="name" label="FULL NAME" req err={errors.name}>
+          <FieldWrapper label="FULL NAME" req err={errors.name}>
             <input value={form.name} placeholder="Ramesh Kumar"
               onChange={e=>{setForm(p=>({...p,name:e.target.value}));if(errors.name)setErrors(p=>({...p,name:""}));}}
               style={errors.name?{borderColor:"#FCA5A5"}:{}}/>
-          </Field>
-          <Field id="phone" label="PHONE (OPTIONAL)">
+          </FieldWrapper>
+          <FieldWrapper label="PHONE (OPTIONAL)">
             <input value={form.phone} placeholder="+91 98765 43210"
               onChange={e=>setForm(p=>({...p,phone:e.target.value}))}/>
-          </Field>
+          </FieldWrapper>
         </div>
 
-        <Field id="email" label="EMAIL" req err={errors.email}>
+        <FieldWrapper label="EMAIL" req err={errors.email}>
           <input type="email" value={form.email} placeholder="farmer@example.com"
             onChange={e=>{setForm(p=>({...p,email:e.target.value}));if(errors.email)setErrors(p=>({...p,email:""}));}}
             style={errors.email?{borderColor:"#FCA5A5"}:{}}/>
-        </Field>
+        </FieldWrapper>
 
-        <Field id="subject" label="SUBJECT / TOPIC">
+        <FieldWrapper label="SUBJECT / TOPIC">
           <select value={form.subject} onChange={e=>setForm(p=>({...p,subject:e.target.value}))}>
             <option value="">Select a topic…</option>
             {["General Enquiry","Technical Support","Partnership","Feedback","Bug Report","Other"].map(s=>(
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-        </Field>
+        </FieldWrapper>
 
-        <Field id="message" label="MESSAGE" req err={errors.message}>
-          <textarea rows={4} value={form.message}
+        <FieldWrapper label="MESSAGE" req err={errors.message}>
+          <textarea rows={5} value={form.message}
             placeholder="Describe your question or feedback in detail — the more context, the better we can help…"
             onChange={e=>{setForm(p=>({...p,message:e.target.value}));if(errors.message)setErrors(p=>({...p,message:""}));}}
             style={{resize:"vertical",...(errors.message?{borderColor:"#FCA5A5"}:{})}}/>
-          <div className="text-[10px] text-slate-400 text-right -mt-0.5">{form.message.length} chars</div>
-        </Field>
+        </FieldWrapper>
 
         {/* Server error */}
         <AnimatePresence>
